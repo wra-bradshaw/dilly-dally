@@ -8,14 +8,38 @@ import {
 } from "./client";
 
 function jsonResponse(body: unknown, status = 200) {
-	return { json: () => Promise.resolve(body), ok: status < 400, status };
+	return new Response(JSON.stringify(body), {
+		headers: { "Content-Type": "application/json" },
+		status,
+	});
+}
+
+function requestOf(mock: ReturnType<typeof vi.fn>, index = 0): Request {
+	const [req] = mock.mock.calls[index] as unknown as [Request];
+	return req;
 }
 
 describe("api client", () => {
 	it("creates events", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(jsonResponse({ id: "x", url: "y" }, 201));
+		const fetchMock = vi.fn().mockResolvedValue(
+			jsonResponse(
+				{
+					event: {
+						createdAt: "2026-09-22T00:00:00.000Z",
+						dates: ["2026-10-05"],
+						endTime: "17:00",
+						expiresAt: "2026-10-06T00:00:00.000Z",
+						id: "x",
+						startTime: "09:00",
+						timezone: "UTC",
+						title: "T",
+					},
+					id: "x",
+					url: "http://localhost/e/x",
+				},
+				201,
+			),
+		);
 		vi.stubGlobal("fetch", fetchMock);
 		try {
 			const res = await createEvent({
@@ -25,11 +49,10 @@ describe("api client", () => {
 				timezone: "UTC",
 				title: "T",
 			});
-			expect(res).toEqual({ id: "x", url: "y" });
-			expect(fetchMock).toHaveBeenCalledWith(
-				"/api/events",
-				expect.objectContaining({ method: "POST" }),
-			);
+			expect(res.id).toBe("x");
+			const req = requestOf(fetchMock);
+			expect(req.url).toContain("/api/events");
+			expect(req.method).toBe("POST");
 		} finally {
 			vi.unstubAllGlobals();
 		}
@@ -55,21 +78,27 @@ describe("api client", () => {
 	});
 
 	it("saves and loads availability", async () => {
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ count: 1 }));
+		const fetchMock = vi.fn().mockResolvedValue(
+			jsonResponse({
+				count: 1,
+				name: "Al",
+				protected: false,
+				updatedAt: "2026-09-22T00:00:00.000Z",
+			}),
+		);
 		vi.stubGlobal("fetch", fetchMock);
 		try {
 			await saveAvailability("AbC123_-XyZ9", { name: "Al", slots: [] });
-			expect(fetchMock).toHaveBeenCalledWith(
-				"/api/events/AbC123_-XyZ9/availability",
-				expect.objectContaining({ method: "PUT" }),
-			);
+			const putReq = requestOf(fetchMock);
+			expect(putReq.url).toContain("/api/events/AbC123_-XyZ9/availability");
+			expect(putReq.method).toBe("PUT");
+			fetchMock.mockResolvedValue(jsonResponse({ name: "Al", slots: [] }));
 			await fetchOwnAvailability("AbC123_-XyZ9", "Al", "pw");
-			expect(fetchMock).toHaveBeenLastCalledWith(
+			const getReq = requestOf(fetchMock, 1);
+			expect(getReq.url).toContain(
 				"/api/events/AbC123_-XyZ9/availability?name=Al",
-				expect.objectContaining({
-					headers: expect.objectContaining({ "x-event-password": "pw" }),
-				}),
 			);
+			expect(getReq.headers.get("x-event-password")).toBe("pw");
 		} finally {
 			vi.unstubAllGlobals();
 		}

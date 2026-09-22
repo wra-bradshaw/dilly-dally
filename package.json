@@ -23,6 +23,7 @@
     "db:migrate:local": "wrangler d1 migrations apply dilly-dally --local",
     "db:migrate:remote": "wrangler d1 migrations apply dilly-dally --remote",
     "db:seed": "tsx scripts/seed.ts",
+    "openapi:generate": "tsx scripts/generate-openapi-json.ts && openapi-typescript scripts/openapi.json -o src/lib/api-schema.d.ts",
     "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.3",
     "lucide-react": "^0.577.0",
+    "openapi-fetch": "^0.17.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -73,6 +75,7 @@
     "drizzle-seed": "^0.3.1",
     "jsdom": "^30.1.1",
     "knip": "^6.37.0",
+    "openapi-typescript": "^7.13.0",
     "playwright": "^1.63.0",
     "react-test-renderer": "^19.3.0",
     "sql.js": "^1.14.2",

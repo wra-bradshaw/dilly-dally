@@ -18,21 +18,21 @@ function wrapper() {
 describe("useEventDetail", () => {
 	it("fetches event detail by id", async () => {
 		const detail = { event: { id: "AbC123_-XyZ9" } };
-		vi.stubGlobal(
-			"fetch",
-			vi
-				.fn()
-				.mockResolvedValue({ json: () => Promise.resolve(detail), ok: true }),
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response(JSON.stringify(detail), {
+				headers: { "Content-Type": "application/json" },
+				status: 200,
+			}),
 		);
+		vi.stubGlobal("fetch", fetchMock);
 		try {
 			const { result } = renderHook(() => useEventDetail("AbC123_-XyZ9"), {
 				wrapper: wrapper(),
 			});
 			await waitFor(() => expect(result.current.isSuccess).toBe(true));
 			expect(result.current.data).toEqual(detail);
-			expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
-				"/api/events/AbC123_-XyZ9",
-			);
+			const [req] = fetchMock.mock.calls[0] as unknown as [Request];
+			expect(req.url).toContain("/api/events/AbC123_-XyZ9");
 		} finally {
 			vi.unstubAllGlobals();
 		}

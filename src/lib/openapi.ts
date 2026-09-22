@@ -1,5 +1,6 @@
 interface OpenApiSchema {
 	$ref?: string;
+	additionalProperties?: OpenApiSchema | boolean;
 	description?: string;
 	enum?: string[];
 	example?: unknown;
@@ -47,7 +48,10 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							type: "string",
 						},
 						slots: {
+							description:
+								"Full replace set of slot ids. Empty array means unavailable everywhere.",
 							items: { $ref: "#/components/schemas/SlotId" },
+							maxItems: 1488,
 							type: "array",
 						},
 					},
@@ -67,6 +71,8 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 				CreateEventRequest: {
 					properties: {
 						dates: {
+							description:
+								"1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive.",
 							items: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
 							maxItems: 31,
 							minItems: 1,
@@ -102,7 +108,13 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						error: {
 							properties: {
 								code: { type: "string" },
-								fields: { type: "object" },
+								fields: {
+									additionalProperties: {
+										items: { type: "string" },
+										type: "array",
+									},
+									type: "object",
+								},
 								message: { type: "string" },
 							},
 							required: ["code", "message"],
@@ -136,6 +148,63 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 					type: "object",
 				},
 				SlotId: slotId,
+				EventDetailResponse: {
+					properties: {
+						bestTimes: {
+							items: {
+								properties: {
+									count: { type: "integer" },
+									slot: { type: "string" },
+								},
+								required: ["slot", "count"],
+								type: "object",
+							},
+							type: "array",
+						},
+						counts: {
+							items: {
+								properties: {
+									count: { type: "integer" },
+									names: { items: { type: "string" }, type: "array" },
+									slot: { type: "string" },
+								},
+								required: ["slot", "count", "names"],
+								type: "object",
+							},
+							type: "array",
+						},
+						event: { $ref: "#/components/schemas/Event" },
+						participants: {
+							items: {
+								properties: {
+									count: { type: "integer" },
+									name: { type: "string" },
+									updatedAt: { type: "string" },
+								},
+								required: ["name", "count", "updatedAt"],
+								type: "object",
+							},
+							type: "array",
+						},
+						slotUniverse: { items: { type: "string" }, type: "array" },
+					},
+					required: [
+						"event",
+						"slotUniverse",
+						"counts",
+						"participants",
+						"bestTimes",
+					],
+					type: "object",
+				},
+				OwnAvailabilityResponse: {
+					properties: {
+						name: { type: "string" },
+						slots: { items: { type: "string" }, type: "array" },
+					},
+					required: ["name", "slots"],
+					type: "object",
+				},
 			},
 		},
 		info: {
@@ -182,6 +251,14 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							},
 							description: "Rate limited",
 						},
+						"500": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Internal error",
+						},
 					},
 					summary: "Create an event",
 				},
@@ -198,7 +275,16 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 					],
 					responses: {
-						"200": { description: "Event with counts and participants" },
+						"200": {
+							content: {
+								"application/json": {
+									schema: {
+										$ref: "#/components/schemas/EventDetailResponse",
+									},
+								},
+							},
+							description: "Event with counts and participants",
+						},
 						"404": {
 							content: {
 								"application/json": {
@@ -214,6 +300,14 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 								},
 							},
 							description: "Expired",
+						},
+						"429": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Rate limited",
 						},
 					},
 					summary: "Get event and group availability",
@@ -237,7 +331,24 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 					],
 					responses: {
-						"200": { description: "Own slots for editing" },
+						"200": {
+							content: {
+								"application/json": {
+									schema: {
+										$ref: "#/components/schemas/OwnAvailabilityResponse",
+									},
+								},
+							},
+							description: "Own slots for editing",
+						},
+						"400": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Validation error",
+						},
 						"401": {
 							content: {
 								"application/json": {
@@ -245,6 +356,22 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 								},
 							},
 							description: "Invalid password",
+						},
+						"404": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Not found",
+						},
+						"429": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Rate limited",
 						},
 					},
 					summary: "Get own availability",
@@ -276,6 +403,14 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							},
 							description: "Saved",
 						},
+						"400": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Validation error",
+						},
 						"401": {
 							content: {
 								"application/json": {
@@ -283,6 +418,30 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 								},
 							},
 							description: "Invalid password",
+						},
+						"404": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Not found",
+						},
+						"422": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Invalid slot",
+						},
+						"429": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Rate limited",
 						},
 					},
 					summary: "Create or update availability",

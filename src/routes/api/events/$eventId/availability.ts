@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { clientIp, jsonError, rateLimited, zodFields } from "#/lib/api-errors";
-import type {
-	AvailabilityRequest,
-	AvailabilityResponse,
-} from "#/lib/api-types";
+import type { components } from "#/lib/api-schema";
 import { deleteEvent, fetchEvent } from "#/lib/db";
 import { getDb } from "#/lib/db-env";
 import { isValidEventId } from "#/lib/event-ids";
@@ -31,7 +28,8 @@ async function loadEvent(eventId: string) {
 async function saveAvailability(request: Request, eventId: string) {
 	let raw: unknown;
 	try {
-		raw = (await request.json()) as AvailabilityRequest;
+		raw =
+			(await request.json()) as components["schemas"]["AvailabilityRequest"];
 	} catch {
 		return jsonError("bad_request", "Invalid JSON", 400);
 	}
@@ -77,7 +75,7 @@ async function saveAvailability(request: Request, eventId: string) {
 	if (!res.ok) {
 		return jsonError("invalid_password", "Wrong password for this name", 401);
 	}
-	const out: AvailabilityResponse = {
+	const out: components["schemas"]["AvailabilityResponse"] = {
 		count: res.result.count,
 		name: res.result.name,
 		protected: res.result.protected,

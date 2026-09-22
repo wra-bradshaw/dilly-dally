@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { clientIp, jsonError, rateLimited } from "#/lib/api-errors";
-import type { EventDetailResponse } from "#/lib/api-types";
+import type { components } from "#/lib/api-schema";
 import { deleteEvent, fetchEvent } from "#/lib/db";
 import { getDb } from "#/lib/db-env";
 import { isValidEventId } from "#/lib/event-ids";
@@ -32,7 +32,8 @@ export const Route = createFileRoute("/api/events/$eventId/")({
 					await deleteEvent(db, event.id);
 					return jsonError("gone", "Event has expired", 410);
 				}
-				const detail: EventDetailResponse = await getEventDetail(db, event);
+				const detail: components["schemas"]["EventDetailResponse"] =
+					await getEventDetail(db, event);
 				return Response.json(detail, {
 					headers: { "Cache-Control": "no-store" },
 				});

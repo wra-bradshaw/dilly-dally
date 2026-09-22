@@ -16,6 +16,7 @@
 			"vitest.setup.ts",
 			"knip.json",
 			"!src/routeTree.gen.ts",
+			"!src/lib/api-schema.d.ts",
 			"!src/styles.css",
 			"!**/node_modules",
 			"!**/dist"

@@ -6,11 +6,7 @@ import {
 	rateLimited,
 	zodFields,
 } from "#/lib/api-errors";
-import type {
-	CreateEventRequest,
-	CreateEventResponse,
-	DillyEventDto,
-} from "#/lib/api-types";
+import type { components } from "#/lib/api-schema";
 import { fetchEvent, insertEvent, purgeExpired } from "#/lib/db";
 import { getDb } from "#/lib/db-env";
 import { generateEventId, isValidEventId } from "#/lib/event-ids";
@@ -25,7 +21,8 @@ export const Route = createFileRoute("/api/events/")({
 			POST: async ({ request }) => {
 				let raw: unknown;
 				try {
-					raw = (await request.json()) as CreateEventRequest;
+					raw =
+						(await request.json()) as components["schemas"]["CreateEventRequest"];
 				} catch {
 					return jsonError("bad_request", "Invalid JSON", 400);
 				}
@@ -79,7 +76,7 @@ export const Route = createFileRoute("/api/events/")({
 				const event = await fetchEvent(db, id);
 				if (!event) return jsonError("internal", "Could not create event", 500);
 				const origin = originOf(request);
-				const dto: DillyEventDto = {
+				const dto: components["schemas"]["Event"] = {
 					createdAt: new Date(event.createdAt).toISOString(),
 					dates: event.dates,
 					endTime: event.endTime,
@@ -89,7 +86,7 @@ export const Route = createFileRoute("/api/events/")({
 					timezone: event.timezone,
 					title: event.title,
 				};
-				const res: CreateEventResponse = {
+				const res: components["schemas"]["CreateEventResponse"] = {
 					event: dto,
 					id,
 					url: `${origin}/e/${id}`,

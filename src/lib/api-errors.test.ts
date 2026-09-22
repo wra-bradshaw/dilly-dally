@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { clientIp, jsonError, rateLimited, zodFields } from "./api-errors";
-import type { ApiError } from "./api-types";
+import type { components } from "./api-schema";
 import { createEventSchema } from "./validation";
+
+type ApiError = components["schemas"]["Error"];
 
 describe("jsonError", () => {
 	it("returns the agent error shape", async () => {
