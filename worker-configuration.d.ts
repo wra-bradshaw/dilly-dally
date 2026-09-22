@@ -3,8 +3,6 @@
 // Runtime types generated with workerd@1.20260921.1 2025-09-02 nodejs_compat
 interface __BaseEnv_Env {
 	DB: D1Database;
-	BETTER_AUTH_URL: string;
-	BETTER_AUTH_SECRET: string;
 }
 declare namespace Cloudflare {
 	interface Env extends __BaseEnv_Env {}
@@ -14,7 +12,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_URL" | "BETTER_AUTH_SECRET">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, never>> {}
 }
 
 // Begin runtime types

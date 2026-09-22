@@ -15,7 +15,6 @@ import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as ApiAgentGuideRouteImport } from './routes/api/agent-guide'
 import { Route as ApiOpenapiDotjsonRouteImport } from './routes/api/openapi[.]json'
 import { Route as EEventIdRouteImport } from './routes/e/$eventId'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
 import { Route as ApiEventsEventIdIndexRouteImport } from './routes/api/events/$eventId/index'
 import { Route as ApiEventsEventIdAvailabilityRouteImport } from './routes/api/events/$eventId/availability'
@@ -50,11 +49,6 @@ const EEventIdRoute = EEventIdRouteImport.update({
   path: '/e/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
   id: '/api/events/',
   path: '/api/events/',
@@ -79,7 +73,6 @@ export interface FileRoutesByFullPath {
   '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/events/': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
   '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
@@ -91,7 +84,6 @@ export interface FileRoutesByTo {
   '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/events': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
   '/api/events/$eventId': typeof ApiEventsEventIdIndexRoute
@@ -104,7 +96,6 @@ export interface FileRoutesById {
   '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/events/': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
   '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
@@ -118,7 +109,6 @@ export interface FileRouteTypes {
     | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
-    | '/api/auth/$'
     | '/api/events/'
     | '/api/events/$eventId/availability'
     | '/api/events/$eventId/'
@@ -130,7 +120,6 @@ export interface FileRouteTypes {
     | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
-    | '/api/auth/$'
     | '/api/events'
     | '/api/events/$eventId/availability'
     | '/api/events/$eventId'
@@ -142,7 +131,6 @@ export interface FileRouteTypes {
     | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
-    | '/api/auth/$'
     | '/api/events/'
     | '/api/events/$eventId/availability'
     | '/api/events/$eventId/'
@@ -155,7 +143,6 @@ export interface RootRouteChildren {
   ApiAgentGuideRoute: typeof ApiAgentGuideRoute
   ApiOpenapiDotjsonRoute: typeof ApiOpenapiDotjsonRoute
   EEventIdRoute: typeof EEventIdRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
   ApiEventsEventIdAvailabilityRoute: typeof ApiEventsEventIdAvailabilityRoute
   ApiEventsEventIdIndexRoute: typeof ApiEventsEventIdIndexRoute
@@ -205,13 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EEventIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/events/': {
       id: '/api/events/'
       path: '/api/events'
@@ -243,7 +223,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAgentGuideRoute: ApiAgentGuideRoute,
   ApiOpenapiDotjsonRoute: ApiOpenapiDotjsonRoute,
   EEventIdRoute: EEventIdRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,
   ApiEventsEventIdAvailabilityRoute: ApiEventsEventIdAvailabilityRoute,
   ApiEventsEventIdIndexRoute: ApiEventsEventIdIndexRoute,
