@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	availabilitySchema,
 	createEventSchema,
@@ -7,6 +7,15 @@ import {
 } from "./validation";
 
 describe("createEventSchema", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-09-22T12:00:00.000Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it("accepts a valid event", () => {
 		const parsed = createEventSchema.safeParse({
 			dates: ["2026-10-05", "2026-10-06"],
@@ -54,6 +63,27 @@ describe("createEventSchema", () => {
 				timezone: "UTC",
 				title: "Night",
 			}).success,
+		).toBe(false);
+	});
+
+	it("enforces the today-to-today+90 UTC window", () => {
+		const base = {
+			endTime: "17:00",
+			startTime: "09:00",
+			timezone: "UTC",
+			title: "Window",
+		};
+		expect(
+			createEventSchema.safeParse({ ...base, dates: ["2026-09-22"] }).success,
+		).toBe(true);
+		expect(
+			createEventSchema.safeParse({ ...base, dates: ["2026-12-21"] }).success,
+		).toBe(true);
+		expect(
+			createEventSchema.safeParse({ ...base, dates: ["2026-09-21"] }).success,
+		).toBe(false);
+		expect(
+			createEventSchema.safeParse({ ...base, dates: ["2026-12-22"] }).success,
 		).toBe(false);
 	});
 });
