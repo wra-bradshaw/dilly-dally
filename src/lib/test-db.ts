@@ -15,6 +15,7 @@ export async function createTestDb(): Promise<{ db: DrizzleDb }> {
 	);
 	const SQL = await initSqlJs({ wasmBinary: readFileSync(wasmPath) });
 	const sqlDb = new SQL.Database();
+	sqlDb.exec("PRAGMA foreign_keys = ON;");
 	const migDir = join(process.cwd(), "migrations", "drizzle");
 	const files = readdirSync(migDir)
 		.filter((f) => f.endsWith(".sql"))

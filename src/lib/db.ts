@@ -84,9 +84,6 @@ export async function insertEvent(
 }
 
 export async function deleteEvent(db: DrizzleDb, id: string): Promise<void> {
-	await db
-		.delete(schema.participants)
-		.where(eq(schema.participants.eventId, id));
 	await db.delete(schema.events).where(eq(schema.events.id, id));
 }
 
@@ -98,11 +95,8 @@ export async function purgeExpired(
 		.select({ id: schema.events.id })
 		.from(schema.events)
 		.where(lte(schema.events.expiresAt, now));
-	for (const r of expired) {
-		await db
-			.delete(schema.participants)
-			.where(eq(schema.participants.eventId, r.id));
-		await db.delete(schema.events).where(eq(schema.events.id, r.id));
+	if (expired.length > 0) {
+		await db.delete(schema.events).where(lte(schema.events.expiresAt, now));
 	}
 	await db
 		.delete(schema.rateCounters)

@@ -8,7 +8,7 @@ import {
 	purgeExpired,
 	toPublicEvent,
 } from "./db";
-import { events } from "./schema";
+import { events, participants } from "./schema";
 import { createTestDb } from "./test-db";
 
 const base = {
@@ -93,5 +93,20 @@ describe("event persistence", () => {
 		expect(await purgeExpired(db, 2000)).toBe(1);
 		expect(await fetchEvent(db, base.id)).toBeNull();
 		expect(await fetchEvent(db, "live-id-00001")).not.toBeNull();
+	});
+
+	it("purge cascades to participants via FK", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, { ...base, expiresAt: 1000 });
+		await db.insert(participants).values({
+			eventId: base.id,
+			nameDisplay: "Alice",
+			nameKey: "alice",
+			passwordHash: null,
+			slotsJson: "[]",
+			updatedAt: 1000,
+		});
+		expect(await purgeExpired(db, 2000)).toBe(1);
+		expect(await listParticipants(db, base.id)).toEqual([]);
 	});
 });
