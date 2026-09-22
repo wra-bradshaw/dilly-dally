@@ -10,11 +10,44 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentsDotmdRouteImport } from './routes/agents[.]md'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as ApiAgentGuideRouteImport } from './routes/api/agent-guide'
+import { Route as ApiOpenapiDotjsonRouteImport } from './routes/api/openapi[.]json'
+import { Route as EEventIdRouteImport } from './routes/e/$eventId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
+import { Route as ApiEventsEventIdIndexRouteImport } from './routes/api/events/$eventId/index'
+import { Route as ApiEventsEventIdAvailabilityRouteImport } from './routes/api/events/$eventId/availability'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsDotmdRoute = AgentsDotmdRouteImport.update({
+  id: '/agents.md',
+  path: '/agents.md',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentGuideRoute = ApiAgentGuideRouteImport.update({
+  id: '/api/agent-guide',
+  path: '/api/agent-guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOpenapiDotjsonRoute = ApiOpenapiDotjsonRouteImport.update({
+  id: '/api/openapi.json',
+  path: '/api/openapi.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EEventIdRoute = EEventIdRouteImport.update({
+  id: '/e/$eventId',
+  path: '/e/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -22,31 +55,110 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
+  id: '/api/events/',
+  path: '/api/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsEventIdIndexRoute = ApiEventsEventIdIndexRouteImport.update({
+  id: '/api/events/$eventId/',
+  path: '/api/events/$eventId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsEventIdAvailabilityRoute =
+  ApiEventsEventIdAvailabilityRouteImport.update({
+    id: '/api/events/$eventId/availability',
+    path: '/api/events/$eventId/availability',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents.md': typeof AgentsDotmdRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/api/agent-guide': typeof ApiAgentGuideRoute
+  '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
+  '/e/$eventId': typeof EEventIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/events/': typeof ApiEventsIndexRoute
+  '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents.md': typeof AgentsDotmdRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/api/agent-guide': typeof ApiAgentGuideRoute
+  '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
+  '/e/$eventId': typeof EEventIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/events': typeof ApiEventsIndexRoute
+  '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId': typeof ApiEventsEventIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents.md': typeof AgentsDotmdRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/api/agent-guide': typeof ApiAgentGuideRoute
+  '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
+  '/e/$eventId': typeof EEventIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/events/': typeof ApiEventsIndexRoute
+  '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/agents.md'
+    | '/llms.txt'
+    | '/api/agent-guide'
+    | '/api/openapi.json'
+    | '/e/$eventId'
+    | '/api/auth/$'
+    | '/api/events/'
+    | '/api/events/$eventId/availability'
+    | '/api/events/$eventId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/agents.md'
+    | '/llms.txt'
+    | '/api/agent-guide'
+    | '/api/openapi.json'
+    | '/e/$eventId'
+    | '/api/auth/$'
+    | '/api/events'
+    | '/api/events/$eventId/availability'
+    | '/api/events/$eventId'
+  id:
+    | '__root__'
+    | '/'
+    | '/agents.md'
+    | '/llms.txt'
+    | '/api/agent-guide'
+    | '/api/openapi.json'
+    | '/e/$eventId'
+    | '/api/auth/$'
+    | '/api/events/'
+    | '/api/events/$eventId/availability'
+    | '/api/events/$eventId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsDotmdRoute: typeof AgentsDotmdRoute
+  LlmsDottxtRoute: typeof LlmsDottxtRoute
+  ApiAgentGuideRoute: typeof ApiAgentGuideRoute
+  ApiOpenapiDotjsonRoute: typeof ApiOpenapiDotjsonRoute
+  EEventIdRoute: typeof EEventIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiEventsIndexRoute: typeof ApiEventsIndexRoute
+  ApiEventsEventIdAvailabilityRoute: typeof ApiEventsEventIdAvailabilityRoute
+  ApiEventsEventIdIndexRoute: typeof ApiEventsEventIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +170,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agents.md': {
+      id: '/agents.md'
+      path: '/agents.md'
+      fullPath: '/agents.md'
+      preLoaderRoute: typeof AgentsDotmdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent-guide': {
+      id: '/api/agent-guide'
+      path: '/api/agent-guide'
+      fullPath: '/api/agent-guide'
+      preLoaderRoute: typeof ApiAgentGuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/openapi.json': {
+      id: '/api/openapi.json'
+      path: '/api/openapi.json'
+      fullPath: '/api/openapi.json'
+      preLoaderRoute: typeof ApiOpenapiDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/e/$eventId': {
+      id: '/e/$eventId'
+      path: '/e/$eventId'
+      fullPath: '/e/$eventId'
+      preLoaderRoute: typeof EEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -65,13 +212,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/events/': {
+      id: '/api/events/'
+      path: '/api/events'
+      fullPath: '/api/events/'
+      preLoaderRoute: typeof ApiEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events/$eventId/': {
+      id: '/api/events/$eventId/'
+      path: '/api/events/$eventId'
+      fullPath: '/api/events/$eventId/'
+      preLoaderRoute: typeof ApiEventsEventIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events/$eventId/availability': {
+      id: '/api/events/$eventId/availability'
+      path: '/api/events/$eventId/availability'
+      fullPath: '/api/events/$eventId/availability'
+      preLoaderRoute: typeof ApiEventsEventIdAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsDotmdRoute: AgentsDotmdRoute,
+  LlmsDottxtRoute: LlmsDottxtRoute,
+  ApiAgentGuideRoute: ApiAgentGuideRoute,
+  ApiOpenapiDotjsonRoute: ApiOpenapiDotjsonRoute,
+  EEventIdRoute: EEventIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiEventsIndexRoute: ApiEventsIndexRoute,
+  ApiEventsEventIdAvailabilityRoute: ApiEventsEventIdAvailabilityRoute,
+  ApiEventsEventIdIndexRoute: ApiEventsEventIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

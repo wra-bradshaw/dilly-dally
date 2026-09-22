@@ -1,14 +1,235 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { DateCalendar } from "#/components/date-calendar";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "#/components/ui/select";
+import { createEvent, HttpError } from "#/lib/client";
+import { formatSlotLabel } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/")({ component: Home });
 
+function todayPlus(days: number): string {
+	return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+		.toISOString()
+		.slice(0, 10);
+}
+
+function hourOptions(): string[] {
+	return Array.from(
+		{ length: 24 },
+		(_, h) => `${String(h).padStart(2, "0")}:00`,
+	);
+}
+
+function browserTimezone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone;
+	} catch {
+		return "UTC";
+	}
+}
+
+function allTimezones(): string[] {
+	try {
+		const supported = (
+			Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
+		).supportedValuesOf?.("timeZone");
+		if (supported && supported.length > 0) return supported;
+	} catch {
+		/* fall through */
+	}
+	return [browserTimezone()];
+}
+
 function Home() {
+	const navigate = useNavigate();
+	const [title, setTitle] = useState("");
+	const [dates, setDates] = useState<Set<string>>(new Set());
+	const [startTime, setStartTime] = useState("09:00");
+	const [endTime, setEndTime] = useState("17:00");
+	const [timezone, setTimezone] = useState(browserTimezone);
+	const [error, setError] = useState("");
+	const [saving, setSaving] = useState(false);
+	const minDate = todayPlus(0);
+	const maxDate = todayPlus(90);
+
+	const submit = async () => {
+		setError("");
+		if (!title.trim()) {
+			setError("Give your event a name.");
+			return;
+		}
+		if (dates.size === 0) {
+			setError("Pick at least one date that might work.");
+			return;
+		}
+		if (startTime >= endTime) {
+			setError("The end time must be after the start time.");
+			return;
+		}
+		setSaving(true);
+		try {
+			const res = await createEvent({
+				dates: [...dates].sort(),
+				endTime,
+				startTime,
+				timezone,
+				title: title.trim(),
+			});
+			await navigate({ params: { eventId: res.id }, to: "/e/$eventId" });
+		} catch (err) {
+			if (err instanceof HttpError && err.code === "rate_limited") {
+				setError("Too many events right now. Wait a bit and try again.");
+			} else if (err instanceof HttpError && err.fields) {
+				setError(Object.values(err.fields).flat().join(" "));
+			} else {
+				setError("Could not create the event. Try again.");
+			}
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	return (
-		<div className="p-8">
-			<h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-			<p className="mt-4 text-lg">
-				Edit <code>src/routes/index.tsx</code> to get started.
-			</p>
+		<div className="page-wrap rise-in pb-16">
+			<header className="flex items-center justify-between py-5">
+				<div className="display-title text-2xl font-bold">Dilly-Dally</div>
+				<nav className="flex gap-4 text-sm">
+					<a className="nav-link" href="/api/agent-guide">
+						Agent guide
+					</a>
+					<a className="nav-link" href="/api/openapi.json">
+						OpenAPI
+					</a>
+				</nav>
+			</header>
+
+			<section className="mt-6 text-center">
+				<p className="island-kicker">Find a time that works for everyone</p>
+				<h1 className="display-title mt-2 text-4xl font-bold text-balance sm:text-5xl">
+					Stop dilly-dallying. Pick a time.
+				</h1>
+				<p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+					Name your event, paint the dates that might work, share one link. No
+					login. Agents welcome: everything works over curl too.
+				</p>
+			</section>
+
+			<Card className="island-shell mx-auto mt-8 max-w-2xl rounded-2xl">
+				<CardHeader>
+					<CardTitle>Plan a new event</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid gap-5">
+						<div className="grid gap-2">
+							<Label htmlFor="event-name">New event name</Label>
+							<Input
+								id="event-name"
+								maxLength={100}
+								onChange={(e) => setTitle(e.target.value)}
+								placeholder="Team offsite planning"
+								value={title}
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>
+								What dates might work?{" "}
+								<span className="text-muted-foreground">
+									({dates.size} selected)
+								</span>
+							</Label>
+							<p className="text-xs text-muted-foreground">
+								Click and drag dates to choose possibilities.
+							</p>
+							<DateCalendar
+								maxDate={maxDate}
+								minDate={minDate}
+								onCommit={setDates}
+								selected={dates}
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>What times might work?</Label>
+							<div className="flex flex-wrap items-center gap-2">
+								<span className="text-sm text-muted-foreground">
+									No earlier than
+								</span>
+								<Select onValueChange={setStartTime} value={startTime}>
+									<SelectTrigger aria-label="No earlier than" className="w-32">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{hourOptions().map((h) => (
+											<SelectItem key={h} value={h}>
+												{formatSlotLabel(`2026-01-01T${h}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<span className="text-sm text-muted-foreground">
+									No later than
+								</span>
+								<Select onValueChange={setEndTime} value={endTime}>
+									<SelectTrigger aria-label="No later than" className="w-32">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{hourOptions().map((h) => (
+											<SelectItem key={h} value={h}>
+												{formatSlotLabel(`2026-01-01T${h}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="tz">Time zone</Label>
+							<Input
+								id="tz"
+								list="tz-list"
+								onChange={(e) => setTimezone(e.target.value)}
+								value={timezone}
+							/>
+							<datalist id="tz-list">
+								{allTimezones().map((tz) => (
+									<option key={tz} value={tz} />
+								))}
+							</datalist>
+						</div>
+						{error !== "" && (
+							<p className="text-sm text-destructive" role="alert">
+								{error}
+							</p>
+						)}
+						<Button disabled={saving} onClick={submit} size="lg">
+							{saving ? "Creating…" : "Create event"}
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<section className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
+				{[
+					{ body: "Name it, pick dates and times.", head: "1. Create" },
+					{ body: "One link is the whole event.", head: "2. Share" },
+					{ body: "Paint availability, read the green.", head: "3. Meet" },
+				].map((s) => (
+					<div className="feature-card rounded-2xl border p-4" key={s.head}>
+						<div className="font-semibold">{s.head}</div>
+						<div className="mt-1 text-sm text-muted-foreground">{s.body}</div>
+					</div>
+				))}
+			</section>
 		</div>
 	);
 }
