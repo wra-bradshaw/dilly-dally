@@ -12,14 +12,52 @@ import { Label } from "#/components/ui/label";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useLocalStorage } from "#/hooks/use-local-storage";
+import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import {
 	fetchOwnAvailability,
 	HttpError,
 	saveAvailability,
 } from "#/lib/client";
+import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
 import { convertSlotZone, formatSlotLabel } from "#/lib/time-slots";
 
-export const Route = createFileRoute("/e/$eventId")({ component: EventPage });
+export const Route = createFileRoute("/e/$eventId")({
+	component: EventPage,
+	errorComponent: EventError,
+	loader: async ({ context, params }) => {
+		await context.queryClient.ensureQueryData({
+			queryFn: async () => {
+				const result = await fetchEventDetailServerFn({
+					data: params.eventId,
+				});
+				if (!result.ok) {
+					throw new HttpError(result.status, result.code, result.message);
+				}
+				return result.detail;
+			},
+			queryKey: ["event", params.eventId],
+		});
+	},
+});
+
+function EventError({ error }: { error: unknown }) {
+	const gone = error instanceof HttpError && error.code === "gone";
+	return (
+		<div className="page-wrap py-16 text-center">
+			<h1 className="display-title text-3xl font-bold">
+				{gone ? "This event has expired" : "Event not found"}
+			</h1>
+			<p className="mt-2 text-muted-foreground">
+				{gone
+					? "Events are deleted after they pass to free up space."
+					: "Check the link and try again."}
+			</p>
+			<a className="mt-4 inline-block" href="/">
+				<Button>Plan a new event</Button>
+			</a>
+		</div>
+	);
+}
 
 function inviteUrl(eventId: string): string {
 	if (typeof window === "undefined") return `/e/${eventId}`;
@@ -37,10 +75,29 @@ function EventPage() {
 	const [activeName, setActiveName] = useState(storedName.trim());
 	const [signedIn, setSignedIn] = useState(storedName.trim() !== "");
 	const [selected, setSelected] = useState<Set<string>>(new Set());
-	const [loadedOnce, setLoadedOnce] = useState(false);
 	const [saveState, setSaveState] = useState("");
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
+	const restoreStatus = useOwnAvailabilityRestore({
+		eventId,
+		fetchAvailability: fetchOwnAvailability,
+		onCleared: () => {
+			setSelected(new Set());
+		},
+		onNeedsPassword: (name) => {
+			setName(name);
+			setSignedIn(false);
+			setSignError("Enter your password to continue.");
+		},
+		onRestored: (own) => {
+			setSelected(new Set(own.slots));
+			setActiveName(own.name);
+			setStoredName(own.name);
+			setName(own.name);
+			setSignedIn(true);
+		},
+		storedName,
+	});
 	const [view, setView] = useLocalStorage("dd:tz-view", "event");
 
 	const event = detail.data?.event;
@@ -103,7 +160,6 @@ function EventPage() {
 			setSigning(false);
 		}
 		setSignedIn(true);
-		setLoadedOnce(true);
 	};
 
 	const commit = async (next: Set<string>) => {
@@ -258,7 +314,12 @@ function EventPage() {
 						onClick={() => {
 							setSignedIn(false);
 							setPassword("");
-							setLoadedOnce(false);
+							setSelected(new Set());
+							setActiveName("");
+							setStoredName("");
+							setName("");
+							setSaveState("");
+							setSignError("");
 						}}
 						type="button"
 					>
@@ -307,12 +368,17 @@ function EventPage() {
 							free.
 						</p>
 					) : (
-						<AvailabilityGrid
-							columns={columns}
-							disabled={!loadedOnce && false}
-							onCommit={commit}
-							selected={selected}
-						/>
+						<>
+							{restoreStatus === "restoring" && (
+								<p className="mb-2 text-sm text-muted-foreground">Restoring…</p>
+							)}
+							<AvailabilityGrid
+								columns={columns}
+								disabled={restoreStatus === "restoring"}
+								onCommit={commit}
+								selected={selected}
+							/>
+						</>
 					)}
 				</CardContent>
 			</Card>
