@@ -1,0 +1,149 @@
+const SLOT_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):(00|15|30|45)$/;
+const HOUR_RE = /^([01]\d|2[0-3]):00$/;
+
+function wallInZone(ms: number, tz: string): number {
+	const fmt = new Intl.DateTimeFormat("en-CA", {
+		day: "2-digit",
+		hour: "2-digit",
+		hour12: false,
+		minute: "2-digit",
+		month: "2-digit",
+		timeZone: tz,
+		year: "numeric",
+	});
+	const parts = fmt.formatToParts(ms);
+	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+	const asUtc = Date.UTC(
+		Number(get("year")),
+		Number(get("month")) - 1,
+		Number(get("day")),
+		Number(get("hour")) === 24 ? 0 : Number(get("hour")),
+		Number(get("minute")),
+	);
+	return asUtc - ms;
+}
+
+export function slotToInstant(slot: string, tz: string): number {
+	const [date, time] = slot.split("T");
+	const [y, mo, d] = date.split("-").map(Number);
+	const [h, mi] = time.split(":").map(Number);
+	const guess = Date.UTC(y, mo - 1, d, h, mi);
+	return guess - wallInZone(guess - wallInZone(guess, tz), tz);
+}
+
+export function instantToSlot(ms: number, tz: string): string {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		day: "2-digit",
+		hour: "2-digit",
+		hour12: false,
+		minute: "2-digit",
+		month: "2-digit",
+		timeZone: tz,
+		year: "numeric",
+	}).formatToParts(ms);
+	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+	const hour = get("hour") === "24" ? "00" : get("hour");
+	return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
+}
+
+export function convertSlotZone(
+	slot: string,
+	fromTz: string,
+	toTz: string,
+): string {
+	if (fromTz === toTz) return slot;
+	return instantToSlot(slotToInstant(slot, fromTz), toTz);
+}
+
+export function formatSlotLabel(slot: string): string {
+	const [, time] = slot.split("T");
+	const [hh, mm] = time.split(":");
+	let h = Number(hh);
+	const suffix = h >= 12 ? "PM" : "AM";
+	h = h % 12 === 0 ? 12 : h % 12;
+	return `${h}:${mm} ${suffix}`;
+}
+
+export interface SlotUniverseInput {
+	dates: string[];
+	startTime: string;
+	endTime: string;
+}
+
+export function isValidSlotId(slot: string): boolean {
+	const m = SLOT_RE.exec(slot);
+	if (!m) return false;
+	const month = Number(m[2]);
+	const day = Number(m[3]);
+	if (month < 1 || month > 12) return false;
+	if (day < 1 || day > 31) return false;
+	const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
+	if (Number.isNaN(d.getTime())) return false;
+	return (
+		d.getUTCFullYear() === Number(m[1]) &&
+		d.getUTCMonth() + 1 === month &&
+		d.getUTCDate() === day
+	);
+}
+
+function hourToMinutes(t: string): number | null {
+	if (!HOUR_RE.test(t)) return null;
+	const [h, m] = t.split(":").map(Number);
+	return h * 60 + m;
+}
+
+export function buildSlotUniverse(input: SlotUniverseInput): string[] {
+	const start = hourToMinutes(input.startTime);
+	const end = hourToMinutes(input.endTime);
+	if (start === null || end === null) return [];
+	if (start >= end) return [];
+	const dates = [...new Set(input.dates)].sort();
+	const out: string[] = [];
+	for (const date of dates) {
+		for (let mins = start; mins < end; mins += 15) {
+			const h = String(Math.floor(mins / 60)).padStart(2, "0");
+			const mm = String(mins % 60).padStart(2, "0");
+			out.push(`${date}T${h}:${mm}`);
+		}
+	}
+	return out;
+}
+
+export function normalizeSlots(slots: string[]): string[] {
+	return [...new Set(slots)].sort();
+}
+
+export interface ParticipantSlots {
+	name: string;
+	slots: string[];
+}
+
+export interface SlotCount {
+	slot: string;
+	count: number;
+	names: string[];
+}
+
+export function computeCounts(
+	universe: string[],
+	participants: ParticipantSlots[],
+): SlotCount[] {
+	const sets = participants.map((p) => ({
+		name: p.name,
+		set: new Set(p.slots),
+	}));
+	return universe.map((slot) => {
+		const names: string[] = [];
+		for (const p of sets) {
+			if (p.set.has(slot)) names.push(p.name);
+		}
+		names.sort((a, b) => a.localeCompare(b));
+		return { count: names.length, names, slot };
+	});
+}
+
+export function findBestTimes(counts: SlotCount[], limit: number): SlotCount[] {
+	return [...counts]
+		.sort((a, b) => b.count - a.count || (a.slot < b.slot ? -1 : 1))
+		.slice(0, limit);
+}
