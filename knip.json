@@ -2,8 +2,6 @@
 	"$schema": "https://unpkg.com/knip@6/schema.json",
 	"entry": ["src/router.tsx"],
 	"ignore": [
-		"src/components/ui/input.tsx",
-		"src/components/ui/label.tsx",
 		"src/components/ui/select.tsx",
 		"src/components/ui/slider.tsx",
 		"src/components/ui/switch.tsx",
@@ -15,14 +13,15 @@
 		"@tanstack/react-form",
 		"@tanstack/react-store",
 		"@tanstack/store",
-		"zod",
-		"lucide-react",
+		"cloudflare",
 		"@tanstack/devtools-event-client",
 		"@testing-library/react-hooks",
 		"@testing-library/user-event",
 		"react-test-renderer"
 	],
 	"ignoreIssues": {
-		"src/components/ui/button.tsx": ["exports"]
+		"src/components/ui/button.tsx": ["exports"],
+		"src/components/ui/card.tsx": ["exports"],
+		"src/components/ui/badge.tsx": ["exports"]
 	}
 }
