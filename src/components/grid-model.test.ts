@@ -2,15 +2,24 @@ import { describe, expect, it } from "vitest";
 import { buildSlotUniverse } from "#/lib/time-slots";
 import {
 	buildColumns,
+	buildGridPos,
 	buildTimeRows,
 	buildWeeklyColumns,
 	formatMarkerDate,
 	getDateBreaks,
 	getDayGaps,
-	gridRectangleIds,
+	gridRectangleIdsFromPos,
 	segmentForCell,
 	summarizeDates,
 } from "./grid-model";
+
+function rectIds(
+	cols: Parameters<typeof gridRectangleIdsFromPos>[0],
+	from: string,
+	to: string,
+): string[] {
+	return gridRectangleIdsFromPos(cols, buildGridPos(cols), from, to);
+}
 
 function expectedTime(time: string): string {
 	const [hh, mm] = time.split(":").map(Number);
@@ -128,7 +137,7 @@ describe("buildColumns", () => {
 			"UTC",
 		);
 		expect(
-			gridRectangleIds(cols, "2026-10-05T09:00", "2026-10-06T09:15").sort(),
+			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:15").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
 			"2026-10-05T09:15",
@@ -136,7 +145,7 @@ describe("buildColumns", () => {
 			"2026-10-06T09:15",
 		]);
 		expect(
-			gridRectangleIds(cols, "2026-10-06T09:15", "2026-10-05T09:00").sort(),
+			rectIds(cols, "2026-10-06T09:15", "2026-10-05T09:00").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
 			"2026-10-05T09:15",
@@ -157,7 +166,7 @@ describe("buildColumns", () => {
 			"UTC",
 		);
 		expect(
-			gridRectangleIds(cols, "2026-10-05T09:00", "2026-10-06T09:00"),
+			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:00"),
 		).toEqual(["2026-10-05T09:00", "2026-10-06T09:00"]);
 	});
 
@@ -173,7 +182,7 @@ describe("buildColumns", () => {
 			"UTC",
 		);
 		expect(
-			gridRectangleIds(cols, "2026-10-05T09:00", "2026-10-08T09:15").sort(),
+			rectIds(cols, "2026-10-05T09:00", "2026-10-08T09:15").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
 			"2026-10-05T09:15",

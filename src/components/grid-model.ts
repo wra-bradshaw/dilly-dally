@@ -189,14 +189,6 @@ export function gridRectangleIdsFromPos(
 	return out;
 }
 
-export function gridRectangleIds(
-	columns: GridColumn[],
-	from: string,
-	to: string,
-): string[] {
-	return gridRectangleIdsFromPos(columns, buildGridPos(columns), from, to);
-}
-
 export function getDayGaps(columns: { date: string }[]): DayGap[] {
 	const dates = [...new Set(columns.map((c) => c.date))].sort();
 	const gaps: DayGap[] = [];
