@@ -18,7 +18,9 @@ function securityHeadersOf(res: Response) {
 describe("agent guide response", () => {
 	it("serves markdown with cache and security headers", async () => {
 		const res = agentGuideResponse(new Request("https://docs.test/"));
-		expect(res.headers.get("Content-Type")).toContain("text/markdown");
+		expect(res.headers.get("Content-Type")).toBe(
+			"text/markdown; charset=utf-8",
+		);
 		expect(securityHeadersOf(res)).toEqual({
 			cache: "public, max-age=3600",
 			referrer: "strict-origin-when-cross-origin",
@@ -38,7 +40,9 @@ describe("agent guide response", () => {
 describe("openapi response", () => {
 	it("serves the spec with cache and security headers", async () => {
 		const res = openApiResponse(new Request("https://events.test/"));
-		expect(res.headers.get("Content-Type")).toContain("application/json");
+		expect(res.headers.get("Content-Type")).toBe(
+			"application/json; charset=utf-8",
+		);
 		expect(securityHeadersOf(res)).toEqual({
 			cache: "public, max-age=3600",
 			referrer: "strict-origin-when-cross-origin",
@@ -56,7 +60,7 @@ describe("openapi response", () => {
 describe("llms response", () => {
 	it("serves plain text with cache and security headers", async () => {
 		const res = llmsResponse();
-		expect(res.headers.get("Content-Type")).toContain("text/plain");
+		expect(res.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
 		expect(securityHeadersOf(res)).toEqual({
 			cache: "public, max-age=3600",
 			referrer: "strict-origin-when-cross-origin",

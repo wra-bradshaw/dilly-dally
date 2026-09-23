@@ -36,7 +36,7 @@ export function serializeSpec(spec: OpenApiSpec): string {
 export function openApiResponse(request: Request): Response {
 	return docsResponse(
 		JSON.stringify(getOpenApiSpec(originOf(request))),
-		"application/json",
+		"application/json; charset=utf-8",
 	);
 }
 
