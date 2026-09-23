@@ -46,7 +46,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="min-h-screen bg-background font-sans text-foreground antialiased">
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="system"
+					enableSystem
+					storageKey="dilly-dally-theme"
+				>
 					<TooltipProvider>{children}</TooltipProvider>
 				</ThemeProvider>
 				<TanStackDevtools
