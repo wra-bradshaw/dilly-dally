@@ -77,7 +77,10 @@ export function GroupHeatmap({
 					tableLabel="Group availability. Darker green means more people are free."
 				/>
 			</div>
-			<div className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64">
+			<div
+			aria-live="polite"
+			className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
+		>
 				{info && hovered ? (
 					<div>
 						<div className="font-semibold">

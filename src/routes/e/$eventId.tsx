@@ -522,10 +522,18 @@ function EventPage() {
 					) : (
 						<>
 							{restoreStatus === "restoring" && (
-								<p className="mb-2 text-sm text-muted-foreground">Restoring…</p>
+								<p
+									aria-live="polite"
+									className="mb-2 text-sm text-muted-foreground"
+								>
+									Restoring…
+								</p>
 							)}
 							{restoreStatus === "failed" && (
-								<p className="mb-2 text-sm text-muted-foreground">
+								<p
+									aria-live="polite"
+									className="mb-2 text-sm text-muted-foreground"
+								>
 									Could not restore your availability.{" "}
 									<button
 										className="nav-link text-sm"
