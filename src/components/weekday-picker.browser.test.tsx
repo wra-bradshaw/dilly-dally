@@ -40,13 +40,25 @@ test("weekday paint surface presents touch-none at rest", async () => {
 	);
 	const monday = screen.getByRole("button", { name: headerForWeekday(1) });
 	await expect.element(monday).toBeVisible();
-	expect(monday.element().closest("fieldset")?.className ?? "").toContain(
-		"touch-none",
+	const surface = monday.element().closest('[data-slot="toggle-group"]');
+	expect(surface).not.toBeNull();
+	expect(surface?.className ?? "").toContain("touch-none");
+	expect(getComputedStyle(surface as HTMLElement).touchAction).toBe("none");
+});
+
+test("pressed weekdays follow the paint preview, not just selection", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<WeekdayPicker onCommit={onCommit} selected={new Set([1])} />,
 	);
-	expect(
-		getComputedStyle(monday.element().closest("fieldset") as HTMLElement)
-			.touchAction,
-	).toBe("none");
+
+	const monday = screen.getByRole("button", { name: headerForWeekday(1) });
+	const tuesday = screen.getByRole("button", { name: headerForWeekday(2) });
+	await expect.element(monday).toBeVisible();
+	expect(monday.element().getAttribute("data-state")).toBe("on");
+	expect(monday.element().getAttribute("aria-pressed")).toBe("true");
+	expect(tuesday.element().getAttribute("data-state")).toBe("off");
+	expect(tuesday.element().getAttribute("aria-pressed")).toBe("false");
 });
 
 test("trusted key presses toggle exactly once per press", async () => {

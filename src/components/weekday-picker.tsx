@@ -1,5 +1,5 @@
+import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { suppressToggleKey, usePaintSurface } from "#/hooks/use-paint-surface";
-import { cn } from "#/lib/utils";
 import { headerForWeekday } from "./grid-model";
 
 interface WeekdayPickerProps {
@@ -15,7 +15,7 @@ function parseWeekday(raw: string): number | undefined {
 }
 
 export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
-	const surface = usePaintSurface<number, HTMLFieldSetElement>({
+	const surface = usePaintSurface<number, HTMLDivElement>({
 		attr: "data-weekday",
 		onCommit,
 		parse: parseWeekday,
@@ -23,46 +23,42 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 		values: WEEKDAYS,
 	});
 
-	const onFieldKeyDown = (e: React.KeyboardEvent) => {
+	const onGroupKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
 		suppressToggleKey(e);
 	};
 
 	return (
-		<fieldset
-			className={cn("flex flex-wrap gap-1 touch-none select-none")}
-			onKeyDown={onFieldKeyDown}
+		<ToggleGroup
+			aria-label="Weekdays"
+			className="flex-wrap touch-none select-none"
+			onKeyDown={onGroupKeyDown}
 			onPointerCancel={surface.onPointerCancel}
 			onPointerMove={surface.onPointerMove}
 			onPointerUp={surface.onPointerUp}
 			ref={surface.containerRef}
+			size="sm"
+			spacing={1}
+			type="multiple"
+			value={[...surface.preview].map(String)}
+			variant="outline"
 		>
-			<legend className="sr-only">Weekdays</legend>
-			{WEEKDAYS.map((day) => {
-				const on = surface.preview.has(day);
-				return (
-					<button
-						aria-pressed={on}
-						className={cn(
-							"rounded-md border px-2 py-1 text-xs font-medium",
-							on
-								? "border-emerald-700 bg-emerald-100 text-emerald-900"
-								: "border-input text-muted-foreground",
-						)}
-						data-weekday={day}
-						key={day}
-						onClick={(e) => surface.toggle(day, e.detail)}
-						onPointerDown={(e) => {
-							if (e.button !== 0 && e.pointerType === "mouse") return;
-							surface.start(day, e);
-						}}
-						onPointerEnter={() => surface.hover(day)}
-						type="button"
-					>
-						{headerForWeekday(day)}
-					</button>
-				);
-			})}
-		</fieldset>
+			{WEEKDAYS.map((day) => (
+				<ToggleGroupItem
+					className="text-muted-foreground data-[state=on]:border-emerald-700 data-[state=on]:bg-emerald-400 data-[state=on]:font-semibold data-[state=on]:text-emerald-950 dark:data-[state=on]:border-emerald-500 dark:data-[state=on]:bg-emerald-700 dark:data-[state=on]:text-emerald-50 aria-pressed:border-emerald-700 aria-pressed:bg-emerald-400 aria-pressed:font-semibold aria-pressed:text-emerald-950 dark:aria-pressed:border-emerald-500 dark:aria-pressed:bg-emerald-700 dark:aria-pressed:text-emerald-50"
+					data-weekday={day}
+					key={day}
+					onClick={(e) => surface.toggle(day, e.detail)}
+					onPointerDown={(e) => {
+						if (e.button !== 0 && e.pointerType === "mouse") return;
+						surface.start(day, e);
+					}}
+					onPointerEnter={() => surface.hover(day)}
+					value={String(day)}
+				>
+					{headerForWeekday(day)}
+				</ToggleGroupItem>
+			))}
+		</ToggleGroup>
 	);
 }
