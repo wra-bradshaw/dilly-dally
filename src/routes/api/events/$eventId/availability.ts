@@ -1,20 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	clientIp,
-	jsonError,
-	rateLimited,
-	readGuardedJson,
-	securityHeaders,
-} from "#/lib/api-errors";
+import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
-import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
+import { RATE_LIMITS } from "#/lib/rate-limit";
 import {
 	getOwnAvailability,
 	upsertAvailability,
 } from "#/lib/server-availability";
-import { loadLiveEvent } from "#/lib/server-event-detail";
-import { checkRateLimit } from "#/lib/server-rate-limit";
+import {
+	liveEventErrorResponse,
+	loadLiveEvent,
+} from "#/lib/server-event-detail";
+import { guardRateLimit } from "#/lib/server-rate-limit";
 import { type AvailabilityInput, availabilitySchema } from "#/lib/validation";
 
 export async function saveAvailability(
@@ -23,24 +20,18 @@ export async function saveAvailability(
 ): Promise<Response> {
 	const db = getDb();
 	const now = Date.now();
-	const key = await rateLimitKey(clientIp(request), "availability_write");
-	const rl = await checkRateLimit(
-		key,
-		now,
-		RATE_LIMITS.availabilityWrite.windowMs,
-		RATE_LIMITS.availabilityWrite.limit,
+	const throttled = await guardRateLimit(
+		request,
+		"availability_write",
+		RATE_LIMITS.availabilityWrite,
 	);
-	if (!rl.allowed) return rateLimited(rl.resetMs);
+	if (throttled) return throttled;
 	const guarded = await readGuardedJson(request, availabilitySchema);
 	if (!guarded.ok) return guarded.response;
 	const input: AvailabilityInput = guarded.data;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
-		return jsonError(
-			loaded.code,
-			loaded.code === "gone" ? "Event has expired" : "Event not found",
-			loaded.status,
-		);
+		return liveEventErrorResponse(loaded);
 	}
 	const res = await upsertAvailability(
 		db,
@@ -88,23 +79,13 @@ export async function getOwnAvailabilityResponse(
 	}
 	const db = getDb();
 	const now = Date.now();
-	const key = await rateLimitKey(clientIp(request), "read");
-	const rl = await checkRateLimit(
-		key,
-		now,
-		RATE_LIMITS.read.windowMs,
-		RATE_LIMITS.read.limit,
-	);
-	if (!rl.allowed) return rateLimited(rl.resetMs, { noStore: true });
+	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
+		noStore: true,
+	});
+	if (throttled) return throttled;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
-		return jsonError(
-			loaded.code,
-			loaded.code === "gone" ? "Event has expired" : "Event not found",
-			loaded.status,
-			undefined,
-			noStore,
-		);
+		return liveEventErrorResponse(loaded, noStore);
 	}
 	const res = await getOwnAvailability(
 		db,

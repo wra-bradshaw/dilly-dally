@@ -1,30 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	clientIp,
 	jsonError,
 	originOf,
-	rateLimited,
 	readGuardedJson,
 	securityHeaders,
 } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
-import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
+import { RATE_LIMITS } from "#/lib/rate-limit";
 import { createEventInDb, toEventDto } from "#/lib/server-events";
-import { checkRateLimit } from "#/lib/server-rate-limit";
+import { guardRateLimit } from "#/lib/server-rate-limit";
 import { createEventSchema } from "#/lib/validation";
 
 export async function handleCreate(request: Request): Promise<Response> {
 	const db = getDb();
 	const now = Date.now();
-	const key = await rateLimitKey(clientIp(request), "create_event");
-	const rl = await checkRateLimit(
-		key,
-		now,
-		RATE_LIMITS.createEvent.windowMs,
-		RATE_LIMITS.createEvent.limit,
+	const throttled = await guardRateLimit(
+		request,
+		"create_event",
+		RATE_LIMITS.createEvent,
 	);
-	if (!rl.allowed) return rateLimited(rl.resetMs);
+	if (throttled) return throttled;
 	const guarded = await readGuardedJson(request, createEventSchema);
 	if (!guarded.ok) return guarded.response;
 	const event = await createEventInDb(db, guarded.data, now);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decideRateLimit, type RateLimitState } from "./rate-limit";
 import { RateLimiter } from "./rate-limiter-do";
-import { checkRateLimit } from "./server-rate-limit";
+import { checkRateLimit, guardRateLimit } from "./server-rate-limit";
 
 describe("decideRateLimit", () => {
 	it("allows first requests then blocks", () => {
@@ -156,6 +156,99 @@ function fakeNamespace() {
 	return createFakeNamespace() as unknown as DurableObjectNamespace<RateLimiter>;
 }
 
+describe("guardRateLimit", () => {
+	function request(ip: string) {
+		return new Request("https://x.test/api/events", {
+			headers: { "cf-connecting-ip": ip },
+		});
+	}
+
+	it("returns null while the budget allows", async () => {
+		const res = await guardRateLimit(
+			request("1.1.1.1"),
+			"read",
+			{ limit: 5, windowMs: 60_000 },
+			undefined,
+			fakeNamespace(),
+		);
+		expect(res).toBeNull();
+	});
+
+	it("maps denial to a 429 honoring noStore", async () => {
+		const namespace = fakeNamespace();
+		const budget = { limit: 1, windowMs: 60_000 };
+		expect(
+			await guardRateLimit(
+				request("2.2.2.2"),
+				"read",
+				budget,
+				undefined,
+				namespace,
+			),
+		).toBeNull();
+		const throttled = await guardRateLimit(
+			request("2.2.2.2"),
+			"read",
+			budget,
+			{ noStore: true },
+			namespace,
+		);
+		expect(throttled?.status).toBe(429);
+		expect(throttled?.headers.get("Cache-Control")).toBe("no-store");
+		const plain = await guardRateLimit(
+			request("3.3.3.3"),
+			"read",
+			{ limit: 0, windowMs: 60_000 },
+			undefined,
+			fakeNamespace(),
+		);
+		expect(plain?.status).toBe(429);
+		expect(plain?.headers.get("Cache-Control")).toBeNull();
+	});
+
+	it("routes keys by scope and client ip", async () => {
+		const namespace = fakeNamespace();
+		const budget = { limit: 1, windowMs: 60_000 };
+		expect(
+			await guardRateLimit(
+				request("4.4.4.4"),
+				"read",
+				budget,
+				undefined,
+				namespace,
+			),
+		).toBeNull();
+		expect(
+			await guardRateLimit(
+				request("4.4.4.4"),
+				"availability_write",
+				budget,
+				undefined,
+				namespace,
+			),
+		).toBeNull();
+		expect(
+			await guardRateLimit(
+				request("5.5.5.5"),
+				"read",
+				budget,
+				undefined,
+				namespace,
+			),
+		).toBeNull();
+		expect(
+			(
+				await guardRateLimit(
+					request("4.4.4.4"),
+					"read",
+					budget,
+					undefined,
+					namespace,
+				)
+			)?.status,
+		).toBe(429);
+	});
+});
 describe("checkRateLimit", () => {
 	it("routes per key so keys are isolated", async () => {
 		const namespace = fakeNamespace();

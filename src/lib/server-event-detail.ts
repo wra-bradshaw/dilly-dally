@@ -1,3 +1,4 @@
+import { jsonError } from "./api-errors";
 import {
 	type DillyEvent,
 	type DrizzleDb,
@@ -32,6 +33,19 @@ export async function loadLiveEvent(
 		return { code: "gone", ok: false, status: 410 };
 	}
 	return { event, ok: true };
+}
+
+export function liveEventErrorResponse(
+	loaded: Extract<LiveEventResult, { ok: false }>,
+	opts?: { noStore?: boolean },
+): Response {
+	return jsonError(
+		loaded.code,
+		loaded.code === "gone" ? "Event has expired" : "Event not found",
+		loaded.status,
+		undefined,
+		opts,
+	);
 }
 
 export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
