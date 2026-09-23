@@ -2,6 +2,7 @@ import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { clientIp } from "./api-errors";
 import type { EventDetailResponse } from "./client";
 import { getDb } from "./db-env";
+import { retryAfterSeconds } from "./denials";
 import { HttpError } from "./http-error";
 import { RATE_LIMITS, rateLimitKey } from "./rate-limit";
 import { loadEventDetailFromDb } from "./server-event-detail";
@@ -25,7 +26,7 @@ export function readLimitContext(
 	if (allowed) return { limited: false };
 	return {
 		limited: true,
-		retryAfter: Math.max(1, Math.ceil((resetMs - now) / 1000)),
+		retryAfter: retryAfterSeconds(resetMs, now),
 	};
 }
 

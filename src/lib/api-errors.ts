@@ -1,4 +1,5 @@
 import type { ZodError, ZodType } from "zod";
+import { retryAfterSeconds } from "./denials";
 
 const MAX_JSON_BYTES = 262_144;
 
@@ -35,7 +36,7 @@ export function rateLimited(
 	resetMs: number,
 	opts?: { noStore?: boolean },
 ): Response {
-	const retryAfter = Math.max(1, Math.ceil((resetMs - Date.now()) / 1000));
+	const retryAfter = retryAfterSeconds(resetMs, Date.now());
 	const headers: Record<string, string> = {
 		...securityHeaders(),
 		"Content-Type": "application/json",
