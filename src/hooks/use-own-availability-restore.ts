@@ -74,7 +74,10 @@ export function useOwnAvailabilityRestore(options: {
 					setStatus("ready");
 				} else if (
 					err instanceof HttpError &&
-					(err.code === "gone" || err.status === 410)
+					(err.code === "gone" ||
+						err.status === 410 ||
+						err.status === 403 ||
+						(err.status === 404 && err.code !== "availability_not_found"))
 				) {
 					callbacksRef.current.onGone?.();
 					setStatus("gone");

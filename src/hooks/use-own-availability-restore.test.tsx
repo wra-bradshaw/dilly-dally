@@ -89,16 +89,31 @@ describe("useOwnAvailabilityRestore", () => {
 		expect(onCleared).toHaveBeenCalledTimes(1);
 	});
 
-	it("fails instead of clearing on a bare 404 without a not-found code", async () => {
+	it("ends missing or forbidden events as terminal instead of retryable", async () => {
 		const fetchAvailability = vi
 			.fn()
 			.mockRejectedValue(new HttpError(404, "not_found", "Event not found"));
-		const { hook, onCleared } = setup({
+		const { hook, onCleared, onGone } = setup({
 			fetchAvailability,
 			storedName: "Ada",
 		});
-		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
+		await waitFor(() => expect(hook.result.current.status).toBe("gone"));
 		expect(onCleared).not.toHaveBeenCalled();
+		expect(onGone).toHaveBeenCalledTimes(1);
+		hook.result.current.retry();
+		expect(hook.result.current.status).toBe("gone");
+	});
+
+	it("ends forbidden restores as terminal", async () => {
+		const fetchAvailability = vi
+			.fn()
+			.mockRejectedValue(new HttpError(403, "forbidden", "Nope"));
+		const { hook, onGone } = setup({
+			fetchAvailability,
+			storedName: "Ada",
+		});
+		await waitFor(() => expect(hook.result.current.status).toBe("gone"));
+		expect(onGone).toHaveBeenCalledTimes(1);
 	});
 
 	it("ends expired events as terminal instead of retryable", async () => {

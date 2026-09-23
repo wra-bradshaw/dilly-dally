@@ -25,7 +25,7 @@ export type SignInDecision =
 
 export function decideSignInError(
 	err: unknown,
-	eventMissing: boolean,
+	_eventMissing?: boolean,
 ): SignInDecision {
 	if (err instanceof HttpError && err.code === "invalid_password") {
 		return {
@@ -33,17 +33,14 @@ export function decideSignInError(
 			text: "That name is taken with a different password.",
 		};
 	}
-	if (
-		err instanceof HttpError &&
-		(err.code === "availability_not_found" ||
-			(err.status === 404 && !eventMissing))
-	) {
+	if (err instanceof HttpError && err.code === "availability_not_found") {
 		return { kind: "fresh" };
 	}
 	if (
 		err instanceof HttpError &&
 		(err.code === "gone" ||
-			(err.status === 404 && eventMissing) ||
+			err.status === 404 ||
+			err.status === 403 ||
 			err.status === 410)
 	) {
 		return {
