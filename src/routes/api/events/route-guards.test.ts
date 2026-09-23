@@ -87,6 +87,15 @@ describe("availability write guards", () => {
 		expect(res.status).toBe(429);
 	});
 
+	it("burns write budget on blank bodies to throttle floods", async () => {
+		stubRateLimiter(denyNamespace());
+		const res = await saveAvailability(
+			postRequest({ name: "   ", slots: [] }, "application/json"),
+			eventId,
+		);
+		expect(res.status).toBe(429);
+	});
+
 	it("rejects oversized content-length with 413", async () => {
 		stubRateLimiter(allowNamespace());
 		const res = await saveAvailability(
