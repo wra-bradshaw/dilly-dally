@@ -46,7 +46,6 @@ export function DateCalendar({
 		day !== null && day >= minDate && day <= maxDate;
 
 	const drag = useDragPaint({
-		mode: "auto",
 		onCommit: (next) => {
 			const kept = new Set<string>();
 			for (const d of next) if (enabled(d)) kept.add(d);

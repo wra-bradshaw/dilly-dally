@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { type PaintMode, useDragPaint } from "#/hooks/use-drag-paint";
-import { useLocalStorage } from "#/hooks/use-local-storage";
+import { useDragPaint } from "#/hooks/use-drag-paint";
 import { paintTargetFromPoint } from "#/lib/paint-target";
 import { cn } from "#/lib/utils";
 import { type GridColumn, gridRectangleIds } from "./grid-model";
@@ -13,21 +12,12 @@ interface AvailabilityGridProps {
 	disabled?: boolean;
 }
 
-const MODES: { label: string; value: PaintMode }[] = [
-	{ label: "Auto", value: "auto" },
-	{ label: "Available", value: "add" },
-	{ label: "Unavailable", value: "remove" },
-];
-
 export function AvailabilityGrid({
 	columns,
 	disabled,
 	onCommit,
 	selected,
 }: AvailabilityGridProps) {
-	const [modeRaw, setMode] = useLocalStorage("dd:paint-mode", "auto");
-	const mode: PaintMode =
-		modeRaw === "add" || modeRaw === "remove" ? modeRaw : "auto";
 	const ref = useRef<HTMLTableElement>(null);
 	const suppressClick = useRef(false);
 	const clearTimer = useRef<number | undefined>(undefined);
@@ -41,7 +31,6 @@ export function AvailabilityGrid({
 		[columns],
 	);
 	const drag = useDragPaint({
-		mode,
 		onCommit,
 		range,
 		selected,
@@ -136,25 +125,6 @@ export function AvailabilityGrid({
 
 	return (
 		<div>
-			<fieldset className="mb-2 flex gap-1">
-				<legend className="sr-only">Paint mode</legend>
-				{MODES.map((m) => (
-					<button
-						aria-pressed={mode === m.value}
-						className={cn(
-							"rounded-md border px-2 py-1 text-xs font-medium",
-							mode === m.value
-								? "border-emerald-700 bg-emerald-100 text-emerald-900"
-								: "border-input text-muted-foreground",
-						)}
-						key={m.value}
-						onClick={() => setMode(m.value)}
-						type="button"
-					>
-						{m.label}
-					</button>
-				))}
-			</fieldset>
 			<div className={cn("overflow-x-auto pb-2", disabled && "opacity-60")}>
 				<TimeGrid
 					columns={columns}

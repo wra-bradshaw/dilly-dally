@@ -4,16 +4,16 @@ import { useDragPaint } from "./use-drag-paint";
 
 const values = ["a", "b", "c", "d"];
 
-function setup(selected: string[], mode: "auto" | "add" | "remove" = "auto") {
+function setup(selected: string[]) {
 	const onCommit = vi.fn();
 	const hook = renderHook(() =>
-		useDragPaint({ mode, onCommit, selected: new Set(selected), values }),
+		useDragPaint({ onCommit, selected: new Set(selected), values }),
 	);
 	return { hook, onCommit };
 }
 
 describe("useDragPaint", () => {
-	it("paints a dragged range in auto mode", () => {
+	it("paints a dragged range", () => {
 		const { hook, onCommit } = setup([]);
 		act(() => hook.result.current.onPointerDown("b"));
 		act(() => hook.result.current.onPointerEnter("d"));
@@ -32,23 +32,10 @@ describe("useDragPaint", () => {
 		expect([...onCommit.mock.calls[0][0]].sort()).toEqual(["a"]);
 	});
 
-	it("forces add and remove modes", () => {
-		const add = setup(["a"], "add");
-		act(() => add.hook.result.current.onPointerDown("a"));
-		act(() => add.hook.result.current.onPointerEnter("b"));
-		expect([...add.hook.result.current.preview].sort()).toEqual(["a", "b"]);
-
-		const remove = setup(["a", "b"], "remove");
-		act(() => remove.hook.result.current.onPointerDown("a"));
-		act(() => remove.hook.result.current.onPointerEnter("a"));
-		expect([...remove.hook.result.current.preview]).toEqual(["b"]);
-	});
-
 	it("uses a custom range function when provided", () => {
 		const onCommit = vi.fn();
 		const hook = renderHook(() =>
 			useDragPaint({
-				mode: "auto",
 				onCommit,
 				range: (_values, from, to) => [from, to],
 				selected: new Set<string>(),

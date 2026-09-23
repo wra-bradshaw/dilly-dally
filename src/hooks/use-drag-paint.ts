@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react";
 
-export type PaintMode = "auto" | "add" | "remove";
-
 function linearRange<T>(values: T[], from: T, to: T): T[] {
 	const a = values.indexOf(from);
 	const b = values.indexOf(to);
@@ -14,7 +12,6 @@ export interface DragPaintOptions<T> {
 	values: T[];
 	selected: Set<T>;
 	onCommit: (next: Set<T>) => void;
-	mode?: PaintMode;
 	range?: (values: T[], from: T, to: T) => T[];
 }
 
@@ -28,13 +25,7 @@ export interface DragPaintApi<T> {
 }
 
 export function useDragPaint<T>(options: DragPaintOptions<T>): DragPaintApi<T> {
-	const {
-		mode = "auto",
-		onCommit,
-		range = linearRange,
-		selected,
-		values,
-	} = options;
+	const { onCommit, range = linearRange, selected, values } = options;
 	const [drag, setDrag] = useState<{
 		anchor: T;
 		current: T;
@@ -53,13 +44,7 @@ export function useDragPaint<T>(options: DragPaintOptions<T>): DragPaintApi<T> {
 
 	return {
 		onPointerDown: (value: T) => {
-			const paint =
-				mode === "add"
-					? true
-					: mode === "remove"
-						? false
-						: !selected.has(value);
-			setDrag({ anchor: value, current: value, paint });
+			setDrag({ anchor: value, current: value, paint: !selected.has(value) });
 		},
 		onPointerEnter: (value: T) => {
 			if (drag) setDrag({ ...drag, current: value });
