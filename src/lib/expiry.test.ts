@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeExpiry, isExpired } from "./expiry";
+import {
+	computeExpiry,
+	EVENT_GRACE_DAYS,
+	EVENT_MAX_FUTURE_DAYS,
+	EVENT_TTL_DAYS,
+	isExpired,
+} from "./expiry";
 
 describe("computeExpiry", () => {
 	it("uses last date plus grace unless 90-day cap hits first", () => {
@@ -22,14 +28,30 @@ describe("computeExpiry", () => {
 		expect(new Date(expiry).toISOString()).toBe("2026-09-24T00:00:00.000Z");
 	});
 
-	it("caps at 90 days", () => {
+	it("caps at max window plus grace", () => {
 		const createdAt = new Date("2026-09-22T00:00:00.000Z").getTime();
 		const expiry = computeExpiry({
 			createdAt,
 			dates: ["2027-06-01"],
 		});
-		const max = createdAt + 90 * 24 * 60 * 60 * 1000;
+		const max = createdAt + EVENT_TTL_DAYS * 24 * 60 * 60 * 1000;
 		expect(expiry).toBe(max);
+	});
+
+	it("keeps a max-window event alive past its last date plus grace", () => {
+		const createdAt = new Date("2026-09-22T12:00:00.000Z").getTime();
+		const lastDate = new Date(createdAt + EVENT_MAX_FUTURE_DAYS * 86400000)
+			.toISOString()
+			.slice(0, 10);
+		const expiry = computeExpiry({ createdAt, dates: [lastDate] });
+		const graceEnd =
+			new Date(`${lastDate}T00:00:00.000Z`).getTime() +
+			EVENT_GRACE_DAYS * 86400000;
+		expect(isExpired(expiry, createdAt)).toBe(false);
+		expect(expiry).toBe(graceEnd);
+		expect(expiry).toBeGreaterThan(
+			new Date(`${lastDate}T00:00:00.000Z`).getTime(),
+		);
 	});
 });
 

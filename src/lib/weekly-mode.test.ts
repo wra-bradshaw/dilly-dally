@@ -5,7 +5,7 @@ import {
 	insertEvent,
 	toPublicEvent,
 } from "./db";
-import { computeExpiry } from "./expiry";
+import { computeExpiry, EVENT_TTL_DAYS } from "./expiry";
 import { getEventDetail, upsertAvailability } from "./server-availability";
 import { createTestDb } from "./test-db";
 import {
@@ -209,11 +209,11 @@ describe("weekly slot universe", () => {
 });
 
 describe("weekly expiry", () => {
-	it("expires 90 days after creation", () => {
+	it("expires at max window plus grace after creation", () => {
 		const createdAt = new Date("2026-09-22T00:00:00.000Z").getTime();
 		expect(
 			computeExpiry({ createdAt, dates: [], mode: "weekly", weekdays: [1, 3] }),
-		).toBe(createdAt + 90 * 24 * 60 * 60 * 1000);
+		).toBe(createdAt + EVENT_TTL_DAYS * 24 * 60 * 60 * 1000);
 	});
 });
 

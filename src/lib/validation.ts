@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DAY_MS, EVENT_MAX_FUTURE_DAYS } from "./expiry";
 
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
 const hourRe = /^([01]\d|2[0-3]):00$/;
@@ -9,8 +10,6 @@ const weeklySlotRe =
 function isSlotId(s: string): boolean {
 	return slotRe.test(s) || weeklySlotRe.test(s);
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function isRealDate(s: string): boolean {
 	const [y, m, d] = s.split("-").map(Number);
@@ -23,7 +22,9 @@ function isRealDate(s: string): boolean {
 }
 
 function maxDateUtc(): string {
-	return new Date(Date.now() + 91 * DAY_MS).toISOString().slice(0, 10);
+	return new Date(Date.now() + EVENT_MAX_FUTURE_DAYS * DAY_MS)
+		.toISOString()
+		.slice(0, 10);
 }
 
 function minDateUtc(): string {
