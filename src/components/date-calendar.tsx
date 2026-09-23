@@ -115,9 +115,13 @@ export function DateCalendar({
 		const target = e.target as HTMLElement | null;
 		const active = document.activeElement as HTMLElement | null;
 		const current = target?.dataset?.day ?? active?.dataset?.day ?? roving;
-		if (!current) return;
+		if (!current) {
+			e.preventDefault();
+			return;
+		}
 		const idx = days.indexOf(current);
 		if (idx === -1) {
+			e.preventDefault();
 			if (firstEnabled) focusDayCell(firstEnabled);
 			return;
 		}
@@ -155,7 +159,9 @@ export function DateCalendar({
 		if (found) {
 			e.preventDefault();
 			focusDayCell(found);
+			return;
 		}
+		e.preventDefault();
 	};
 
 	const monthLabel = new Intl.DateTimeFormat(undefined, {
@@ -163,8 +169,7 @@ export function DateCalendar({
 		timeZone: "UTC",
 		year: "numeric",
 	}).format(new Date(Date.UTC(ym.y, ym.m, 1)));
-	const canPrev =
-		`${ym.y}-${String(ym.m + 1).padStart(2, "0")}-01` > minDate.slice(0, 7);
+	const canPrev = `${ym.y}-${String(ym.m + 1).padStart(2, "0")}-01` > minDate;
 	const lastDay = matrix.flat().filter(Boolean).at(-1) ?? "";
 	const canNext = lastDay < maxDate;
 
