@@ -114,9 +114,13 @@ interface DateCalendarProps {
 	onCommit: (next: Set<string>) => void;
 	minDate: string;
 	maxDate: string;
+	labelledBy?: string;
+	describedBy?: string;
 }
 
 export function DateCalendar({
+	describedBy,
+	labelledBy,
 	maxDate,
 	minDate,
 	onCommit,
@@ -330,8 +334,10 @@ export function DateCalendar({
 
 	return (
 		<div>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: Escape cancels drag-paint; cells stay native buttons */}
+			{/* biome-ignore lint/a11y/useSemanticElements: inner group inside parent fieldset */}
 			<div
+				aria-describedby={describedBy}
+				aria-labelledby={labelledBy}
 				className={cn("touch-none select-none")}
 				data-slot="date-calendar"
 				onKeyDown={onDayKeyDown}
@@ -339,6 +345,7 @@ export function DateCalendar({
 				onPointerMove={onPointerMove}
 				onPointerUp={onPointerUp}
 				ref={surface.containerRef}
+				role="group"
 			>
 				<div
 					className="max-h-[400px] overflow-y-auto overscroll-contain"
@@ -361,77 +368,90 @@ export function DateCalendar({
 							<div
 								className="text-center text-xs text-muted-foreground"
 								key={d.full}
-								title={d.full}
 							>
-								<span aria-hidden="true">{d.short}</span>
-								<span className="sr-only">{d.full}</span>
+								<abbr
+									aria-label={d.full}
+									className="no-underline"
+									title={d.full}
+								>
+									{d.short}
+								</abbr>
 							</div>
 						))}
 					</div>
-					{sections.map((section) => (
-						<section
-							aria-label={section.label}
-							className="mt-3 first:mt-1"
-							key={section.key}
-						>
-							<div className="mb-1 text-sm font-semibold">{section.label}</div>
-							<div className="grid grid-cols-7 gap-1">
-								{section.weeks.flatMap((week) => {
-									let offset = 0;
-									while (offset < week.length && week[offset] === null) {
-										offset += 1;
-									}
-									return week.slice(offset).map((day, i) => {
-										if (day === null) return null;
-										const off = !enabled(day);
-										const on = surface.preview.has(day);
-										const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
-										return (
-											<button
-												aria-hidden={off || undefined}
-												aria-label={formatMarkerDate(day)}
-												aria-pressed={on}
-												className={cn(
-													"flex aspect-square items-center justify-center rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-													off && "invisible",
-													!off &&
+					{sections.map((section) => {
+						const headingId = `calendar-month-${section.key}`;
+						return (
+							<section
+								aria-labelledby={headingId}
+								className="mt-3 first:mt-1"
+								key={section.key}
+							>
+								<h3 className="mb-1 text-sm font-semibold" id={headingId}>
+									{section.label}
+								</h3>
+								<div className="grid grid-cols-7 gap-1">
+									{section.weeks.flatMap((week) => {
+										let offset = 0;
+										while (offset < week.length && week[offset] === null) {
+											offset += 1;
+										}
+										return week.slice(offset).map((day, i) => {
+											if (day === null) return null;
+											const off = !enabled(day);
+											const gridStyle =
+												i === 0 && offset > 0
+													? { gridColumnStart: offset + 1 }
+													: undefined;
+											if (off) {
+												return (
+													<span
+														aria-hidden="true"
+														className="aspect-square"
+														data-filler=""
+														key={day}
+														style={gridStyle}
+													/>
+												);
+											}
+											const on = surface.preview.has(day);
+											const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
+											return (
+												<button
+													aria-label={formatMarkerDate(day)}
+													aria-pressed={on}
+													className={cn(
+														"flex aspect-square items-center justify-center rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
 														!on &&
-														"border-input bg-background hover:border-primary",
-													!off &&
+															"border-input bg-background hover:border-primary",
 														on &&
-														"border-emerald-700 bg-emerald-400 font-semibold text-emerald-950 dark:border-emerald-500 dark:bg-emerald-700 dark:text-emerald-50",
-												)}
-												disabled={off}
-												data-day={day}
-												key={day}
-												onClick={(e) => surface.toggle(day, e.detail)}
-												onFocus={() => setFocusDay(day)}
-												style={
-													i === 0 && offset > 0
-														? { gridColumnStart: offset + 1 }
-														: undefined
-												}
-												tabIndex={off ? -1 : day === roving ? 0 : -1}
-												onPointerDown={(e) => {
-													if (off) return;
-													if (e.button !== 0 && e.pointerType === "mouse")
-														return;
-													surface.start(day, e);
-												}}
-												onPointerEnter={() => {
-													if (off) return;
-													surface.hover(day);
-												}}
-												type="button"
-											>
-												{dayNum ? Number(dayNum[1]) : ""}
-											</button>
-										);
-									});
-								})}
-							</div>
-						</section>
-					))}
+															"border-emerald-700 bg-emerald-400 font-semibold text-emerald-950 dark:border-emerald-500 dark:bg-emerald-700 dark:text-emerald-50",
+													)}
+													data-day={day}
+													key={day}
+													onClick={(e) => surface.toggle(day, e.detail)}
+													onFocus={() => setFocusDay(day)}
+													style={gridStyle}
+													tabIndex={day === roving ? 0 : -1}
+													onPointerDown={(e) => {
+														if (e.button !== 0 && e.pointerType === "mouse")
+															return;
+														surface.start(day, e);
+													}}
+													onPointerEnter={() => {
+														surface.hover(day);
+													}}
+													type="button"
+												>
+													{dayNum ? Number(dayNum[1]) : ""}
+												</button>
+											);
+										});
+									})}
+								</div>
+							</section>
+						);
+					})}
 				</div>
 			</div>
 		</div>

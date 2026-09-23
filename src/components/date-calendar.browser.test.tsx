@@ -35,11 +35,12 @@ test("dates outside the event window cannot be picked", async () => {
 
 	const day = screen.getByRole("button", { name: "Mon, 9/28" });
 	await expect.element(day).toBeVisible();
-	const offDay = screen.container.querySelector<HTMLButtonElement>(
-		'[data-day="2026-09-22"]',
-	);
-	expect(offDay?.disabled).toBe(true);
-	expect(offDay?.getAttribute("aria-hidden")).toBe("true");
+	expect(screen.container.querySelector('[data-day="2026-09-22"]')).toBeNull();
+	const filler = screen.container.querySelectorAll("[data-filler]");
+	expect(filler.length).toBeGreaterThan(0);
+	expect(
+		screen.container.querySelector('button[aria-hidden="true"]'),
+	).toBeNull();
 });
 
 test("pointerdown focuses the day without scrolling the page", async () => {

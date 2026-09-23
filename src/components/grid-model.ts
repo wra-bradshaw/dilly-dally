@@ -47,6 +47,16 @@ export function headerForWeekday(weekday: number): string {
 	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
 }
 
+export function weekdayFullName(weekday: number): string {
+	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+		return `Day ${weekday}`;
+	}
+	return new Intl.DateTimeFormat("en-US", {
+		timeZone: "UTC",
+		weekday: "long",
+	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
+}
+
 export function summarizeWeekdays(weekdays: number[]): string {
 	const uniq = [...new Set(weekdays)]
 		.filter((w) => Number.isInteger(w) && w >= 0 && w <= 6)
