@@ -28,7 +28,9 @@ describe("jsonError", () => {
 	it("sends anti-sniff and referrer headers without caching by default", () => {
 		const res = jsonError("gone", "Event has expired", 410);
 		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-		expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+		expect(res.headers.get("Referrer-Policy")).toBe(
+			"strict-origin-when-cross-origin",
+		);
 		expect(res.headers.get("Cache-Control")).toBeNull();
 	});
 

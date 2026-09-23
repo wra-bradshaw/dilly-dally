@@ -64,7 +64,9 @@ describe("event flow", () => {
 		);
 		expect(created.status).toBe(201);
 		expect(created.headers.get("X-Content-Type-Options")).toBe("nosniff");
-		expect(created.headers.get("Referrer-Policy")).toBeTruthy();
+		expect(created.headers.get("Referrer-Policy")).toBe(
+			"strict-origin-when-cross-origin",
+		);
 		const createdBody = (await created.json()) as {
 			id: string;
 			url: string;
@@ -160,16 +162,11 @@ describe("event flow", () => {
 
 	it("rethrows non-HttpError failures", async () => {
 		const prev = (globalThis as unknown as Record<string, unknown>).__testDb;
-		(globalThis as unknown as Record<string, unknown>).__testDb = Object.create(
-			prev as object,
-			{
-				select: {
-					value: () => {
-						throw new Error("boom");
-					},
-				},
+		(globalThis as unknown as Record<string, unknown>).__testDb = {
+			select: () => {
+				throw new Error("boom");
 			},
-		);
+		};
 		try {
 			await expect(
 				handleGetDetail(

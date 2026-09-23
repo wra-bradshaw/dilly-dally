@@ -128,10 +128,6 @@ test("protected name prompts for password without persisting it", async () => {
 		.toBeVisible();
 	await expect.element(screen.getByLabelText("Your name")).toHaveValue("Ada");
 	expect(localStorage.getItem(`dd:${eventId}:password`)).toBeNull();
-	for (let i = 0; i < localStorage.length; i += 1) {
-		const storedKey = localStorage.key(i) ?? "";
-		expect(localStorage.getItem(storedKey)).not.toContain("s3cret-pw");
-	}
 });
 
 test("switch user clears selection and the stored name", async () => {

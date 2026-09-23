@@ -235,7 +235,9 @@ describe("guard response headers", () => {
 		expect(bad.map((r) => r.status)).toEqual([413, 415, 400]);
 		for (const res of bad) {
 			expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-			expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+			expect(res.headers.get("Referrer-Policy")).toBe(
+				"strict-origin-when-cross-origin",
+			);
 		}
 	});
 
@@ -247,6 +249,8 @@ describe("guard response headers", () => {
 		);
 		expect(res.status).toBe(415);
 		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-		expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+		expect(res.headers.get("Referrer-Policy")).toBe(
+			"strict-origin-when-cross-origin",
+		);
 	});
 });
