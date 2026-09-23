@@ -8,6 +8,7 @@ import {
 } from "./db";
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
+import { toEventDto } from "./server-events";
 import {
 	buildEventUniverse,
 	computeCounts,
@@ -185,18 +186,7 @@ export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
 			slot: c.slot,
 		})),
 		counts,
-		event: {
-			createdAt: new Date(event.createdAt).toISOString(),
-			dates: event.dates,
-			endTime: event.endTime,
-			expiresAt: new Date(event.expiresAt).toISOString(),
-			id: event.id,
-			mode: event.mode ?? "dates",
-			startTime: event.startTime,
-			timezone: event.timezone,
-			title: event.title,
-			weekdays: event.weekdays ?? [],
-		},
+		event: toEventDto(event),
 		participants: parts.map((p) => ({
 			count: p.slots.length,
 			name: p.name,
