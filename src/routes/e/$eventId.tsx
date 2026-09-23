@@ -332,10 +332,17 @@ function EventPage() {
 							Your name and password are only for this event. New here? Make up
 							a password. Returning? Use the same name and password.
 						</p>
-						<div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+						<form
+							className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+							onSubmit={(e) => {
+								e.preventDefault();
+								void signIn();
+							}}
+						>
 							<div className="grid gap-2">
 								<Label htmlFor="who-name">Your name</Label>
 								<Input
+									autoComplete="username"
 									id="who-name"
 									maxLength={40}
 									onChange={(e) => setName(e.target.value)}
@@ -346,16 +353,17 @@ function EventPage() {
 							<div className="grid gap-2">
 								<Label htmlFor="who-pass">Password (optional)</Label>
 								<Input
+									autoComplete="current-password"
 									id="who-pass"
 									onChange={(e) => setPassword(e.target.value)}
 									type="password"
 									value={password}
 								/>
 							</div>
-							<Button disabled={signing} onClick={signIn} type="button">
+							<Button disabled={signing} type="submit">
 								{signing ? "Signing in…" : "Continue"}
 							</Button>
-						</div>
+						</form>
 						{signError !== "" && (
 							<p className="mt-2 text-sm text-destructive" role="alert">
 								{signError}
