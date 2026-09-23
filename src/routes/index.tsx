@@ -46,9 +46,7 @@ function allTimezones(): string[] {
 			Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
 		).supportedValuesOf?.("timeZone");
 		if (supported && supported.length > 0) return supported;
-	} catch {
-		/* fall through */
-	}
+	} catch {}
 	return [browserTimezone()];
 }
 

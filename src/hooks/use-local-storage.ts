@@ -15,9 +15,7 @@ export function useLocalStorage(
 		setValue(next);
 		try {
 			localStorage.setItem(key, next);
-		} catch {
-			/* storage unavailable */
-		}
+		} catch {}
 	};
 	return [value, set];
 }

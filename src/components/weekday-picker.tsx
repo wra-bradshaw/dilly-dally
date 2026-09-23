@@ -24,9 +24,7 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 	const capture = (e: React.PointerEvent) => {
 		try {
 			ref.current?.setPointerCapture?.(e.pointerId);
-		} catch {
-			/* pointer capture unavailable */
-		}
+		} catch {}
 	};
 
 	const toggleWeekday = (day: number, detail: number) => {

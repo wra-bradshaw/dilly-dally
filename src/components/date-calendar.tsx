@@ -77,9 +77,7 @@ export function DateCalendar({
 	const capture = (e: React.PointerEvent) => {
 		try {
 			ref.current?.setPointerCapture?.(e.pointerId);
-		} catch {
-			/* pointer capture unavailable */
-		}
+		} catch {}
 	};
 
 	let blanks = 0;
