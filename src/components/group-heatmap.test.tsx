@@ -101,7 +101,7 @@ describe("TimeGrid announcements", () => {
 		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
 	});
 
-	it("emits one live region when the event page silences the heatmap", () => {
+	it("emits one live region when signed in and the heatmap is silenced", () => {
 		const columns = cols();
 		const { container } = render(
 			<>
@@ -126,6 +126,28 @@ describe("TimeGrid announcements", () => {
 					viewTimezone="UTC"
 				/>
 			</>,
+		);
+		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
+	});
+
+	it("emits one live region when signed out and only the heatmap announces", () => {
+		const columns = cols();
+		const { container } = render(
+			<GroupHeatmap
+				allNames={["Ada"]}
+				announce
+				columns={columns}
+				counts={
+					new Map(
+						columns.flatMap((c) =>
+							c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+						),
+					)
+				}
+				eventTimezone="UTC"
+				total={1}
+				viewTimezone="UTC"
+			/>,
 		);
 		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
 	});
