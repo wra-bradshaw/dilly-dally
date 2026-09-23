@@ -46,16 +46,16 @@ function wallFormatter(tz: string): Intl.DateTimeFormat {
 	return fmt;
 }
 
-const slotLabelFormatter = new Intl.DateTimeFormat(undefined, {
+const slotLabelFormatter = new Intl.DateTimeFormat("en-US", {
 	hour: "numeric",
 	minute: "2-digit",
 	timeZone: "UTC",
 });
-const weekdayShortFormatter = new Intl.DateTimeFormat(undefined, {
+const weekdayShortFormatter = new Intl.DateTimeFormat("en-US", {
 	timeZone: "UTC",
 	weekday: "short",
 });
-const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
+const monthDayFormatter = new Intl.DateTimeFormat("en-US", {
 	day: "numeric",
 	month: "short",
 	timeZone: "UTC",

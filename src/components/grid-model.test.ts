@@ -23,7 +23,7 @@ function rectIds(
 
 function expectedTime(time: string): string {
 	const [hh, mm] = time.split(":").map(Number);
-	return new Intl.DateTimeFormat(undefined, {
+	return new Intl.DateTimeFormat("en-US", {
 		hour: "numeric",
 		minute: "2-digit",
 		timeZone: "UTC",
@@ -32,7 +32,7 @@ function expectedTime(time: string): string {
 
 function expectedMarker(date: string): string {
 	const [y, m, d] = date.split("-").map(Number);
-	return new Intl.DateTimeFormat(undefined, {
+	return new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
 		month: "numeric",
 		timeZone: "UTC",
@@ -264,6 +264,10 @@ describe("formatMarkerDate", () => {
 	it("formats as single-line weekday date", () => {
 		expect(formatMarkerDate("2026-09-23")).toBe(expectedMarker("2026-09-23"));
 		expect(formatMarkerDate("2026-10-05")).toBe(expectedMarker("2026-10-05"));
+	});
+
+	it("pins en-US output so server and client render identically", () => {
+		expect(formatMarkerDate("2026-09-28")).toBe("Mon, 9/28");
 	});
 });
 

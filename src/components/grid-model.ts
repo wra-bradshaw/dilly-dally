@@ -41,7 +41,7 @@ export function headerForWeekday(weekday: number): string {
 	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
 		return `Day ${weekday}`;
 	}
-	return new Intl.DateTimeFormat(undefined, {
+	return new Intl.DateTimeFormat("en-US", {
 		timeZone: "UTC",
 		weekday: "short",
 	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
@@ -70,7 +70,7 @@ export function summarizeWeekdays(weekdays: number[]): string {
 export function formatMarkerDate(date: string): string {
 	const [y, m, d] = date.split("-").map(Number);
 	const dt = new Date(Date.UTC(y, m - 1, d));
-	return new Intl.DateTimeFormat(undefined, {
+	return new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
 		month: "numeric",
 		timeZone: "UTC",

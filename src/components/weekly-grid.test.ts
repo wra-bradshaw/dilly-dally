@@ -25,7 +25,7 @@ describe("buildWeeklyColumns", () => {
 		expect(cols).toHaveLength(1);
 		expect(cols[0].header).toBe(headerForWeekday(1));
 		expect(cols[0].cells[0].label).toBe(
-			new Intl.DateTimeFormat(undefined, {
+			new Intl.DateTimeFormat("en-US", {
 				hour: "numeric",
 				minute: "2-digit",
 				timeZone: "UTC",
@@ -52,9 +52,9 @@ describe("buildWeeklyColumns", () => {
 });
 
 describe("headerForWeekday", () => {
-	it("names each weekday in the runtime locale", () => {
+	it("names each weekday in the pinned locale", () => {
 		const weekday = (n: number) =>
-			new Intl.DateTimeFormat(undefined, {
+			new Intl.DateTimeFormat("en-US", {
 				timeZone: "UTC",
 				weekday: "short",
 			}).format(new Date(Date.UTC(2000, 0, 2 + n)));

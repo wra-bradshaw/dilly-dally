@@ -126,10 +126,10 @@ describe("findBestTimes", () => {
 });
 
 describe("formatSlotWithDate", () => {
-	it("includes month, day, and time in the runtime locale", () => {
+	it("includes month, day, and time in the pinned locale", () => {
 		const monthDay = (date: string) => {
 			const [y, m, d] = date.split("-").map(Number);
-			return new Intl.DateTimeFormat(undefined, {
+			return new Intl.DateTimeFormat("en-US", {
 				day: "numeric",
 				month: "short",
 				timeZone: "UTC",
@@ -137,7 +137,7 @@ describe("formatSlotWithDate", () => {
 		};
 		const time = (t: string) => {
 			const [hh, mm] = t.split(":").map(Number);
-			return new Intl.DateTimeFormat(undefined, {
+			return new Intl.DateTimeFormat("en-US", {
 				hour: "numeric",
 				minute: "2-digit",
 				timeZone: "UTC",
