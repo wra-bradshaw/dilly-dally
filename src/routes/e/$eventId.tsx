@@ -95,6 +95,7 @@ function EventPage() {
 		useOwnAvailabilityRestore({
 			eventId,
 			eventMissing,
+			eventSettled: !detail.isPending,
 			fetchAvailability: fetchOwnAvailability,
 			onCleared: () => {
 				lastSavedRef.current = new Set();
@@ -502,10 +503,17 @@ function EventPage() {
 									</button>
 								</p>
 							)}
+							{restoreStatus === "gone" && (
+								<p className="mb-2 text-sm text-muted-foreground" role="alert">
+									This event has expired. Reload the page.
+								</p>
+							)}
 							<AvailabilityGrid
 								columns={columns}
 								disabled={
-									restoreStatus === "restoring" || restoreStatus === "failed"
+									restoreStatus === "restoring" ||
+									restoreStatus === "failed" ||
+									restoreStatus === "gone"
 								}
 								onCommit={commit}
 								selected={selected}

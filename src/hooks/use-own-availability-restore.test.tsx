@@ -8,6 +8,7 @@ const eventId = "AbC123_-XyZ9";
 function setup(options: {
 	storedName: string;
 	eventMissing?: boolean;
+	eventSettled?: boolean;
 	fetchAvailability: (
 		eventId: string,
 		name: string,
@@ -19,20 +20,23 @@ function setup(options: {
 	const onRestored = vi.fn();
 	const onNeedsPassword = vi.fn();
 	const onCleared = vi.fn();
+	const onGone = vi.fn();
 	const hook = renderHook(
 		({ storedName }) =>
 			useOwnAvailabilityRestore({
 				eventId,
 				eventMissing: options.eventMissing,
+				eventSettled: options.eventSettled,
 				fetchAvailability: options.fetchAvailability as never,
 				onCleared: () => onCleared(),
+				onGone: () => onGone(),
 				onNeedsPassword: (name) => onNeedsPassword(name),
 				onRestored: (own) => onRestored(own),
 				storedName,
 			}),
 		{ initialProps: { storedName: options.storedName } },
 	);
-	return { hook, onCleared, onNeedsPassword, onRestored };
+	return { hook, onCleared, onGone, onNeedsPassword, onRestored };
 }
 
 describe("useOwnAvailabilityRestore", () => {
@@ -98,6 +102,67 @@ describe("useOwnAvailabilityRestore", () => {
 		});
 		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
 		expect(onCleared).not.toHaveBeenCalled();
+	});
+
+	it("fails instead of clearing on a bare 404 without a not-found code", async () => {
+		const fetchAvailability = vi
+			.fn()
+			.mockRejectedValue(new HttpError(404, "not_found", "Event not found"));
+		const { hook, onCleared } = setup({
+			fetchAvailability,
+			storedName: "Ada",
+		});
+		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
+		expect(onCleared).not.toHaveBeenCalled();
+	});
+
+	it("ends expired events as terminal instead of retryable", async () => {
+		const fetchAvailability = vi
+			.fn()
+			.mockRejectedValue(new HttpError(410, "gone", "Event has expired"));
+		const { hook, onCleared, onGone, onRestored } = setup({
+			fetchAvailability,
+			storedName: "Ada",
+		});
+		await waitFor(() => expect(hook.result.current.status).toBe("gone"));
+		expect(onCleared).not.toHaveBeenCalled();
+		expect(onRestored).not.toHaveBeenCalled();
+		expect(onGone).toHaveBeenCalledTimes(1);
+		hook.result.current.retry();
+		expect(hook.result.current.status).toBe("gone");
+		expect(fetchAvailability).toHaveBeenCalledTimes(1);
+	});
+
+	it("waits for the event query before deciding", async () => {
+		const fetchAvailability = vi.fn().mockResolvedValue({
+			name: "Ada",
+			slots: [],
+		});
+		const onRestored = vi.fn();
+		const onNeedsPassword = vi.fn();
+		const onCleared = vi.fn();
+		const onGone = vi.fn();
+		const hook = renderHook(
+			({ settled }: { settled: boolean }) =>
+				useOwnAvailabilityRestore({
+					eventId,
+					eventSettled: settled,
+					fetchAvailability: fetchAvailability as never,
+					onCleared: () => onCleared(),
+					onGone: () => onGone(),
+					onNeedsPassword: (name) => onNeedsPassword(name),
+					onRestored: (own) => onRestored(own),
+					storedName: "Ada",
+				}),
+			{ initialProps: { settled: false } },
+		);
+		expect(hook.result.current.status).toBe("restoring");
+		await new Promise((r) => setTimeout(r, 20));
+		expect(fetchAvailability).not.toHaveBeenCalled();
+		hook.rerender({ settled: true });
+		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
+		expect(fetchAvailability).toHaveBeenCalledTimes(1);
+		expect(onRestored).toHaveBeenCalledTimes(1);
 	});
 
 	it("reports failed and retries after a network error", async () => {
