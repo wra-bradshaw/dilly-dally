@@ -84,11 +84,12 @@ export function AvailabilityGrid({
 							aria-label={`${ctx.segment.label} ${cell.label}`}
 							aria-pressed={surface.preview.has(cell.id)}
 							className={cn(
-								"block h-6 w-full border-r border-b border-l first:border-t",
+								"block h-6 w-full border-r border-b border-l first:border-t hover:ring-2 hover:ring-inset hover:ring-primary",
 								surface.preview.has(cell.id)
-									? "border-emerald-700 bg-emerald-400"
-									: "border-rose-200 bg-rose-100 hover:bg-rose-200",
-								cell.hourStart && "border-t border-t-rose-300",
+									? "border-emerald-700 bg-emerald-400 dark:border-emerald-600 dark:bg-emerald-700"
+									: "border-rose-200 bg-rose-100 hover:bg-rose-200 dark:border-rose-900/70 dark:bg-rose-950/40 dark:hover:bg-rose-900/60",
+								cell.hourStart &&
+									"border-t border-t-rose-300 dark:border-t-rose-800",
 								ctx.afterBreak && "border-t-2 border-t-foreground/50",
 								disabled && "pointer-events-none",
 							)}

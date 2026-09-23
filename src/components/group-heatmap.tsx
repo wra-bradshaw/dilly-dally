@@ -10,8 +10,6 @@ interface CellCount {
 }
 
 export const HEATMAP_FILL_RGB = [16, 122, 87] as const;
-export const HEATMAP_TEXT_RGB = [2, 44, 34] as const;
-export const HEATMAP_CARD_RGB = [255, 255, 255] as const;
 
 export function heatmapAlpha(count: number, max: number): number {
 	if (!(max > 0)) return 0.15;
@@ -90,10 +88,10 @@ export function GroupHeatmap({
 							className={cn(
 								"block h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold first:border-t",
 								(counts.get(cell.id)?.count ?? 0) === 0
-									? "border-rose-200 bg-rose-50 text-rose-400"
-									: "border-emerald-800 text-emerald-950 underline decoration-emerald-900/40 underline-offset-2",
+									? "border-rose-200 bg-rose-50 text-rose-400 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300/70"
+									: "border-emerald-800 text-emerald-950 underline decoration-emerald-900/40 underline-offset-2 dark:border-emerald-600 dark:text-emerald-100",
 								ctx.afterBreak && "border-t-2 border-t-foreground/50",
-								hovered === cell.id && "ring-2 ring-primary",
+								hovered === cell.id && "ring-2 ring-inset ring-primary",
 							)}
 							data-cell={cell.id}
 							onBlur={(e) => {
@@ -140,7 +138,6 @@ export function GroupHeatmap({
 									? undefined
 									: {
 											backgroundColor: `rgba(${HEATMAP_FILL_RGB[0]}, ${HEATMAP_FILL_RGB[1]}, ${HEATMAP_FILL_RGB[2]}, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
-											color: `rgb(${HEATMAP_TEXT_RGB[0]}, ${HEATMAP_TEXT_RGB[1]}, ${HEATMAP_TEXT_RGB[2]})`,
 										}
 							}
 							tabIndex={cell.id === roving ? 0 : -1}
@@ -169,7 +166,7 @@ export function GroupHeatmap({
 						</div>
 						{info.names.length > 0 && (
 							<div className="mt-2">
-								<div className="text-xs font-medium text-emerald-800">
+								<div className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
 									Available
 								</div>
 								<div className="text-xs">{info.names.join(", ")}</div>
@@ -177,7 +174,7 @@ export function GroupHeatmap({
 						)}
 						{unavailable.length > 0 && (
 							<div className="mt-2">
-								<div className="text-xs font-medium text-rose-800">
+								<div className="text-xs font-medium text-rose-800 dark:text-rose-300">
 									Unavailable
 								</div>
 								<div className="text-xs">{unavailable.join(", ")}</div>

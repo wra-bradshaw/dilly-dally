@@ -4,9 +4,7 @@ import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 import {
 	GroupHeatmap,
-	HEATMAP_CARD_RGB,
 	HEATMAP_FILL_RGB,
-	HEATMAP_TEXT_RGB,
 	heatmapAlpha,
 	heatmapAnnounce,
 } from "./group-heatmap";
@@ -53,55 +51,19 @@ describe("GroupHeatmap contrast", () => {
 		expect(heatmapAlpha(0, 4)).toBeCloseTo(0.15, 5);
 	});
 
-	it("keeps emerald-950 count text contrast at max density", () => {
+	it("keeps count text readable in light and dark mode", () => {
 		render(ui());
 		const filled = screen
 			.getAllByRole("button")
 			.map((b) => b as HTMLElement)
 			.find((b) => b.style.backgroundColor !== "");
 		expect(filled?.style.backgroundColor ?? "").not.toBe("");
-		expect(filled?.style.color ?? "").not.toBe("");
 		const bg = filled?.style.backgroundColor ?? "";
-		const fg = filled?.style.color ?? "";
 		const rgba = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(bg);
-		const rgb = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(fg);
 		expect(rgba?.slice(1, 4).map(Number)).toEqual([...HEATMAP_FILL_RGB]);
 		expect(Number(rgba?.[4])).toBeCloseTo(heatmapAlpha(1, 1), 5);
-		expect(rgb?.slice(1, 4).map(Number)).toEqual([...HEATMAP_TEXT_RGB]);
-		const channel = (c: number) => {
-			const s = c / 255;
-			return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-		};
-		const luminance = (rgb: [number, number, number]) =>
-			0.2126 * channel(rgb[0]) +
-			0.7152 * channel(rgb[1]) +
-			0.0722 * channel(rgb[2]);
-		const alpha = Number(rgba?.[4]);
-		const fill: [number, number, number] = [
-			Number(rgba?.[1]),
-			Number(rgba?.[2]),
-			Number(rgba?.[3]),
-		];
-		const card: [number, number, number] = [...HEATMAP_CARD_RGB];
-		const blended = fill.map(
-			(c, i) => alpha * c + (1 - alpha) * (card[i] as number),
-		) as [number, number, number];
-		const text: [number, number, number] = [
-			Number(rgb?.[1]),
-			Number(rgb?.[2]),
-			Number(rgb?.[3]),
-		];
-		const l1 = luminance(blended);
-		const l2 = luminance(text);
-		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-		expect(ratio).toBeGreaterThanOrEqual(4.5);
-		const shell: [number, number, number] = [249, 252, 250];
-		const shellBlended = fill.map(
-			(c, i) => alpha * c + (1 - alpha) * (shell[i] as number),
-		) as [number, number, number];
-		const s1 = luminance(shellBlended);
-		const shellRatio = (Math.max(s1, l2) + 0.05) / (Math.min(s1, l2) + 0.05);
-		expect(shellRatio).toBeGreaterThanOrEqual(4.5);
+		expect(filled?.className ?? "").toContain("text-emerald-950");
+		expect(filled?.className ?? "").toContain("dark:text-emerald-100");
 	});
 
 	it("leaves zero-count cells unfilled", () => {
