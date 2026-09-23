@@ -339,7 +339,7 @@ function EventPage() {
 	const stale = detail.isError && detail.data !== undefined;
 
 	return (
-		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] animate-in fade-in slide-in-from-bottom-3 duration-700 pb-16">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
 			{stale && (
 				<output className="mt-4 block rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					Couldn&apos;t refresh — showing the last update.{" "}
