@@ -20,6 +20,21 @@ export function buildMonthMatrix(
 	return weeks;
 }
 
+export function filterCalendarCommit(
+	next: Set<string>,
+	selected: Set<string>,
+	visible: (string | null)[],
+	minDate: string,
+	maxDate: string,
+): Set<string> {
+	const inRange = (d: string) => d >= minDate && d <= maxDate;
+	const kept = new Set<string>();
+	for (const d of next) if (inRange(d)) kept.add(d);
+	for (const d of selected) {
+		if (!visible.includes(d) && inRange(d)) kept.add(d);
+	}
+	return kept;
+}
 interface DateCalendarProps {
 	selected: Set<string>;
 	onCommit: (next: Set<string>) => void;
@@ -51,13 +66,7 @@ export function DateCalendar({
 		day !== null && day >= minDate && day <= maxDate;
 
 	const commitEnabled = (next: Set<string>) => {
-		const kept = new Set<string>();
-		for (const d of next) if (enabled(d)) kept.add(d);
-		for (const d of selected) {
-			if (!matrix.flat().includes(d) && d >= minDate && d <= maxDate)
-				kept.add(d);
-		}
-		onCommit(kept);
+		onCommit(filterCalendarCommit(next, selected, matrix.flat(), minDate, maxDate));
 	};
 
 	const surface = usePaintSurface<string, HTMLDivElement>({
