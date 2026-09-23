@@ -7,9 +7,12 @@ import * as schema from "./lib/schema";
 
 export { RateLimiter };
 
-function withDocumentHeaders(res: Response): Response {
-	const contentType = res.headers.get("content-type") ?? "";
-	if (!contentType.includes("text/html")) return res;
+export function needsDocumentHeaders(contentType: string | null): boolean {
+	return (contentType ?? "").toLowerCase().includes("text/html");
+}
+
+export function withDocumentHeaders(res: Response): Response {
+	if (!needsDocumentHeaders(res.headers.get("content-type"))) return res;
 	const headers = new Headers(res.headers);
 	for (const [key, value] of Object.entries(documentSecurityHeaders())) {
 		headers.set(key, value);
