@@ -123,22 +123,30 @@ function Home() {
 	};
 
 	return (
-		<div className="page-wrap rise-in pb-16">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] animate-in fade-in slide-in-from-bottom-3 duration-700 pb-16">
 			<header className="flex items-center justify-between py-5">
-				<div className="display-title text-2xl font-bold">Dilly-Dally</div>
+				<div className="font-display text-2xl font-bold">Dilly-Dally</div>
 				<nav className="flex gap-4 text-sm">
-					<a className="nav-link nav-link-standalone" href="/api/agent-guide">
+					<a
+						className="relative inline-flex min-h-6 items-center py-0.5 text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+						href="/api/agent-guide"
+					>
 						Agent guide
 					</a>
-					<a className="nav-link nav-link-standalone" href="/api/openapi.json">
+					<a
+						className="relative inline-flex min-h-6 items-center py-0.5 text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+						href="/api/openapi.json"
+					>
 						OpenAPI
 					</a>
 				</nav>
 			</header>
 
 			<section className="mt-6 text-center">
-				<p className="island-kicker">Find a time that works for everyone</p>
-				<h1 className="display-title mt-2 text-4xl font-bold text-balance sm:text-5xl">
+				<p className="text-[0.69rem] font-bold uppercase tracking-[0.16em] text-emerald-900/90 dark:text-teal-200">
+					Find a time that works for everyone
+				</p>
+				<h1 className="mt-2 font-display text-4xl font-bold text-balance sm:text-5xl">
 					Stop dilly-dallying. Pick a time.
 				</h1>
 				<p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -147,7 +155,7 @@ function Home() {
 				</p>
 			</section>
 
-			<Card className="island-shell mx-auto mt-8 max-w-2xl rounded-2xl">
+			<Card className="mx-auto mt-8 max-w-2xl rounded-2xl border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none">
 				<CardHeader>
 					<CardTitle>Plan a new event</CardTitle>
 				</CardHeader>
@@ -307,7 +315,10 @@ function Home() {
 					{ body: "One link is the whole event.", head: "2. Share" },
 					{ body: "Paint availability, read the green.", head: "3. Meet" },
 				].map((s) => (
-					<div className="feature-card rounded-2xl border p-4" key={s.head}>
+					<div
+						className="rounded-2xl border border-[#173a40]/15 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_34px_rgba(30,90,72,0.10),0_4px_14px_rgba(23,58,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-700/35 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none"
+						key={s.head}
+					>
 						<div className="font-semibold">{s.head}</div>
 						<div className="mt-1 text-sm text-muted-foreground">{s.body}</div>
 					</div>

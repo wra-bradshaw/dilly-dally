@@ -64,8 +64,8 @@ function EventError({ error }: { error: unknown }) {
 	const retryAfter =
 		limited && error instanceof HttpError ? error.retryAfter : undefined;
 	return (
-		<div className="page-wrap py-16 text-center">
-			<h1 className="display-title text-3xl font-bold">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
+			<h1 className="font-display text-3xl font-bold">
 				{limited
 					? "Slow down — too many requests"
 					: gone
@@ -274,7 +274,7 @@ function EventPage() {
 
 	if (detail.isPending) {
 		return (
-			<div className="page-wrap py-16">
+			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16">
 				<p className="text-muted-foreground">Loading event…</p>
 			</div>
 		);
@@ -287,8 +287,8 @@ function EventPage() {
 			!(err instanceof HttpError) || err.status === 429 || err.status >= 500;
 		if (retryable && !gone) {
 			return (
-				<div className="page-wrap py-16 text-center">
-					<h1 className="display-title text-3xl font-bold">
+				<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
+					<h1 className="font-display text-3xl font-bold">
 						Could not load this event
 					</h1>
 					<p className="mt-2 text-muted-foreground">
@@ -305,8 +305,8 @@ function EventPage() {
 			);
 		}
 		return (
-			<div className="page-wrap py-16 text-center">
-				<h1 className="display-title text-3xl font-bold">
+			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
+				<h1 className="font-display text-3xl font-bold">
 					{gone ? "This event has expired" : "Event not found"}
 				</h1>
 				<p className="mt-2 text-muted-foreground">
@@ -326,12 +326,12 @@ function EventPage() {
 	const stale = detail.isError && detail.data !== undefined;
 
 	return (
-		<div className="page-wrap rise-in pb-16">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] animate-in fade-in slide-in-from-bottom-3 duration-700 pb-16">
 			{stale && (
 				<output className="mt-4 block rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					Couldn&apos;t refresh — showing the last update.{" "}
 					<button
-						className="nav-link text-sm"
+						className="relative text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
 						onClick={() => void detail.refetch()}
 						type="button"
 					>
@@ -340,23 +340,26 @@ function EventPage() {
 				</output>
 			)}
 			<header className="flex items-center justify-between py-5">
-				<a className="display-title text-2xl font-bold" href="/">
+				<a className="font-display text-2xl font-bold" href="/">
 					Dilly-Dally
 				</a>
 				<nav className="flex gap-4 text-sm">
-					<a className="nav-link nav-link-standalone" href="/api/agent-guide">
+					<a
+						className="relative inline-flex min-h-6 items-center py-0.5 text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+						href="/api/agent-guide"
+					>
 						Agent guide
 					</a>
 				</nav>
 			</header>
 
-			<h1 className="display-title mt-2 text-3xl font-bold">{event?.title}</h1>
+			<h1 className="font-display mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
 				{event?.timezone} · {dateSummary} · {event?.startTime}–{event?.endTime}{" "}
 				· Expires {event ? new Date(event.expiresAt).toLocaleDateString() : ""}
 			</p>
 
-			<Card className="island-shell mt-6 rounded-2xl">
+			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-6 rounded-2xl">
 				<CardHeader>
 					<CardTitle>Invite people</CardTitle>
 				</CardHeader>
@@ -389,7 +392,7 @@ function EventPage() {
 			</Card>
 
 			{!signedIn ? (
-				<Card className="island-shell mt-4 rounded-2xl">
+				<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
 					<CardHeader>
 						<CardTitle>Sign in</CardTitle>
 					</CardHeader>
@@ -443,7 +446,7 @@ function EventPage() {
 						Signed in as <strong>{activeName}</strong>
 					</span>
 					<button
-						className="nav-link nav-link-standalone text-sm"
+						className="relative inline-flex min-h-6 items-center py-0.5 text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
 						onClick={() => {
 							saver.cancel();
 							lastSubmittedRef.current = null;
@@ -486,7 +489,7 @@ function EventPage() {
 				<span className="text-xs text-muted-foreground">{viewTimezone}</span>
 			</div>
 
-			<Card className="island-shell mt-4 rounded-2xl">
+			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
 				<CardHeader>
 					<CardTitle>
 						Your availability{" "}
@@ -513,7 +516,7 @@ function EventPage() {
 							<>
 								Could not restore your availability.{" "}
 								<button
-									className="nav-link text-sm"
+									className="relative text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
 									onClick={retryRestore}
 									type="button"
 								>
@@ -551,7 +554,7 @@ function EventPage() {
 				</CardContent>
 			</Card>
 
-			<Card className="island-shell mt-4 rounded-2xl">
+			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
 				<CardHeader>
 					<CardTitle>
 						Group&apos;s availability{" "}
@@ -617,8 +620,21 @@ function EventPage() {
 
 			<footer className="mt-8 text-center text-xs text-muted-foreground">
 				The link is the event, keep it. Data auto-deletes after the event
-				passes. Agents: see <a href="/api/agent-guide">/api/agent-guide</a> and{" "}
-				<a href="/api/openapi.json">/api/openapi.json</a>.
+				passes. Agents: see{" "}
+				<a
+					className="text-teal-800 underline decoration-teal-700/40 decoration-[1px] underline-offset-2 hover:text-teal-950 dark:text-teal-300 dark:hover:text-teal-100"
+					href="/api/agent-guide"
+				>
+					/api/agent-guide
+				</a>{" "}
+				and{" "}
+				<a
+					className="text-teal-800 underline decoration-teal-700/40 decoration-[1px] underline-offset-2 hover:text-teal-950 dark:text-teal-300 dark:hover:text-teal-100"
+					href="/api/openapi.json"
+				>
+					/api/openapi.json
+				</a>
+				.
 			</footer>
 		</div>
 	);
