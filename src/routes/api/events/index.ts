@@ -15,6 +15,16 @@ import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
 import { checkRateLimitDb } from "#/lib/server-rate-limit";
 import { type CreateEventInput, createEventSchema } from "#/lib/validation";
 
+function isIdCollision(err: unknown): boolean {
+	const msg = err instanceof Error ? err.message : String(err);
+	return (
+		/unique constraint failed/i.test(msg) ||
+		/primary key/i.test(msg) ||
+		/duplicate key/i.test(msg) ||
+		/already exists/i.test(msg)
+	);
+}
+
 export const Route = createFileRoute("/api/events/")({
 	server: {
 		handlers: {
@@ -77,7 +87,10 @@ export const Route = createFileRoute("/api/events/")({
 							weekdays,
 						});
 						inserted = true;
-					} catch {
+					} catch (err) {
+						if (!isIdCollision(err)) {
+							return jsonError("internal", "Could not create event", 500);
+						}
 						id = generateEventId();
 					}
 				}
