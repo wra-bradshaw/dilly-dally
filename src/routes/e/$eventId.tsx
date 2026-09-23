@@ -48,19 +48,37 @@ export const Route = createFileRoute("/e/$eventId")({
 
 function EventError({ error }: { error: unknown }) {
 	const gone = error instanceof HttpError && error.code === "gone";
+	const limited =
+		!gone && error instanceof HttpError && error.status === 429;
 	return (
 		<div className="page-wrap py-16 text-center">
 			<h1 className="display-title text-3xl font-bold">
-				{gone ? "This event has expired" : "Event not found"}
+				{limited
+					? "Slow down — too many requests"
+					: gone
+						? "This event has expired"
+						: "Event not found"}
 			</h1>
 			<p className="mt-2 text-muted-foreground">
-				{gone
-					? "Events are deleted after they pass to free up space."
-					: "Check the link and try again."}
+				{limited
+					? "Wait a moment, then try again."
+					: gone
+						? "Events are deleted after they pass to free up space."
+						: "Check the link and try again."}
 			</p>
-			<Button asChild className="mt-4">
-				<a href="/">Plan a new event</a>
-			</Button>
+			{limited ? (
+				<Button
+					className="mt-4"
+					onClick={() => window.location.reload()}
+					type="button"
+				>
+					Retry
+				</Button>
+			) : (
+				<Button asChild className="mt-4">
+					<a href="/">Plan a new event</a>
+				</Button>
+			)}
 		</div>
 	);
 }
