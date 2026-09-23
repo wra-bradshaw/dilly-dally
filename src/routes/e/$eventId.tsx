@@ -27,6 +27,7 @@ import {
 	type EventDetailResponse,
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
+import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
 
 export const Route = createFileRoute("/e/$eventId")({
@@ -195,31 +196,15 @@ function EventPage() {
 			setActiveName(own.name);
 			setStoredName(own.name);
 		} catch (err) {
-			if (err instanceof HttpError && err.code === "invalid_password") {
-				setSignError("That name is taken with a different password.");
+			const decision = decideSignInError(err, eventMissing);
+			if (decision.kind === "message") {
+				setSignError(decision.text);
 				return;
 			}
-			if (
-				err instanceof HttpError &&
-				(err.code === "availability_not_found" ||
-					(err.status === 404 && !eventMissing))
-			) {
-				lastSavedRef.current = new Set();
-				setSelected(new Set());
-				setActiveName(name.trim());
-				setStoredName(name.trim());
-			} else if (
-				err instanceof HttpError &&
-				(err.code === "gone" ||
-					(err.status === 404 && eventMissing) ||
-					err.status === 410)
-			) {
-				setSignError("This event is gone. Check the link and try again.");
-				return;
-			} else {
-				setSignError("Could not sign in. Try again.");
-				return;
-			}
+			lastSavedRef.current = new Set();
+			setSelected(new Set());
+			setActiveName(name.trim());
+			setStoredName(name.trim());
 		} finally {
 			setSigning(false);
 		}
@@ -231,22 +216,7 @@ function EventPage() {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(lastSavedRef.current));
 			}
-			if (err instanceof HttpError && err.code === "invalid_password") {
-				setSaveState("Wrong password for this name. Change reverted.");
-			} else if (err instanceof HttpError && err.code === "invalid_slot") {
-				setSaveState("Some times are outside the event. Reload and retry.");
-			} else if (
-				err instanceof HttpError &&
-				(err.code === "gone" || err.status === 410)
-			) {
-				setSaveState("This event has expired. Reload the page.");
-			} else if (err instanceof HttpError && err.code === "bad_request") {
-				setSaveState("Could not save. Check your input and retry.");
-			} else if (err instanceof HttpError && err.code === "rate_limited") {
-				setSaveState("Saving too fast. Change reverted; paint again.");
-			} else {
-				setSaveState("Could not save. Change reverted.");
-			}
+			setSaveState(saveErrorMessage(err));
 		},
 		onSuccess: (value) => {
 			lastSavedRef.current = new Set(value);
