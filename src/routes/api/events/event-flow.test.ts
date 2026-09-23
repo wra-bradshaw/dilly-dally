@@ -109,6 +109,15 @@ describe("event flow", () => {
 		expect(res.status).toBe(400);
 	});
 
+	it("checks own-availability rate limit before the name check", async () => {
+		stubRateLimiter(denyNamespace());
+		const res = await getOwnAvailabilityResponse(
+			"AbC123_-XyZ9",
+			new Request("https://x.test/api/events/x/availability"),
+		);
+		expect(res.status).toBe(429);
+	});
+
 	it("maps expired events to 410", async () => {
 		const db = (globalThis as unknown as Record<string, unknown>)
 			.__testDb as Parameters<typeof insertEvent>[0];

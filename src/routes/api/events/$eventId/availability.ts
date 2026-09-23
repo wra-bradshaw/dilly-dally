@@ -67,6 +67,12 @@ export async function getOwnAvailabilityResponse(
 	request: Request,
 ): Promise<Response> {
 	const noStore = { noStore: true } as const;
+	const db = getDb();
+	const now = Date.now();
+	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
+		noStore: true,
+	});
+	if (throttled) return throttled;
 	const name = new URL(request.url).searchParams.get("name") ?? "";
 	if (!name.trim()) {
 		return jsonError(
@@ -77,12 +83,6 @@ export async function getOwnAvailabilityResponse(
 			noStore,
 		);
 	}
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
-		noStore: true,
-	});
-	if (throttled) return throttled;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded, noStore);
