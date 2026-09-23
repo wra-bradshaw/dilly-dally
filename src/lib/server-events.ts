@@ -64,7 +64,13 @@ export async function createEventInDb(
 			});
 			inserted = true;
 		} catch (err) {
-			if (!isIdCollision(err)) return null;
+			if (!isIdCollision(err)) {
+				console.error("createEventInDb insert failed", {
+					attempt,
+					mode,
+				});
+				return null;
+			}
 			id = generateEventId();
 		}
 	}
