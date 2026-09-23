@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { heatmapAnnounce } from "#/lib/event-messages";
 import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 import {
@@ -9,6 +8,7 @@ import {
 	HEATMAP_FILL_RGB,
 	HEATMAP_TEXT_RGB,
 	heatmapAlpha,
+	heatmapAnnounce,
 } from "./group-heatmap";
 
 function cols() {

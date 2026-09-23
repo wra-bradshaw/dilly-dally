@@ -9,7 +9,7 @@ import {
 	summarizeDates,
 	summarizeWeekdays,
 } from "#/components/grid-model";
-import { GroupHeatmap } from "#/components/group-heatmap";
+import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -27,11 +27,7 @@ import {
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
-import {
-	decideSignInError,
-	heatmapAnnounce,
-	saveErrorMessage,
-} from "#/lib/event-messages";
+import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { HttpError } from "#/lib/http-error";
 
 export const Route = createFileRoute("/e/$eventId")({

@@ -19,6 +19,10 @@ export function heatmapAlpha(count: number, max: number): number {
 	return Math.min(0.6, 0.15 + 0.75 * ratio);
 }
 
+export function heatmapAnnounce(signedIn: boolean): boolean {
+	return !signedIn;
+}
+
 interface GroupHeatmapProps {
 	columns: GridColumn[];
 	counts: Map<string, CellCount>;
