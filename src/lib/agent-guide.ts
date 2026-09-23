@@ -96,7 +96,7 @@ curl 'HOST/api/events/AbC123_-XyZ9/availability?name=Alice' -H 'x-event-password
 
 - OpenAPI 3.1 with JSON Schemas: \`GET HOST/api/openapi.json\`
 - Use it with openapi-typescript / openapi-fetch for typed clients.
-- Errors look like \`{"error":{"code":"bad_request","message":"..."}}\`. Codes: \`bad_request\`, \`not_found\`, \`gone\`, \`invalid_password\`, \`invalid_slot\`, \`rate_limited\`.
+- Errors look like \`{"error":{"code":"bad_request","message":"..."}}\`. Codes: \`bad_request\`, \`not_found\`, \`availability_not_found\`, \`gone\`, \`invalid_password\`, \`invalid_slot\`, \`rate_limited\`. \`404\` with \`availability_not_found\` means the event exists but that name has no saved availability yet.
 - Rate limits per IP: create 10/hour, availability writes 30/min, reads 120/min. \`429\` includes \`Retry-After\`.
 
 ## 5. Human flow (for context)

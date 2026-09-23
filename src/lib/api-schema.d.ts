@@ -307,8 +307,17 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Not found */
+            /** @description Event not found, or no availability for this name (availability_not_found) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Expired */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -371,6 +380,15 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Expired */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

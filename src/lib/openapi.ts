@@ -408,7 +408,16 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 									schema: { $ref: "#/components/schemas/Error" },
 								},
 							},
-							description: "Not found",
+							description:
+								"Event not found, or no availability for this name (availability_not_found)",
+						},
+						"410": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Expired",
 						},
 						"429": {
 							content: {
@@ -471,6 +480,14 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 								},
 							},
 							description: "Not found",
+						},
+						"410": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Expired",
 						},
 						"422": {
 							content: {
