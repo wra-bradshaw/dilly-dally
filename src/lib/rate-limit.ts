@@ -16,3 +16,33 @@ export const RATE_LIMITS = {
 	createEvent: { limit: 10, windowMs: 3_600_000 },
 	read: { limit: 120, windowMs: 60_000 },
 } as const;
+
+export interface RateLimitState {
+	count: number;
+	windowStart: number;
+}
+
+export interface RateLimitResult {
+	allowed: boolean;
+	remaining: number;
+	resetMs: number;
+}
+
+export function decideRateLimit(
+	stored: RateLimitState | null,
+	nowMs: number,
+	windowMs: number,
+	limit: number,
+): { next: RateLimitState; result: RateLimitResult } {
+	const ws = windowStartFor(nowMs, windowMs);
+	const count =
+		stored !== null && stored.windowStart === ws ? stored.count + 1 : 1;
+	return {
+		next: { count, windowStart: ws },
+		result: {
+			allowed: count <= limit,
+			remaining: Math.max(0, limit - count),
+			resetMs: ws + windowMs,
+		},
+	};
+}
