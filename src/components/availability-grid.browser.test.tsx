@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
@@ -139,6 +140,26 @@ test("repeat keydown does not toggle the focused slot", async () => {
 		}),
 	);
 	expect(onCommit).not.toHaveBeenCalled();
+});
+
+test("trusted key presses toggle exactly once per press", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	(cell.element() as HTMLButtonElement).focus();
+	await expect.element(cell).toHaveFocus();
+	await userEvent.keyboard("{Enter}");
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	await userEvent.keyboard(" ");
+	expect(onCommit).toHaveBeenCalledTimes(2);
 });
 
 test("Home and End jump focus across dates", async () => {
