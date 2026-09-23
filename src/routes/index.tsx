@@ -13,6 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "#/components/ui/select";
+import { WeekdayPicker } from "#/components/weekday-picker";
 import { createEvent, HttpError } from "#/lib/client";
 import { formatSlotLabel } from "#/lib/time-slots";
 
@@ -51,16 +52,6 @@ function allTimezones(): string[] {
 	return [browserTimezone()];
 }
 
-const WEEKDAY_OPTIONS = [
-	{ label: "Sun", value: 0 },
-	{ label: "Mon", value: 1 },
-	{ label: "Tue", value: 2 },
-	{ label: "Wed", value: 3 },
-	{ label: "Thu", value: 4 },
-	{ label: "Fri", value: 5 },
-	{ label: "Sat", value: 6 },
-];
-
 function Home() {
 	const navigate = useNavigate();
 	const [title, setTitle] = useState("");
@@ -76,15 +67,6 @@ function Home() {
 	const [saving, setSaving] = useState(false);
 	const minDate = todayPlus(0);
 	const maxDate = todayPlus(90);
-
-	const toggleWeekday = (day: number) => {
-		setWeekdays((prev) => {
-			const next = new Set(prev);
-			if (next.has(day)) next.delete(day);
-			else next.add(day);
-			return next;
-		});
-	};
 
 	const submit = async () => {
 		setError("");
@@ -236,26 +218,10 @@ function Home() {
 									</output>
 								</Label>
 								<p className="text-xs text-muted-foreground">
-									Availability means that weekday generally, every week.
+									Availability means that weekday generally, every week. Click
+									and drag weekdays to choose possibilities.
 								</p>
-								<fieldset className="flex flex-wrap gap-1">
-									<legend className="sr-only">Weekdays</legend>
-									{WEEKDAY_OPTIONS.map((d) => (
-										<button
-											aria-pressed={weekdays.has(d.value)}
-											className={
-												weekdays.has(d.value)
-													? "rounded-md border border-emerald-700 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900"
-													: "rounded-md border border-input px-2 py-1 text-xs text-muted-foreground"
-											}
-											key={d.value}
-											onClick={() => toggleWeekday(d.value)}
-											type="button"
-										>
-											{d.label}
-										</button>
-									))}
-								</fieldset>
+								<WeekdayPicker onCommit={setWeekdays} selected={weekdays} />
 							</div>
 						)}
 						<div className="grid gap-2">
