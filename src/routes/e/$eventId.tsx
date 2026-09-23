@@ -75,6 +75,7 @@ function EventPage() {
 	const detail = useEventDetail(eventId);
 	const eventMissing =
 		detail.isError &&
+		!detail.data &&
 		detail.error instanceof HttpError &&
 		(detail.error.status === 404 || detail.error.status === 410);
 	const queryClient = useQueryClient();
@@ -252,9 +253,32 @@ function EventPage() {
 		);
 	}
 
-	if (detail.isError) {
+	if (detail.isError && !detail.data) {
 		const err = detail.error;
 		const gone = err instanceof HttpError && err.code === "gone";
+		const retryable =
+			!(err instanceof HttpError) ||
+			err.status === 429 ||
+			err.status >= 500;
+		if (retryable && !gone) {
+			return (
+				<div className="page-wrap py-16 text-center">
+					<h1 className="display-title text-3xl font-bold">
+						Could not load this event
+					</h1>
+					<p className="mt-2 text-muted-foreground">
+						The server hiccuped. Your link is fine — try again.
+					</p>
+					<Button
+						className="mt-4"
+						onClick={() => void detail.refetch()}
+						type="button"
+					>
+						Retry
+					</Button>
+				</div>
+			);
+		}
 		return (
 			<div className="page-wrap py-16 text-center">
 				<h1 className="display-title text-3xl font-bold">
@@ -274,9 +298,25 @@ function EventPage() {
 
 	const total = allNames.length;
 	const url = inviteUrl(eventId);
+	const stale = detail.isError && detail.data !== undefined;
 
 	return (
 		<div className="page-wrap rise-in pb-16">
+			{stale && (
+				<p
+					className="mt-4 rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground"
+					role="status"
+				>
+					Couldn&apos;t refresh — showing the last update.{" "}
+					<button
+						className="nav-link text-sm"
+						onClick={() => void detail.refetch()}
+						type="button"
+					>
+						Retry
+					</button>
+				</p>
+			)}
 			<header className="flex items-center justify-between py-5">
 				<a className="display-title text-2xl font-bold" href="/">
 					Dilly-Dally
