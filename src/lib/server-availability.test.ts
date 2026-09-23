@@ -1,10 +1,12 @@
+import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { fetchEvent, insertEvent } from "./db";
+import { fetchEvent, getParticipantRow, insertEvent } from "./db";
 import {
 	getEventDetail,
 	getOwnAvailability,
 	upsertAvailability,
 } from "./server-availability";
+import * as schema from "./schema";
 import { createTestDb } from "./test-db";
 
 const event = {
@@ -147,6 +149,73 @@ describe("upsertAvailability", () => {
 		);
 		expect(wrong).toEqual({ code: "invalid_password", ok: false });
 	}, 20000);
+
+	it("fails closed when a password lands mid-claim instead of overwriting", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		await upsertAvailability(db, event, { name: "Cara", slots: [] }, 1000);
+		const res = await upsertAvailability(
+			db,
+			event,
+			{ name: "cara", password: "claim", slots: ["2026-10-05T09:00"] },
+			1001,
+			{
+				hash: async () => {
+					await db
+						.update(schema.participants)
+						.set({ passwordHash: "RIVAL" })
+						.where(
+							and(
+								eq(schema.participants.eventId, event.id),
+								eq(schema.participants.nameKey, "cara"),
+							),
+						);
+					return "NEW";
+				},
+				verify: async () => true,
+			},
+		);
+		expect(res).toEqual({ code: "invalid_password", ok: false });
+		const stored = await getParticipantRow(db, event.id, "cara");
+		expect(stored?.passwordHash).toBe("RIVAL");
+	});
+
+	it("fails closed when a protected hash rotates mid-save", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		await upsertAvailability(
+			db,
+			event,
+			{ name: "Bob", password: "old-pw", slots: [] },
+			1000,
+			{ hash: async () => "OLD", verify: async () => true },
+		);
+		const res = await upsertAvailability(
+			db,
+			event,
+			{ name: "bob", password: "old-pw", slots: ["2026-10-05T09:00"] },
+			1001,
+			{
+				hash: async () => "OLD",
+				verify: async () => {
+					await db
+						.update(schema.participants)
+						.set({ passwordHash: "RIVAL" })
+						.where(
+							and(
+								eq(schema.participants.eventId, event.id),
+								eq(schema.participants.nameKey, "bob"),
+							),
+						);
+					return true;
+				},
+			},
+		);
+		expect(res).toEqual({ code: "invalid_password", ok: false });
+		const stored = await getParticipantRow(db, event.id, "bob");
+		expect(stored?.passwordHash).toBe("RIVAL");
+		expect(stored?.slotsJson).toBe(JSON.stringify([]));
+	});
 });
 
 describe("getOwnAvailability", () => {

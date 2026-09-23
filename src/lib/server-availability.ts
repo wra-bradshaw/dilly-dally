@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
 	type DillyEvent,
 	type DrizzleDb,
@@ -36,19 +36,25 @@ async function applyUpdate(
 	| { ok: false; code: "invalid_password" }
 > {
 	const key = nameKey(input.name);
+	const guard =
+		existing.passwordHash === null
+			? isNull(schema.participants.passwordHash)
+			: eq(schema.participants.passwordHash, existing.passwordHash);
+	const scope = and(
+		eq(schema.participants.eventId, event.id),
+		eq(schema.participants.nameKey, key),
+		guard,
+	);
 	if (existing.passwordHash !== null) {
 		if (!input.password) return { code: "invalid_password", ok: false };
 		const valid = await deps.verify(input.password, existing.passwordHash);
 		if (!valid) return { code: "invalid_password", ok: false };
-		await db
+		const updated = await db
 			.update(schema.participants)
 			.set({ slotsJson: JSON.stringify(slots), updatedAt: now })
-			.where(
-				and(
-					eq(schema.participants.eventId, event.id),
-					eq(schema.participants.nameKey, key),
-				),
-			);
+			.where(scope)
+			.returning({ nameKey: schema.participants.nameKey });
+		if (updated.length === 0) return { code: "invalid_password", ok: false };
 		return {
 			ok: true,
 			result: {
@@ -60,19 +66,16 @@ async function applyUpdate(
 		};
 	}
 	const passwordHash = input.password ? await deps.hash(input.password) : null;
-	await db
+	const updated = await db
 		.update(schema.participants)
 		.set({
 			passwordHash,
 			slotsJson: JSON.stringify(slots),
 			updatedAt: now,
 		})
-		.where(
-			and(
-				eq(schema.participants.eventId, event.id),
-				eq(schema.participants.nameKey, key),
-			),
-		);
+		.where(scope)
+		.returning({ nameKey: schema.participants.nameKey });
+	if (updated.length === 0) return { code: "invalid_password", ok: false };
 	return {
 		ok: true,
 		result: {
