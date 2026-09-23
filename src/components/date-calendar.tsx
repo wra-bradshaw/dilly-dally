@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
-import { useDragPaint } from "#/hooks/use-drag-paint";
-import { paintTargetFromPoint } from "#/lib/paint-target";
+import { useState } from "react";
+import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import { formatMarkerDate } from "./grid-model";
 
@@ -47,23 +46,24 @@ export function DateCalendar({
 		return { m: now.getUTCMonth(), y: now.getUTCFullYear() };
 	});
 	const matrix = buildMonthMatrix(ym.y, ym.m);
-	const ref = useRef<HTMLDivElement>(null);
-	const suppressClick = useRef(false);
-	const clearTimer = useRef<number | undefined>(undefined);
 
 	const enabled = (day: string | null): day is string =>
 		day !== null && day >= minDate && day <= maxDate;
 
-	const drag = useDragPaint({
-		onCommit: (next) => {
-			const kept = new Set<string>();
-			for (const d of next) if (enabled(d)) kept.add(d);
-			for (const d of selected) {
-				if (!matrix.flat().includes(d) && d >= minDate && d <= maxDate)
-					kept.add(d);
-			}
-			onCommit(kept);
-		},
+	const commitEnabled = (next: Set<string>) => {
+		const kept = new Set<string>();
+		for (const d of next) if (enabled(d)) kept.add(d);
+		for (const d of selected) {
+			if (!matrix.flat().includes(d) && d >= minDate && d <= maxDate)
+				kept.add(d);
+		}
+		onCommit(kept);
+	};
+
+	const surface = usePaintSurface<string, HTMLDivElement>({
+		attr: "data-day",
+		onCommit: commitEnabled,
+		parse: identityParse,
 		selected,
 		values: matrix.flat().filter((d): d is string => d !== null),
 	});
@@ -83,44 +83,7 @@ export function DateCalendar({
 		setYm({ m: d.getUTCMonth(), y: d.getUTCFullYear() });
 	};
 
-	const capture = (e: React.PointerEvent) => {
-		try {
-			ref.current?.setPointerCapture?.(e.pointerId);
-		} catch {}
-	};
-
 	let blanks = 0;
-
-	const toggleDay = (day: string, detail: number) => {
-		if (detail !== 0) {
-			if (suppressClick.current) suppressClick.current = false;
-			return;
-		}
-		const next = new Set(selected);
-		if (next.has(day)) next.delete(day);
-		else next.add(day);
-		onCommit(next);
-	};
-
-	const moveToPoint = (clientX: number, clientY: number) => {
-		if (!drag.painting) return;
-		const day = paintTargetFromPoint(clientX, clientY, "data-day");
-		if (day) drag.onPointerEnter(day);
-	};
-
-	const finishAtPoint = (clientX: number, clientY: number) => {
-		const day = paintTargetFromPoint(clientX, clientY, "data-day");
-		if (day) {
-			suppressClick.current = true;
-			if (clearTimer.current !== undefined)
-				window.clearTimeout(clearTimer.current);
-			clearTimer.current = window.setTimeout(() => {
-				suppressClick.current = false;
-				clearTimer.current = undefined;
-			}, 300);
-		}
-		drag.onPointerUp(day ?? undefined);
-	};
 
 	return (
 		<div>
@@ -148,12 +111,12 @@ export function DateCalendar({
 			<div
 				className={cn(
 					"grid grid-cols-7 gap-1 select-none",
-					drag.painting && "touch-none",
+					surface.painting && "touch-none",
 				)}
-				onPointerCancel={drag.onPointerCancel}
-				onPointerMove={(e) => moveToPoint(e.clientX, e.clientY)}
-				onPointerUp={(e) => finishAtPoint(e.clientX, e.clientY)}
-				ref={ref}
+				onPointerCancel={surface.onPointerCancel}
+				onPointerMove={surface.onPointerMove}
+				onPointerUp={surface.onPointerUp}
+				ref={surface.containerRef}
 			>
 				{[
 					{ full: "Sunday", short: "S" },
@@ -179,7 +142,7 @@ export function DateCalendar({
 						return <div key={`blank-${ym.y}-${ym.m}-${blanks}`} />;
 					}
 					const off = !enabled(day);
-					const on = drag.preview.has(day);
+					const on = surface.preview.has(day);
 					const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
 					return (
 						<button
@@ -199,21 +162,15 @@ export function DateCalendar({
 							disabled={off}
 							data-day={day}
 							key={day}
-							onClick={(e) => toggleDay(day, e.detail)}
+							onClick={(e) => surface.toggle(day, e.detail)}
 							onPointerDown={(e) => {
 								if (off) return;
 								if (e.button !== 0 && e.pointerType === "mouse") return;
-								if (clearTimer.current !== undefined) {
-									window.clearTimeout(clearTimer.current);
-									clearTimer.current = undefined;
-								}
-								suppressClick.current = false;
-								capture(e);
-								drag.onPointerDown(day);
+								surface.start(day, e);
 							}}
 							onPointerEnter={() => {
 								if (off) return;
-								drag.onPointerEnter(day);
+								surface.hover(day);
 							}}
 							type="button"
 						>
