@@ -195,6 +195,16 @@ describe("write guards", () => {
 		expect(contentLengthTooLarge(small)).toBe(false);
 	});
 
+	it("honors a custom byte cap in the content-length pre-check", () => {
+		const req = new Request("https://x.test/", {
+			headers: { "content-length": "200" },
+			method: "POST",
+		});
+		expect(contentLengthTooLarge(req, 100)).toBe(true);
+		expect(contentLengthTooLarge(req, 200)).toBe(false);
+		expect(contentLengthTooLarge(req)).toBe(false);
+	});
+
 	it("requires application/json content type", () => {
 		const json = new Request("https://x.test/", {
 			headers: { "content-type": "application/json; charset=utf-8" },

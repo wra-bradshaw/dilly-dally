@@ -70,7 +70,7 @@ export async function readGuardedJson<T>(
 	schema: ZodType<T>,
 	maxBytes: number = MAX_JSON_BYTES,
 ): Promise<GuardedJson<T>> {
-	if (contentLengthTooLarge(request))
+	if (contentLengthTooLarge(request, maxBytes))
 		return {
 			ok: false,
 			response: jsonError("bad_request", "Payload too large", 413),
@@ -120,11 +120,14 @@ export function originOf(request: Request): string {
 	return new URL(request.url).origin;
 }
 
-export function contentLengthTooLarge(request: Request): boolean {
+export function contentLengthTooLarge(
+	request: Request,
+	maxBytes: number = MAX_JSON_BYTES,
+): boolean {
 	const raw = request.headers.get("content-length");
 	if (!raw) return false;
 	const n = Number(raw);
-	return Number.isFinite(n) && n > MAX_JSON_BYTES;
+	return Number.isFinite(n) && n > maxBytes;
 }
 
 export function isJsonContentType(request: Request): boolean {
