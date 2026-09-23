@@ -1,8 +1,15 @@
-import { type DillyEvent, type DrizzleDb, deleteEvent, fetchEvent } from "./db";
+import {
+	type DillyEvent,
+	type DrizzleDb,
+	deleteEvent,
+	fetchEvent,
+	listParticipants,
+} from "./db";
 import { isValidEventId } from "./event-ids";
 import { isExpired } from "./expiry";
 import { HttpError } from "./http-error";
-import { getEventDetail } from "./server-availability";
+import { toEventDto } from "./server-events";
+import { buildEventUniverse, computeCounts, findBestTimes } from "./time-slots";
 
 type LiveEventResult =
 	| { event: DillyEvent; ok: true }
@@ -25,6 +32,29 @@ export async function loadLiveEvent(
 		return { code: "gone", ok: false, status: 410 };
 	}
 	return { event, ok: true };
+}
+
+export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
+	const universe = buildEventUniverse(event);
+	const parts = await listParticipants(db, event.id);
+	const counts = computeCounts(
+		universe,
+		parts.map((p) => ({ name: p.name, slots: p.slots })),
+	);
+	return {
+		bestTimes: findBestTimes(counts, 10).map((c) => ({
+			count: c.count,
+			slot: c.slot,
+		})),
+		counts,
+		event: toEventDto(event),
+		participants: parts.map((p) => ({
+			count: p.slots.length,
+			name: p.name,
+			updatedAt: new Date(p.updatedAt).toISOString(),
+		})),
+		slotUniverse: universe,
+	};
 }
 
 export async function loadEventDetailFromDb(

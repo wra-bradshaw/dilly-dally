@@ -2,11 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { fetchEvent, getParticipantRow, insertEvent } from "./db";
 import * as schema from "./schema";
-import {
-	getEventDetail,
-	getOwnAvailability,
-	upsertAvailability,
-} from "./server-availability";
+import { getOwnAvailability, upsertAvailability } from "./server-availability";
+import { getEventDetail } from "./server-event-detail";
 import { createTestDb } from "./test-db";
 
 const event = {

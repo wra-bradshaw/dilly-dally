@@ -3,18 +3,11 @@ import {
 	type DillyEvent,
 	type DrizzleDb,
 	getParticipantRow,
-	listParticipants,
 	parseSlotsJson,
 } from "./db";
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
-import { toEventDto } from "./server-events";
-import {
-	buildEventUniverse,
-	computeCounts,
-	findBestTimes,
-	normalizeSlots,
-} from "./time-slots";
+import { buildEventUniverse, normalizeSlots } from "./time-slots";
 import { type AvailabilityInput, nameKey } from "./validation";
 
 export interface AvailabilityResult {
@@ -170,28 +163,5 @@ export async function getOwnAvailability(
 		name: existing.nameDisplay,
 		ok: true,
 		slots: parseSlotsJson(existing.slotsJson),
-	};
-}
-
-export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
-	const universe = buildEventUniverse(event);
-	const parts = await listParticipants(db, event.id);
-	const counts = computeCounts(
-		universe,
-		parts.map((p) => ({ name: p.name, slots: p.slots })),
-	);
-	return {
-		bestTimes: findBestTimes(counts, 10).map((c) => ({
-			count: c.count,
-			slot: c.slot,
-		})),
-		counts,
-		event: toEventDto(event),
-		participants: parts.map((p) => ({
-			count: p.slots.length,
-			name: p.name,
-			updatedAt: new Date(p.updatedAt).toISOString(),
-		})),
-		slotUniverse: universe,
 	};
 }

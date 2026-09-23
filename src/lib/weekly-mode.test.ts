@@ -6,7 +6,8 @@ import {
 	toPublicEvent,
 } from "./db";
 import { computeExpiry, EVENT_TTL_DAYS } from "./expiry";
-import { getEventDetail, upsertAvailability } from "./server-availability";
+import { upsertAvailability } from "./server-availability";
+import { getEventDetail } from "./server-event-detail";
 import { createTestDb } from "./test-db";
 import {
 	buildEventUniverse,
