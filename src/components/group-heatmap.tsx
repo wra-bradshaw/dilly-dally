@@ -52,7 +52,7 @@ export function GroupHeatmap({
 						<button
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
-								"block h-5 w-full cursor-default border-r border-b border-l first:border-t",
+								"block h-6 w-full cursor-default border-r border-b border-l first:border-t",
 								(counts.get(cell.id)?.count ?? 0) === 0
 									? "border-rose-200 bg-rose-50"
 									: "border-emerald-800",

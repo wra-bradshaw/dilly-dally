@@ -132,7 +132,7 @@ export function AvailabilityGrid({
 							aria-label={`${ctx.segment.label} ${cell.label}`}
 							aria-pressed={drag.preview.has(cell.id)}
 							className={cn(
-								"block h-5 w-full border-r border-b border-l first:border-t",
+								"block h-6 w-full border-r border-b border-l first:border-t",
 								drag.preview.has(cell.id)
 									? "border-emerald-700 bg-emerald-400"
 									: "border-rose-200 bg-rose-100 hover:bg-rose-200",
@@ -163,7 +163,7 @@ export function AvailabilityGrid({
 							type="button"
 						/>
 					)}
-					tableClassName="touch-none"
+					tableClassName={drag.painting ? "touch-none" : undefined}
 					tableLabel="Your availability. Click or drag to paint times you are free. Use arrow keys to move, space to toggle."
 					tableRef={ref}
 				/>

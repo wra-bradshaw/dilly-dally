@@ -160,7 +160,7 @@ export function TimeGrid({
 						return (
 							<tr key={`row-${r}`}>
 								<th
-									className="pr-1 text-right align-top text-[10px] leading-5 font-normal text-muted-foreground"
+									className="pr-1 text-right align-top text-[10px] leading-6 font-normal text-muted-foreground"
 									scope="row"
 								>
 									{gutter?.hourStart ? gutter.label : ""}
@@ -179,7 +179,7 @@ export function TimeGrid({
 													aria-hidden="true"
 													className="border-r border-dashed border-muted-foreground/40 bg-muted/40 p-0"
 												>
-													<span className="block h-5 w-4" />
+													<span className="block h-6 w-4" />
 												</td>
 											) : null}
 											{cell && segment ? (
@@ -194,7 +194,7 @@ export function TimeGrid({
 												</td>
 											) : (
 												<td className="p-0">
-													<span className="block h-5 w-full" />
+													<span className="block h-6 w-full" />
 												</td>
 											)}
 										</Fragment>
