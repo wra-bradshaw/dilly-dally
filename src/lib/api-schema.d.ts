@@ -64,7 +64,7 @@ export interface components {
             name: string;
             /** @description Optional password. Sent only over HTTPS, never stored in plain text. */
             password?: string;
-            /** @description Full replace set of slot ids. Empty array means unavailable everywhere. */
+            /** @description Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15. Empty array means unavailable everywhere. */
             slots: components["schemas"]["SlotId"][];
         };
         AvailabilityResponse: {
@@ -74,16 +74,35 @@ export interface components {
             updatedAt: string;
         };
         CreateEventRequest: {
-            /** @description 1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. */
-            dates: string[];
+            /** @description 1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. Required when mode is dates (the default). Omit or send [] for weekly events. */
+            dates?: string[];
             /** @example 17:00 */
             endTime: string;
+            mode?: components["schemas"]["EventMode"];
             /** @example 09:00 */
             startTime: string;
             /** @example America/New_York */
             timezone: string;
             title: string;
+            /** @description Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri. */
+            weekdays?: components["schemas"]["Weekday"][];
         };
+        /**
+         * @description dates picks specific dates; weekly repeats on weekdays.
+         * @example dates
+         * @enum {string}
+         */
+        EventMode: "dates" | "weekly";
+        /**
+         * @description Day of week, 0=Sunday through 6=Saturday.
+         * @example 1
+         */
+        Weekday: number;
+        /**
+         * @description Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.
+         * @example MON-09:15
+         */
+        WeeklySlotId: string;
         CreateEventResponse: {
             event: components["schemas"]["Event"];
             id: string;
@@ -100,16 +119,20 @@ export interface components {
         };
         Event: {
             createdAt: string;
+            /** @description Specific dates for dates events; empty array for weekly events. */
             dates: string[];
             endTime: string;
             expiresAt: string;
             id: string;
+            mode: components["schemas"]["EventMode"];
             startTime: string;
             timezone: string;
             title: string;
+            /** @description Weekdays for weekly events, 0=Sunday through 6=Saturday; empty array for dates events. */
+            weekdays: components["schemas"]["Weekday"][];
         };
         /**
-         * @description Slot id in event-timezone wall time
+         * @description Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15.
          * @example 2026-10-05T09:15
          */
         SlotId: string;

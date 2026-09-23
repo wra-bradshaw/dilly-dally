@@ -29,9 +29,18 @@ export interface OpenApiSpec {
 
 export function getOpenApiSpec(origin: string): OpenApiSpec {
 	const slotId: OpenApiSchema = {
-		description: "Slot id in event-timezone wall time",
+		description:
+			"Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15.",
 		example: "2026-10-05T09:15",
-		pattern: "^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|15|30|45)$",
+		pattern:
+			"^(\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|15|30|45)|(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|15|30|45))$",
+		type: "string",
+	};
+	const weeklySlotId: OpenApiSchema = {
+		description:
+			"Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.",
+		example: "MON-09:15",
+		pattern: "^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|15|30|45)$",
 		type: "string",
 	};
 	return {
@@ -49,7 +58,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 						slots: {
 							description:
-								"Full replace set of slot ids. Empty array means unavailable everywhere.",
+								"Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15. Empty array means unavailable everywhere.",
 							items: { $ref: "#/components/schemas/SlotId" },
 							maxItems: 1488,
 							type: "array",
@@ -72,7 +81,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 					properties: {
 						dates: {
 							description:
-								"1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive.",
+								"1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. Required when mode is dates (the default). Omit or send [] for weekly events.",
 							items: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
 							maxItems: 31,
 							minItems: 1,
@@ -83,6 +92,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							pattern: "^([01]\\d|2[0-3]):00$",
 							type: "string",
 						},
+						mode: { $ref: "#/components/schemas/EventMode" },
 						startTime: {
 							example: "09:00",
 							pattern: "^([01]\\d|2[0-3]):00$",
@@ -90,10 +100,31 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 						timezone: { example: "America/New_York", type: "string" },
 						title: { maxLength: 100, minLength: 1, type: "string" },
+						weekdays: {
+							description:
+								"Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri.",
+							items: { $ref: "#/components/schemas/Weekday" },
+							maxItems: 7,
+							minItems: 1,
+							type: "array",
+						},
 					},
-					required: ["title", "dates", "startTime", "endTime", "timezone"],
+					required: ["title", "startTime", "endTime", "timezone"],
 					type: "object",
 				},
+				EventMode: {
+					description:
+						"dates picks specific dates; weekly repeats on weekdays.",
+					enum: ["dates", "weekly"],
+					example: "dates",
+					type: "string",
+				},
+				Weekday: {
+					description: "Day of week, 0=Sunday through 6=Saturday.",
+					example: 1,
+					type: "integer",
+				},
+				WeeklySlotId: weeklySlotId,
 				CreateEventResponse: {
 					properties: {
 						event: { $ref: "#/components/schemas/Event" },
@@ -127,18 +158,32 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 				Event: {
 					properties: {
 						createdAt: { type: "string" },
-						dates: { items: { type: "string" }, type: "array" },
+						dates: {
+							description:
+								"Specific dates for dates events; empty array for weekly events.",
+							items: { type: "string" },
+							type: "array",
+						},
 						endTime: { type: "string" },
 						expiresAt: { type: "string" },
 						id: { type: "string" },
+						mode: { $ref: "#/components/schemas/EventMode" },
 						startTime: { type: "string" },
 						timezone: { type: "string" },
 						title: { type: "string" },
+						weekdays: {
+							description:
+								"Weekdays for weekly events, 0=Sunday through 6=Saturday; empty array for dates events.",
+							items: { $ref: "#/components/schemas/Weekday" },
+							type: "array",
+						},
 					},
 					required: [
 						"id",
 						"title",
+						"mode",
 						"dates",
+						"weekdays",
 						"startTime",
 						"endTime",
 						"timezone",

@@ -9,7 +9,7 @@ import {
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
 import {
-	buildSlotUniverse,
+	buildEventUniverse,
 	computeCounts,
 	findBestTimes,
 	normalizeSlots,
@@ -42,13 +42,7 @@ export async function upsertAvailability(
 	| { ok: true; result: AvailabilityResult }
 	| { ok: false; code: "invalid_password" | "invalid_slot" }
 > {
-	const universe = new Set(
-		buildSlotUniverse({
-			dates: event.dates,
-			endTime: event.endTime,
-			startTime: event.startTime,
-		}),
-	);
+	const universe = new Set(buildEventUniverse(event));
 	for (const s of input.slots) {
 		if (!universe.has(s)) return { code: "invalid_slot", ok: false };
 	}
@@ -151,11 +145,7 @@ export async function getOwnAvailability(
 }
 
 export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
-	const universe = buildSlotUniverse({
-		dates: event.dates,
-		endTime: event.endTime,
-		startTime: event.startTime,
-	});
+	const universe = buildEventUniverse(event);
 	const parts = await listParticipants(db, event.id);
 	const counts = computeCounts(
 		universe,
@@ -173,9 +163,11 @@ export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
 			endTime: event.endTime,
 			expiresAt: new Date(event.expiresAt).toISOString(),
 			id: event.id,
+			mode: event.mode ?? "dates",
 			startTime: event.startTime,
 			timezone: event.timezone,
 			title: event.title,
+			weekdays: event.weekdays ?? [],
 		},
 		participants: parts.map((p) => ({
 			count: p.slots.length,

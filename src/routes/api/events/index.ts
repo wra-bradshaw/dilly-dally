@@ -36,6 +36,12 @@ export const Route = createFileRoute("/api/events/")({
 					);
 				}
 				const input: CreateEventInput = parsed.data;
+				const mode = input.mode ?? "dates";
+				const dates = mode === "weekly" ? [] : [...(input.dates ?? [])].sort();
+				const weekdays =
+					mode === "weekly"
+						? [...new Set(input.weekdays ?? [])].sort((a, b) => a - b)
+						: [];
 				const db = getDb();
 				const now = Date.now();
 				const key = await rateLimitKey(clientIp(request), "create_event");
@@ -55,16 +61,20 @@ export const Route = createFileRoute("/api/events/")({
 					try {
 						await insertEvent(db, {
 							createdAt: now,
-							dates: [...input.dates].sort(),
+							dates,
 							endTime: input.endTime,
 							expiresAt: computeExpiry({
 								createdAt: now,
-								dates: input.dates,
+								dates,
+								mode,
+								weekdays,
 							}),
 							id,
+							mode,
 							startTime: input.startTime,
 							timezone: input.timezone,
 							title: input.title,
+							weekdays,
 						});
 						inserted = true;
 					} catch {
@@ -82,9 +92,11 @@ export const Route = createFileRoute("/api/events/")({
 					endTime: event.endTime,
 					expiresAt: new Date(event.expiresAt).toISOString(),
 					id: event.id,
+					mode: event.mode ?? "dates",
 					startTime: event.startTime,
 					timezone: event.timezone,
 					title: event.title,
+					weekdays: event.weekdays ?? [],
 				};
 				const res: components["schemas"]["CreateEventResponse"] = {
 					event: dto,
