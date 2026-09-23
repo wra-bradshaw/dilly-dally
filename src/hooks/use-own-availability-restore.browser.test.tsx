@@ -255,8 +255,6 @@ test("expired event shows gone banner with disabled grid and no retry", async ()
 		.toBeVisible();
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
 	await expect.element(cell).toBeDisabled();
-	expect(screen.getByRole("button", { name: "Retry" }).all()).toHaveLength(
-		0,
-	);
+	expect(screen.getByRole("button", { name: "Retry" }).all()).toHaveLength(0);
 	expect(fetchAvailability).toHaveBeenCalledTimes(1);
 });

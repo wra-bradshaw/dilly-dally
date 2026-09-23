@@ -69,12 +69,7 @@ describe("buildEventUniverse", () => {
 				startTime: "09:00",
 				weekdays: [1],
 			}),
-		).toEqual([
-			"MON-09:00",
-			"MON-09:15",
-			"MON-09:30",
-			"MON-09:45",
-		]);
+		).toEqual(["MON-09:00", "MON-09:15", "MON-09:30", "MON-09:45"]);
 	});
 });
 

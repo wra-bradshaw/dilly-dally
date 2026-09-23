@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { HttpError } from "./http-error";
 import { decideSignInError, saveErrorMessage } from "./event-messages";
+import { HttpError } from "./http-error";
 
 describe("saveErrorMessage", () => {
 	it("maps invalid_password to wrong-password recovery", () => {

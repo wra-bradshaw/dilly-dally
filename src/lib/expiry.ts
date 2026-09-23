@@ -14,8 +14,7 @@ export function computeExpiry(args: {
 	const lastDate = [...args.dates].sort().at(-1);
 	if (!lastDate) return cap;
 	const graceEnd =
-		new Date(`${lastDate}T00:00:00.000Z`).getTime() +
-		EVENT_GRACE_DAYS * DAY_MS;
+		new Date(`${lastDate}T00:00:00.000Z`).getTime() + EVENT_GRACE_DAYS * DAY_MS;
 	return Math.min(cap, graceEnd);
 }
 

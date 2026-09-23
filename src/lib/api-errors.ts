@@ -12,7 +12,10 @@ export function jsonError(
 		"Content-Type": "application/json",
 	};
 	if (opts?.noStore) headers["Cache-Control"] = "no-store";
-	return Response.json({ error: { code, fields, message } }, { headers, status });
+	return Response.json(
+		{ error: { code, fields, message } },
+		{ headers, status },
+	);
 }
 
 export function securityHeaders(): Record<string, string> {
@@ -62,7 +65,7 @@ export function originOf(request: Request): string {
 	return new URL(request.url).origin;
 }
 
-export const MAX_JSON_BYTES = 262_144;
+const MAX_JSON_BYTES = 262_144;
 
 export function contentLengthTooLarge(request: Request): boolean {
 	const raw = request.headers.get("content-length");
@@ -80,8 +83,7 @@ export async function readCappedJson(
 	request: Request,
 	maxBytes: number = MAX_JSON_BYTES,
 ): Promise<
-	| { ok: true; value: unknown }
-	| { ok: false; reason: "too_large" | "invalid" }
+	{ ok: true; value: unknown } | { ok: false; reason: "too_large" | "invalid" }
 > {
 	if (!request.body) {
 		try {

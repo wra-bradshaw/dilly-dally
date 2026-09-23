@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type RefObject } from "react";
+import { type RefObject, useCallback, useMemo, useState } from "react";
 import type { GridColumn, GridPos } from "#/components/grid-model";
 
 export function useGridKeyboardNav(

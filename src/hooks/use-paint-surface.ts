@@ -84,8 +84,7 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	const finishAtPoint = useCallback(
 		(clientX: number, clientY: number) => {
 			const raw = paintTargetFromPoint(clientX, clientY, attr);
-			const target =
-				raw === null ? undefined : parse(raw);
+			const target = raw === null ? undefined : parse(raw);
 			if (target !== undefined) {
 				suppressClick.current = true;
 				if (clearTimer.current !== undefined)

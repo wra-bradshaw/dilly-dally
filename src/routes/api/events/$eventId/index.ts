@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { clientIp, jsonError, rateLimited, securityHeaders } from "#/lib/api-errors";
-import { HttpError } from "#/lib/http-error";
+import {
+	clientIp,
+	jsonError,
+	rateLimited,
+	securityHeaders,
+} from "#/lib/api-errors";
 import { getDb } from "#/lib/db-env";
+import { HttpError } from "#/lib/http-error";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
 import { loadEventDetailFromDb } from "#/lib/server-event-detail";
 import { checkRateLimit } from "#/lib/server-rate-limit";

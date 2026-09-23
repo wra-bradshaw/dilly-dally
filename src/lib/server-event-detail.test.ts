@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { HttpError } from "./http-error";
 import { fetchEvent, insertEvent } from "./db";
+import { HttpError } from "./http-error";
 import { upsertAvailability } from "./server-availability";
 import { loadEventDetailFromDb } from "./server-event-detail";
 import { createTestDb } from "./test-db";

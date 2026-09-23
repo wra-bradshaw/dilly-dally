@@ -2,8 +2,6 @@ import createClient from "openapi-fetch";
 import type { components, paths } from "./api-schema";
 import { HttpError } from "./http-error";
 
-export { HttpError };
-
 export type CreateEventRequest = components["schemas"]["CreateEventRequest"];
 export type CreateEventResponse = components["schemas"]["CreateEventResponse"];
 export type EventDetailResponse = components["schemas"]["EventDetailResponse"];
@@ -12,7 +10,6 @@ export type AvailabilityResponse =
 	components["schemas"]["AvailabilityResponse"];
 export type OwnAvailabilityResponse =
 	components["schemas"]["OwnAvailabilityResponse"];
-
 
 const client = createClient<paths>({
 	baseUrl:

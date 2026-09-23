@@ -1,8 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
 import { env } from "cloudflare:workers";
-import { handleCreate } from "./index";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+	getOwnAvailabilityResponse,
+	saveAvailability,
+} from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
-import { getOwnAvailabilityResponse, saveAvailability } from "./$eventId/availability";
+import { handleCreate } from "./index";
 
 function allowNamespace() {
 	return {
@@ -29,11 +32,11 @@ function denyNamespace() {
 }
 
 function stubRateLimiter(namespace: unknown) {
-	(env as Record<string, unknown>).RATE_LIMITER = namespace;
+	(env as unknown as Record<string, unknown>).RATE_LIMITER = namespace;
 }
 
 afterEach(() => {
-	delete (env as Record<string, unknown>).RATE_LIMITER;
+	delete (env as unknown as Record<string, unknown>).RATE_LIMITER;
 });
 
 function postRequest(body: unknown, contentType = "application/json") {
@@ -47,9 +50,7 @@ function postRequest(body: unknown, contentType = "application/json") {
 describe("create guards", () => {
 	it("checks the rate limit before parsing or validating", async () => {
 		stubRateLimiter(denyNamespace());
-		const res = await handleCreate(
-			postRequest({ title: "x" }, "text/plain"),
-		);
+		const res = await handleCreate(postRequest({ title: "x" }, "text/plain"));
 		expect(res.status).toBe(429);
 	});
 
@@ -125,7 +126,10 @@ describe("availability write guards", () => {
 
 	it("rejects non-JSON content with 415", async () => {
 		stubRateLimiter(allowNamespace());
-		const res = await saveAvailability(postRequest("{}", "text/plain"), eventId);
+		const res = await saveAvailability(
+			postRequest("{}", "text/plain"),
+			eventId,
+		);
 		expect(res.status).toBe(415);
 	});
 });

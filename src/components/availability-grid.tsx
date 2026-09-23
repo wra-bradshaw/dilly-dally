@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
+import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import {
 	buildGridPos,

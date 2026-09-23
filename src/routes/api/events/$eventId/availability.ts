@@ -102,7 +102,13 @@ export async function getOwnAvailabilityResponse(
 	const noStore = { noStore: true } as const;
 	const name = new URL(request.url).searchParams.get("name") ?? "";
 	if (!name.trim()) {
-		return jsonError("bad_request", "Query param name is required", 400, undefined, noStore);
+		return jsonError(
+			"bad_request",
+			"Query param name is required",
+			400,
+			undefined,
+			noStore,
+		);
 	}
 	const db = getDb();
 	const now = Date.now();

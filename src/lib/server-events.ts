@@ -1,17 +1,10 @@
 import type { components } from "./api-schema";
-import {
-	type DillyEvent,
-	type DrizzleDb,
-	fetchEvent,
-	insertEvent,
-} from "./db";
+import { type DillyEvent, type DrizzleDb, fetchEvent, insertEvent } from "./db";
 import { generateEventId, isValidEventId } from "./event-ids";
 import { computeExpiry } from "./expiry";
 import type { CreateEventInput } from "./validation";
 
-export function toEventDto(
-	event: DillyEvent,
-): components["schemas"]["Event"] {
+export function toEventDto(event: DillyEvent): components["schemas"]["Event"] {
 	return {
 		createdAt: new Date(event.createdAt).toISOString(),
 		dates: event.dates,

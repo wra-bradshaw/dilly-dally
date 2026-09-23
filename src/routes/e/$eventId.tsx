@@ -25,10 +25,10 @@ import {
 	fetchOwnAvailability,
 	saveAvailability,
 } from "#/lib/client";
-import { HttpError } from "#/lib/http-error";
 import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
+import { HttpError } from "#/lib/http-error";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,

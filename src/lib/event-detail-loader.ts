@@ -1,8 +1,8 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { clientIp } from "./api-errors";
-import { type EventDetailResponse } from "./client";
-import { HttpError } from "./http-error";
+import type { EventDetailResponse } from "./client";
 import { getDb } from "./db-env";
+import { HttpError } from "./http-error";
 import { RATE_LIMITS, rateLimitKey } from "./rate-limit";
 import { loadEventDetailFromDb } from "./server-event-detail";
 import { checkRateLimit } from "./server-rate-limit";

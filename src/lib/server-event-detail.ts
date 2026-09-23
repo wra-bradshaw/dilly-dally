@@ -1,7 +1,7 @@
-import { HttpError } from "./http-error";
 import { type DillyEvent, type DrizzleDb, deleteEvent, fetchEvent } from "./db";
 import { isValidEventId } from "./event-ids";
 import { isExpired } from "./expiry";
+import { HttpError } from "./http-error";
 import { getEventDetail } from "./server-availability";
 
 type LiveEventResult =
