@@ -7,5 +7,6 @@ export function useEventDetail(eventId: string) {
 		queryKey: ["event", eventId],
 		refetchInterval: 15_000,
 		retry: false,
+		staleTime: 15_000,
 	});
 }
