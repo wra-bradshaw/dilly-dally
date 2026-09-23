@@ -28,7 +28,11 @@ export function isWeeklySlotId(slot: string): boolean {
 	return WEEKLY_SLOT_RE.test(slot);
 }
 
-function wallInZone(ms: number, tz: string): number {
+const wallFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function wallFormatter(tz: string): Intl.DateTimeFormat {
+	const cached = wallFormatters.get(tz);
+	if (cached) return cached;
 	const fmt = new Intl.DateTimeFormat("en-CA", {
 		day: "2-digit",
 		hour: "2-digit",
@@ -38,7 +42,27 @@ function wallInZone(ms: number, tz: string): number {
 		timeZone: tz,
 		year: "numeric",
 	});
-	const parts = fmt.formatToParts(ms);
+	wallFormatters.set(tz, fmt);
+	return fmt;
+}
+
+const slotLabelFormatter = new Intl.DateTimeFormat(undefined, {
+	hour: "numeric",
+	minute: "2-digit",
+	timeZone: "UTC",
+});
+const weekdayShortFormatter = new Intl.DateTimeFormat(undefined, {
+	timeZone: "UTC",
+	weekday: "short",
+});
+const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
+	day: "numeric",
+	month: "short",
+	timeZone: "UTC",
+});
+
+function wallInZone(ms: number, tz: string): number {
+	const parts = wallFormatter(tz).formatToParts(ms);
 	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
 	const asUtc = Date.UTC(
 		Number(get("year")),
@@ -59,15 +83,7 @@ export function slotToInstant(slot: string, tz: string): number {
 }
 
 export function instantToSlot(ms: number, tz: string): string {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		day: "2-digit",
-		hour: "2-digit",
-		hour12: false,
-		minute: "2-digit",
-		month: "2-digit",
-		timeZone: tz,
-		year: "numeric",
-	}).formatToParts(ms);
+	const parts = wallFormatter(tz).formatToParts(ms);
 	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
 	const hour = get("hour") === "24" ? "00" : get("hour");
 	return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
@@ -85,20 +101,13 @@ export function convertSlotZone(
 export function formatSlotLabel(slot: string): string {
 	const [, time] = slot.split("T");
 	const [hh, mm] = time.split(":").map(Number);
-	return new Intl.DateTimeFormat(undefined, {
-		hour: "numeric",
-		minute: "2-digit",
-		timeZone: "UTC",
-	}).format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
+	return slotLabelFormatter.format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
 }
 
 function weekdayShortForCode(code: string): string {
 	const idx = weekdayForCode(code);
 	if (idx === null) return code;
-	return new Intl.DateTimeFormat(undefined, {
-		timeZone: "UTC",
-		weekday: "short",
-	}).format(new Date(Date.UTC(2000, 0, 2 + idx)));
+	return weekdayShortFormatter.format(new Date(Date.UTC(2000, 0, 2 + idx)));
 }
 
 export function formatWeeklySlot(slot: string): string {
@@ -125,11 +134,7 @@ export function formatSlotWithDate(slot: string): string {
 	const [date] = slot.split("T");
 	const [y, m, d] = date.split("-").map(Number);
 	const dt = new Date(Date.UTC(y, m - 1, d));
-	const monthDay = new Intl.DateTimeFormat(undefined, {
-		day: "numeric",
-		month: "short",
-		timeZone: "UTC",
-	}).format(dt);
+	const monthDay = monthDayFormatter.format(dt);
 	return `${monthDay}, ${formatSlotLabel(slot)}`;
 }
 
