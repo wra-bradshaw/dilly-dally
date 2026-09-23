@@ -151,7 +151,7 @@ describe("GroupHeatmap hover focus", () => {
 		expect(screen.queryByText("1/1 available")).toBeNull();
 	});
 
-	it("keeps the keyboard-focused panel through a hover round-trip", () => {
+	it("previews the hovered cell and restores the focused cell on leave", () => {
 		const columns = cols();
 		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
 		const mixed = new Map(
@@ -174,9 +174,22 @@ describe("GroupHeatmap hover focus", () => {
 		fireEvent.focus(first as HTMLElement);
 		expect(screen.getByText("Unavailable")).toBeVisible();
 		fireEvent.mouseEnter(second as HTMLElement);
-		expect(screen.getByText("Unavailable")).toBeVisible();
+		expect(screen.getByText("2/2 available")).toBeVisible();
 		fireEvent.mouseLeave(second as HTMLElement);
 		expect(screen.getByText("Unavailable")).toBeVisible();
+	});
+
+	it("clears focus tracking on Escape so hover works again", () => {
+		render(ui());
+		const [first, second] = screen.getAllByRole("button");
+		fireEvent.focus(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		fireEvent.keyDown(first as HTMLElement, { key: "Escape" });
+		expect(screen.getByText(/Hover or tap a time slot/)).toBeVisible();
+		fireEvent.mouseEnter(second as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		fireEvent.mouseLeave(second as HTMLElement);
+		expect(screen.getByText(/Hover or tap a time slot/)).toBeVisible();
 	});
 
 	it("clears the panel on tab-out", () => {
@@ -231,6 +244,16 @@ describe("GroupHeatmap hover focus", () => {
 		fireEvent.click(first as HTMLElement);
 		expect(screen.getByText("1/1 available")).toBeVisible();
 		fireEvent.keyDown(first as HTMLElement, { key: "Escape" });
+		expect(screen.queryByText("1/1 available")).toBeNull();
+		expect(screen.getByText(/Hover or tap a time slot/)).toBeVisible();
+	});
+
+	it("clears a tapped cell on blur", () => {
+		render(ui());
+		const [first] = screen.getAllByRole("button");
+		fireEvent.click(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		fireEvent.blur(first as HTMLElement);
 		expect(screen.queryByText("1/1 available")).toBeNull();
 	});
 });

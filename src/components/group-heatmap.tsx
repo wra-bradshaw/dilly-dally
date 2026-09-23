@@ -47,6 +47,7 @@ export function GroupHeatmap({
 	const onHeatmapKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Escape") {
 			tapped.current = null;
+			setFocusedId(null);
 			setHovered(null);
 		}
 		onGridKeyDown(e);
@@ -105,7 +106,6 @@ export function GroupHeatmap({
 								setHovered(cell.id);
 							}}
 							onMouseEnter={() => {
-								if (focusedId !== null && tapped.current === null) return;
 								setHovered(cell.id);
 							}}
 							onMouseLeave={(e) => {
