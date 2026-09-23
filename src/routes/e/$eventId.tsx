@@ -27,7 +27,11 @@ import {
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
-import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
+import {
+	decideSignInError,
+	heatmapAnnounce,
+	saveErrorMessage,
+} from "#/lib/event-messages";
 import { HttpError } from "#/lib/http-error";
 
 export const Route = createFileRoute("/e/$eventId")({
@@ -499,6 +503,31 @@ function EventPage() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
+					<p
+						aria-live="polite"
+						className={
+							restoreStatus === "restoring" || restoreStatus === "failed"
+								? "mb-2 text-sm text-muted-foreground"
+								: "sr-only"
+						}
+					>
+						{restoreStatus === "restoring" ? (
+							"Restoring…"
+						) : restoreStatus === "failed" ? (
+							<>
+								Could not restore your availability.{" "}
+								<button
+									className="nav-link text-sm"
+									onClick={retryRestore}
+									type="button"
+								>
+									Retry
+								</button>
+							</>
+						) : (
+							""
+						)}
+					</p>
 					{!signedIn ? (
 						<p className="text-sm text-muted-foreground">
 							Sign in above, then click and drag to paint the times you are
@@ -506,31 +535,6 @@ function EventPage() {
 						</p>
 					) : (
 						<>
-							<p
-								aria-live="polite"
-								className={
-									restoreStatus === "restoring" || restoreStatus === "failed"
-										? "mb-2 text-sm text-muted-foreground"
-										: "sr-only"
-								}
-							>
-								{restoreStatus === "restoring" ? (
-									"Restoring…"
-								) : restoreStatus === "failed" ? (
-									<>
-										Could not restore your availability.{" "}
-										<button
-											className="nav-link text-sm"
-											onClick={retryRestore}
-											type="button"
-										>
-											Retry
-										</button>
-									</>
-								) : (
-									""
-								)}
-							</p>
 							{restoreStatus === "gone" && (
 								<p className="mb-2 text-sm text-muted-foreground" role="alert">
 									This event has expired. Reload the page.
@@ -563,7 +567,7 @@ function EventPage() {
 				<CardContent>
 					<GroupHeatmap
 						allNames={allNames}
-						announce={!signedIn}
+						announce={heatmapAnnounce(signedIn)}
 						columns={columns}
 						counts={counts}
 						eventTimezone={event?.timezone}

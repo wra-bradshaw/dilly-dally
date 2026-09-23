@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { heatmapAnnounce } from "#/lib/event-messages";
 import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 import { GroupHeatmap, heatmapAlpha } from "./group-heatmap";
@@ -101,8 +102,14 @@ describe("TimeGrid announcements", () => {
 		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
 	});
 
+	it("routes the heatmap live region from sign-in state", () => {
+		expect(heatmapAnnounce(true)).toBe(false);
+		expect(heatmapAnnounce(false)).toBe(true);
+	});
+
 	it("emits one live region when signed in and the heatmap is silenced", () => {
 		const columns = cols();
+		const signedIn = true;
 		const { container } = render(
 			<>
 				<AvailabilityGrid
@@ -112,7 +119,7 @@ describe("TimeGrid announcements", () => {
 				/>
 				<GroupHeatmap
 					allNames={["Ada"]}
-					announce={false}
+					announce={heatmapAnnounce(signedIn)}
 					columns={columns}
 					counts={
 						new Map(
@@ -132,10 +139,11 @@ describe("TimeGrid announcements", () => {
 
 	it("emits one live region when signed out and only the heatmap announces", () => {
 		const columns = cols();
+		const signedIn = false;
 		const { container } = render(
 			<GroupHeatmap
 				allNames={["Ada"]}
-				announce
+				announce={heatmapAnnounce(signedIn)}
 				columns={columns}
 				counts={
 					new Map(

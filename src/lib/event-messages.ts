@@ -23,6 +23,10 @@ export type SignInDecision =
 	| { kind: "fresh" }
 	| { kind: "message"; text: string };
 
+export function heatmapAnnounce(signedIn: boolean): boolean {
+	return !signedIn;
+}
+
 export function decideSignInError(err: unknown): SignInDecision {
 	if (err instanceof HttpError && err.code === "invalid_password") {
 		return {
