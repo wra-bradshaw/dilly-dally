@@ -80,7 +80,13 @@ function Harness({
 					/>
 				</div>
 			)}
-			{status === "restoring" && <p>Restoring…</p>}
+			{status === "restoring" ? (
+				<p aria-live="polite">Restoring…</p>
+			) : (
+				<p aria-live="polite" className="sr-only">
+					{""}
+				</p>
+			)}
 			<AvailabilityGrid
 				columns={columns()}
 				disabled={status === "restoring"}
@@ -110,6 +116,21 @@ test("preset name restores cells after reload with a Restoring state", async () 
 	resolveFetch({ name: "Ada", slots: ["2026-09-28T09:00"] });
 	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
 	expect(fetchAvailability).toHaveBeenCalledWith(eventId, "Ada", undefined);
+});
+
+test("restore live region is pre-mounted outside the sign-in branch", async () => {
+	localStorage.clear();
+	const fetchAvailability = vi.fn();
+	const screen = await render(
+		<Harness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByText("Enter your password to continue."))
+		.toBeVisible();
+	const regions = screen.container.querySelectorAll('p[aria-live="polite"]');
+	expect(regions).toHaveLength(1);
+	expect(regions[0]?.className).toContain("sr-only");
+	expect(fetchAvailability).not.toHaveBeenCalled();
 });
 
 test("protected name prompts for password without persisting it", async () => {

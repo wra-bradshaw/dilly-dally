@@ -161,6 +161,14 @@ test("month buttons clamp to the in-range window", async () => {
 	await expect.element(prev).toBeVisible();
 	await expect.element(prev).toHaveAttribute("disabled", "");
 	await expect.element(next).toHaveAttribute("disabled", "");
+	expect(prev.element().className).toContain("min-w-6");
+	expect(next.element().className).toContain("min-w-6");
+	expect(prev.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
+		24,
+	);
+	expect(next.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
+		24,
+	);
 	expect(
 		screen.container.querySelectorAll('button[data-day][tabindex="0"]'),
 	).toHaveLength(1);
