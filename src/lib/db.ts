@@ -54,11 +54,6 @@ function parseWeekdaysJson(json: string | null | undefined): number[] | null {
 
 type EventRow = typeof schema.events.$inferSelect;
 
-export function toPublicEvent(row: EventRow): DillyEvent | null;
-export function toPublicEvent(
-	row: Omit<EventRow, "mode" | "weekdaysJson"> &
-		Partial<Pick<EventRow, "mode" | "weekdaysJson">>,
-): DillyEvent | null;
 export function toPublicEvent(
 	row: Omit<EventRow, "mode" | "weekdaysJson"> &
 		Partial<Pick<EventRow, "mode" | "weekdaysJson">>,
