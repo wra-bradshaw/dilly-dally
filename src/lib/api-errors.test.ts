@@ -5,6 +5,7 @@ import {
 	isJsonContentType,
 	jsonError,
 	rateLimited,
+	readCappedJson,
 	zodFields,
 } from "./api-errors";
 import type { components } from "./api-schema";
@@ -23,6 +24,20 @@ describe("jsonError", () => {
 			error: { code: "gone", message: "Event has expired" },
 		});
 	});
+
+	it("sends anti-sniff and referrer headers without caching by default", () => {
+		const res = jsonError("gone", "Event has expired", 410);
+		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+		expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+		expect(res.headers.get("Cache-Control")).toBeNull();
+	});
+
+	it("opts into no-store for GET error responses", () => {
+		const res = jsonError("not_found", "Event not found", 404, undefined, {
+			noStore: true,
+		});
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+	});
 });
 
 describe("rateLimited", () => {
@@ -30,6 +45,53 @@ describe("rateLimited", () => {
 		const res = rateLimited(Date.now() + 61_000);
 		expect(res.status).toBe(429);
 		expect(res.headers.get("Retry-After")).toBeTruthy();
+	});
+
+	it("sends anti-sniff headers on 429", () => {
+		const res = rateLimited(Date.now() + 61_000);
+		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+	});
+});
+
+describe("readCappedJson", () => {
+	it("parses a small body", async () => {
+		const req = new Request("https://x.test/", {
+			body: JSON.stringify({ name: "Ada" }),
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
+		expect(await readCappedJson(req)).toEqual({
+			ok: true,
+			value: { name: "Ada" },
+		});
+	});
+
+	it("rejects invalid JSON", async () => {
+		const req = new Request("https://x.test/", {
+			body: "{nope",
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
+		expect((await readCappedJson(req)).ok).toBe(false);
+	});
+
+	it("caps streamed bodies at the byte budget", async () => {
+		const big = new ReadableStream({
+			start(controller) {
+				controller.enqueue(new Uint8Array(300_000));
+				controller.close();
+			},
+		});
+		const req = new Request("https://x.test/", {
+			body: big,
+			duplex: "half",
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		} as RequestInit);
+		expect(await readCappedJson(req)).toEqual({
+			ok: false,
+			reason: "too_large",
+		});
 	});
 });
 

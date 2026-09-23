@@ -43,6 +43,22 @@ describe("decideRateLimit", () => {
 		const fresh = decideRateLimit(stored, 61_000, 60_000, 3);
 		expect(fresh.result).toMatchObject({ allowed: true, remaining: 2 });
 	});
+
+	it("resets the count when the stored window is stale", () => {
+		const { next, result } = decideRateLimit(
+			{ count: 3, windowStart: 0 },
+			61_000,
+			60_000,
+			3,
+		);
+		expect(result).toMatchObject({ allowed: true, remaining: 2 });
+		expect(next).toEqual({ count: 1, windowStart: 60_000 });
+	});
+
+	it("blocks everything when the limit is zero", () => {
+		const { result } = decideRateLimit(null, 1000, 60_000, 0);
+		expect(result).toMatchObject({ allowed: false, remaining: 0 });
+	});
 });
 
 function createFakeStorage() {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildEventUniverse,
 	buildSlotUniverse,
 	computeCounts,
 	findBestTimes,
@@ -40,6 +41,40 @@ describe("buildSlotUniverse", () => {
 				startTime: "09:00",
 			}),
 		).toEqual([]);
+	});
+});
+
+describe("buildEventUniverse", () => {
+	it("defaults a modeless event to dates", () => {
+		expect(
+			buildEventUniverse({
+				dates: ["2026-10-05"],
+				endTime: "10:00",
+				startTime: "09:00",
+			}),
+		).toEqual([
+			"2026-10-05T09:00",
+			"2026-10-05T09:15",
+			"2026-10-05T09:30",
+			"2026-10-05T09:45",
+		]);
+	});
+
+	it("routes weekly events to weekday slots", () => {
+		expect(
+			buildEventUniverse({
+				dates: [],
+				endTime: "10:00",
+				mode: "weekly",
+				startTime: "09:00",
+				weekdays: [1],
+			}),
+		).toEqual([
+			"MON-09:00",
+			"MON-09:15",
+			"MON-09:30",
+			"MON-09:45",
+		]);
 	});
 });
 
