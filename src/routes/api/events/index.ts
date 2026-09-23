@@ -9,7 +9,7 @@ import {
 	zodFields,
 } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
-import { fetchEvent, insertEvent, purgeExpired } from "#/lib/db";
+import { fetchEvent, insertEvent } from "#/lib/db";
 import { getDb } from "#/lib/db-env";
 import { generateEventId, isValidEventId } from "#/lib/event-ids";
 import { computeExpiry } from "#/lib/expiry";
@@ -69,7 +69,6 @@ export const Route = createFileRoute("/api/events/")({
 					mode === "weekly"
 						? [...new Set(input.weekdays ?? [])].sort((a, b) => a - b)
 						: [];
-				await purgeExpired(db, now);
 				let id = generateEventId();
 				let inserted = false;
 				for (let attempt = 0; attempt < 3 && !inserted; attempt++) {

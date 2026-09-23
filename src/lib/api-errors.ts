@@ -48,7 +48,7 @@ export function originOf(request: Request): string {
 	return new URL(request.url).origin;
 }
 
-export const MAX_JSON_BYTES = 262_144;
+const MAX_JSON_BYTES = 262_144;
 
 export function contentLengthTooLarge(request: Request): boolean {
 	const raw = request.headers.get("content-length");
