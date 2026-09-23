@@ -8,34 +8,11 @@ import {
 } from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
 import { handleCreate } from "./index";
-
-function allowNamespace() {
-	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: true,
-				remaining: 1,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
-	};
-}
-
-function denyNamespace() {
-	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: false,
-				remaining: 0,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
-	};
-}
-
-function stubRateLimiter(namespace: unknown) {
-	(env as unknown as Record<string, unknown>).RATE_LIMITER = namespace;
-}
+import {
+	allowNamespace,
+	denyNamespace,
+	stubRateLimiter,
+} from "./rate-limit-test-stub";
 
 afterEach(() => {
 	delete (env as unknown as Record<string, unknown>).RATE_LIMITER;

@@ -1,4 +1,3 @@
-import { env } from "cloudflare:workers";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { insertEvent } from "#/lib/db";
 import { createTestDb } from "#/lib/test-db";
@@ -8,38 +7,15 @@ import {
 } from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
 import { handleCreate } from "./index";
+import {
+	allowNamespace,
+	denyNamespace,
+	stubRateLimiter,
+} from "./rate-limit-test-stub";
 
 vi.mock("#/lib/db-env", () => ({
 	getDb: () => (globalThis as unknown as Record<string, unknown>).__testDb,
 }));
-
-function allowNamespace() {
-	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: true,
-				remaining: 1,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
-	};
-}
-
-function denyNamespace() {
-	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: false,
-				remaining: 0,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
-	};
-}
-
-function stubRateLimiter(namespace: unknown) {
-	(env as unknown as Record<string, unknown>).RATE_LIMITER = namespace;
-}
 
 function futureDate(offsetDays: number): string {
 	const now = new Date();
