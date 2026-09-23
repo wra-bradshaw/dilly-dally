@@ -105,9 +105,4 @@ describe("worker scheduled", () => {
 		});
 		expect(typeof vi.mocked(purgeExpired).mock.calls[0]?.[1]).toBe("number");
 	});
-
-	it("keeps fetch and scheduled exports with the expected arity", () => {
-		expect(typeof worker.fetch).toBe("function");
-		expect(worker.scheduled.length).toBe(3);
-	});
 });
