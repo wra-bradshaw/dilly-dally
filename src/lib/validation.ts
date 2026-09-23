@@ -130,7 +130,7 @@ export const createEventSchema = z
 export const availabilitySchema = z.object({
 	name: participantNameSchema,
 	password: z.string().min(4).max(72).optional(),
-	slots: z.array(z.string().refine(isSlotId)).max(1488),
+	slots: z.array(z.string().refine(isSlotId)).max(2852),
 });
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;

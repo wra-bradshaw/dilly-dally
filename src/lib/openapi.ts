@@ -60,7 +60,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							description:
 								"Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15. Empty array means unavailable everywhere.",
 							items: { $ref: "#/components/schemas/SlotId" },
-							maxItems: 1488,
+							maxItems: 2852,
 							type: "array",
 						},
 					},
