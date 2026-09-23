@@ -126,10 +126,10 @@ function Home() {
 			<header className="flex items-center justify-between py-5">
 				<div className="display-title text-2xl font-bold">Dilly-Dally</div>
 				<nav className="flex gap-4 text-sm">
-					<a className="nav-link" href="/api/agent-guide">
+					<a className="nav-link nav-link-standalone" href="/api/agent-guide">
 						Agent guide
 					</a>
-					<a className="nav-link" href="/api/openapi.json">
+					<a className="nav-link nav-link-standalone" href="/api/openapi.json">
 						OpenAPI
 					</a>
 				</nav>

@@ -123,7 +123,11 @@ function EventPage() {
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
 	const lastSavedRef = useRef<Set<string>>(new Set());
-	const lastSubmittedRef = useRef<{ password: string | undefined; identity: string; slots: Set<string> } | null>(null);
+	const lastSubmittedRef = useRef<{
+		password: string | undefined;
+		identity: string;
+		slots: Set<string>;
+	} | null>(null);
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
@@ -222,7 +226,11 @@ function EventPage() {
 		setSignedIn(true);
 	};
 
-	const saver = useSerialSaver<{ password: string | undefined; identity: string; slots: Set<string> }>({
+	const saver = useSerialSaver<{
+		password: string | undefined;
+		identity: string;
+		slots: Set<string>;
+	}>({
 		onError: (err, value) => {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(lastSavedRef.current));
@@ -241,7 +249,9 @@ function EventPage() {
 				queryClient.setQueryData(
 					["event", eventId],
 					(old: EventDetailResponse | undefined) =>
-						old ? patchDetailForSave(old, value.identity, value.slots, stamp) : old,
+						old
+							? patchDetailForSave(old, value.identity, value.slots, stamp)
+							: old,
 				);
 			}
 		},
@@ -339,7 +349,7 @@ function EventPage() {
 					Dilly-Dally
 				</a>
 				<nav className="flex gap-4 text-sm">
-					<a className="nav-link" href="/api/agent-guide">
+					<a className="nav-link nav-link-standalone" href="/api/agent-guide">
 						Agent guide
 					</a>
 				</nav>
@@ -438,7 +448,7 @@ function EventPage() {
 						Signed in as <strong>{activeName}</strong>
 					</span>
 					<button
-						className="nav-link text-sm"
+						className="nav-link nav-link-standalone text-sm"
 						onClick={() => {
 							saver.cancel();
 							lastSubmittedRef.current = null;
@@ -485,14 +495,12 @@ function EventPage() {
 				<CardHeader>
 					<CardTitle>
 						Your availability{" "}
-						{saveState !== "" && (
-							<span
-								aria-live="polite"
-								className="text-xs font-normal text-muted-foreground"
-							>
-								{saveState}
-							</span>
-						)}
+						<span
+							aria-live="polite"
+							className="text-xs font-normal text-muted-foreground"
+						>
+							{saveState}
+						</span>
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -503,29 +511,31 @@ function EventPage() {
 						</p>
 					) : (
 						<>
-							{restoreStatus === "restoring" && (
-								<p
-									aria-live="polite"
-									className="mb-2 text-sm text-muted-foreground"
-								>
-									Restoring…
-								</p>
-							)}
-							{restoreStatus === "failed" && (
-								<p
-									aria-live="polite"
-									className="mb-2 text-sm text-muted-foreground"
-								>
-									Could not restore your availability.{" "}
-									<button
-										className="nav-link text-sm"
-										onClick={retryRestore}
-										type="button"
-									>
-										Retry
-									</button>
-								</p>
-							)}
+							<p
+								aria-live="polite"
+								className={
+									restoreStatus === "restoring" || restoreStatus === "failed"
+										? "mb-2 text-sm text-muted-foreground"
+										: "sr-only"
+								}
+							>
+								{restoreStatus === "restoring" ? (
+									"Restoring…"
+								) : restoreStatus === "failed" ? (
+									<>
+										Could not restore your availability.{" "}
+										<button
+											className="nav-link text-sm"
+											onClick={retryRestore}
+											type="button"
+										>
+											Retry
+										</button>
+									</>
+								) : (
+									""
+								)}
+							</p>
 							{restoreStatus === "gone" && (
 								<p className="mb-2 text-sm text-muted-foreground" role="alert">
 									This event has expired. Reload the page.
