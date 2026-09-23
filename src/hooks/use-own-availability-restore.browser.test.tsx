@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { AvailabilityGrid } from "../components/availability-grid";
 import { buildColumns } from "../components/grid-model";
-import { HttpError } from "../lib/client";
+import { HttpError } from "../lib/http-error";
 import { useLocalStorage } from "./use-local-storage";
 import { useOwnAvailabilityRestore } from "./use-own-availability-restore";
 

@@ -23,9 +23,9 @@ import { useSerialSaver } from "#/hooks/use-serial-saver";
 import {
 	type EventDetailResponse,
 	fetchOwnAvailability,
-	HttpError,
 	saveAvailability,
 } from "#/lib/client";
+import { HttpError } from "#/lib/http-error";
 import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";

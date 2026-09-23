@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HttpError } from "./client";
+import { HttpError } from "./http-error";
 import { decideSignInError, saveErrorMessage } from "./event-messages";
 
 describe("saveErrorMessage", () => {

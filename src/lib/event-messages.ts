@@ -1,4 +1,4 @@
-import { HttpError } from "./client";
+import { HttpError } from "./http-error";
 
 export function saveErrorMessage(err: unknown): string {
 	if (err instanceof HttpError && err.code === "invalid_password") {

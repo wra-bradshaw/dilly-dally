@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { HttpError } from "#/lib/client";
+import { HttpError } from "#/lib/http-error";
 import { useEventDetail } from "./use-event-detail";
 
 function wrapper() {

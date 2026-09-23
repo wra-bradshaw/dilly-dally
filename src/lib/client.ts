@@ -1,5 +1,8 @@
 import createClient from "openapi-fetch";
 import type { components, paths } from "./api-schema";
+import { HttpError } from "./http-error";
+
+export { HttpError };
 
 export type CreateEventRequest = components["schemas"]["CreateEventRequest"];
 export type CreateEventResponse = components["schemas"]["CreateEventResponse"];
@@ -10,26 +13,6 @@ export type AvailabilityResponse =
 export type OwnAvailabilityResponse =
 	components["schemas"]["OwnAvailabilityResponse"];
 
-export class HttpError extends Error {
-	status: number;
-	code: string;
-	fields?: Record<string, string[]>;
-	retryAfter?: number;
-
-	constructor(
-		status: number,
-		code: string,
-		message: string,
-		fields?: Record<string, string[]>,
-		retryAfter?: number,
-	) {
-		super(message);
-		this.status = status;
-		this.code = code;
-		this.fields = fields;
-		this.retryAfter = retryAfter;
-	}
-}
 
 const client = createClient<paths>({
 	baseUrl:

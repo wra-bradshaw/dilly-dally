@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchOwnAvailability, HttpError } from "#/lib/client";
+import { fetchOwnAvailability } from "#/lib/client";
+import { HttpError } from "#/lib/http-error";
 
 export type OwnAvailabilityRestoreStatus =
 	| "idle"

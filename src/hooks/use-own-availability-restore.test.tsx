@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { HttpError } from "#/lib/client";
+import { HttpError } from "#/lib/http-error";
 import { useOwnAvailabilityRestore } from "./use-own-availability-restore";
 
 const eventId = "AbC123_-XyZ9";

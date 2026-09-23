@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HttpError } from "./client";
+import { HttpError } from "./http-error";
 import { fetchEvent, insertEvent } from "./db";
 import { upsertAvailability } from "./server-availability";
 import { loadEventDetailFromDb } from "./server-event-detail";

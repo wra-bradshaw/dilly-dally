@@ -3,9 +3,9 @@ import {
 	createEvent,
 	fetchEventDetail,
 	fetchOwnAvailability,
-	HttpError,
 	saveAvailability,
 } from "./client";
+import { HttpError } from "./http-error";
 
 function jsonResponse(body: unknown, status = 200) {
 	return new Response(JSON.stringify(body), {

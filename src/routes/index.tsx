@@ -14,7 +14,8 @@ import {
 	SelectValue,
 } from "#/components/ui/select";
 import { WeekdayPicker } from "#/components/weekday-picker";
-import { createEvent, HttpError } from "#/lib/client";
+import { createEvent } from "#/lib/client";
+import { HttpError } from "#/lib/http-error";
 import { formatSlotLabel } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/")({ component: Home });
