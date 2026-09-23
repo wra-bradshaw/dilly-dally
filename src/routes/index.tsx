@@ -15,19 +15,15 @@ import {
 import { WeekdayPicker } from "#/components/weekday-picker";
 import { useHydrated } from "#/hooks/use-hydrated";
 import { createEvent } from "#/lib/client";
-import { DAY_MS } from "#/lib/expiry";
 import { HttpError } from "#/lib/http-error";
 import {
 	allTimezones,
 	browserTimezone,
 	formatSlotLabel,
+	todayPlusInTimezone,
 } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/")({ component: Home });
-
-function todayPlus(days: number): string {
-	return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
-}
 
 function hourOptions(): string[] {
 	return Array.from(
@@ -48,15 +44,17 @@ function Home() {
 	const [startTime, setStartTime] = useState("09:00");
 	const [endTime, setEndTime] = useState("17:00");
 	const [timezoneOverride, setTimezoneOverride] = useState("");
-	const timezone =
-		timezoneOverride !== ""
-			? timezoneOverride
-			: hydrated
-				? browserTimezone()
-				: "UTC";
+	const browserTz = hydrated ? browserTimezone() : "UTC";
+	const timezone = timezoneOverride !== "" ? timezoneOverride : browserTz;
 	const [error, setError] = useState("");
 	const [saving, setSaving] = useState(false);
-	const [minDate, maxDate] = useMemo(() => [todayPlus(0), todayPlus(90)], []);
+	const [minDate, maxDate] = useMemo(
+		() => [
+			todayPlusInTimezone(0, browserTz),
+			todayPlusInTimezone(90, browserTz),
+		],
+		[browserTz],
+	);
 
 	const submit = async () => {
 		setError("");
@@ -183,7 +181,7 @@ function Home() {
 										selected={dates}
 									/>
 								) : (
-									<output className="block h-[400px] animate-pulse rounded-md border border-input bg-muted/50">
+									<output className="block h-[400px] animate-pulse rounded-md bg-muted/50">
 										<span className="sr-only">Loading calendar</span>
 									</output>
 								)}

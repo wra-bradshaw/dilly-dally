@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { convertSlotZone, instantToSlot, slotToInstant } from "./time-slots";
+import {
+	convertSlotZone,
+	instantToSlot,
+	slotToInstant,
+	todayPlusInTimezone,
+} from "./time-slots";
 
 describe("slotToInstant", () => {
 	it("converts New York wall time to UTC", () => {
@@ -47,5 +52,30 @@ describe("convertSlotZone", () => {
 				"America/New_York",
 			),
 		).toBe("2026-10-05T09:00");
+	});
+});
+
+describe("todayPlusInTimezone", () => {
+	it("returns the wall date in zones ahead of UTC", () => {
+		const now = Date.UTC(2026, 8, 23, 15, 0);
+		expect(todayPlusInTimezone(0, "Australia/Melbourne", now)).toBe(
+			"2026-09-24",
+		);
+		expect(todayPlusInTimezone(0, "UTC", now)).toBe("2026-09-23");
+	});
+
+	it("returns the wall date in zones behind UTC", () => {
+		const now = Date.UTC(2026, 8, 24, 2, 0);
+		expect(todayPlusInTimezone(0, "America/New_York", now)).toBe("2026-09-23");
+	});
+
+	it("adds days across month boundaries", () => {
+		const now = Date.UTC(2026, 8, 30, 12, 0);
+		expect(todayPlusInTimezone(0, "Australia/Melbourne", now)).toBe(
+			"2026-09-30",
+		);
+		expect(todayPlusInTimezone(5, "Australia/Melbourne", now)).toBe(
+			"2026-10-05",
+		);
 	});
 });

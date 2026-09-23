@@ -1,3 +1,5 @@
+import { DAY_MS } from "./expiry";
+
 const WEEKLY_SLOT_RE =
 	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|15|30|45)$/;
 const HOUR_RE = /^([01]\d|2[0-3]):00$/;
@@ -20,6 +22,20 @@ export function browserTimezone(): string {
 	} catch {
 		return "UTC";
 	}
+}
+
+function dateInTimezone(ms: number, tz: string): string {
+	const parts = wallFormatter(tz).formatToParts(ms);
+	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+	return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+export function todayPlusInTimezone(
+	days: number,
+	tz: string,
+	now: number = Date.now(),
+): string {
+	return dateInTimezone(now + days * DAY_MS, tz);
 }
 
 export function allTimezones(): string[] {
