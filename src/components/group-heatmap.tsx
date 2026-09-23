@@ -9,6 +9,10 @@ interface CellCount {
 	names: string[];
 }
 
+export const HEATMAP_FILL_RGB = [16, 122, 87] as const;
+export const HEATMAP_TEXT_RGB = [2, 44, 34] as const;
+export const HEATMAP_CARD_RGB = [255, 255, 255] as const;
+
 export function heatmapAlpha(count: number, max: number): number {
 	if (!(max > 0)) return 0.15;
 	const ratio = Math.min(1, Math.max(0, count / max));
@@ -125,7 +129,7 @@ export function GroupHeatmap({
 								(counts.get(cell.id)?.count ?? 0) === 0
 									? undefined
 									: {
-											backgroundColor: `rgba(16, 122, 87, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
+											backgroundColor: `rgba(${HEATMAP_FILL_RGB[0]}, ${HEATMAP_FILL_RGB[1]}, ${HEATMAP_FILL_RGB[2]}, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
 										}
 							}
 							tabIndex={cell.id === roving ? 0 : -1}

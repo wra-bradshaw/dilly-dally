@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import { heatmapAnnounce } from "#/lib/event-messages";
 import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
-import { GroupHeatmap, heatmapAlpha } from "./group-heatmap";
+import {
+	GroupHeatmap,
+	HEATMAP_CARD_RGB,
+	HEATMAP_FILL_RGB,
+	HEATMAP_TEXT_RGB,
+	heatmapAlpha,
+} from "./group-heatmap";
 
 function cols() {
 	return buildColumns(
@@ -57,12 +63,12 @@ describe("GroupHeatmap contrast", () => {
 			0.7152 * channel(rgb[1]) +
 			0.0722 * channel(rgb[2]);
 		const alpha = heatmapAlpha(1, 1);
-		const fill: [number, number, number] = [16, 122, 87];
-		const card: [number, number, number] = [255, 255, 255];
+		const fill: [number, number, number] = [...HEATMAP_FILL_RGB];
+		const card: [number, number, number] = [...HEATMAP_CARD_RGB];
 		const blended = fill.map(
 			(c, i) => alpha * c + (1 - alpha) * (card[i] as number),
 		) as [number, number, number];
-		const text: [number, number, number] = [2, 44, 34];
+		const text: [number, number, number] = [...HEATMAP_TEXT_RGB];
 		const l1 = luminance(blended);
 		const l2 = luminance(text);
 		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
