@@ -48,6 +48,9 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	const start = useCallback(
 		(value: T, e: React.PointerEvent) => {
 			if (disabled) return;
+			(e.currentTarget as unknown as HTMLElement | null)?.focus?.({
+				preventScroll: true,
+			});
 			capture(e);
 			drag.onPointerDown(value);
 		},

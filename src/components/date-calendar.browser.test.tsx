@@ -40,6 +40,31 @@ test("dates outside the event window cannot be picked", async () => {
 	expect(offDay?.getAttribute("aria-hidden")).toBe("true");
 });
 
+test("pointerdown focuses the day without scrolling the page", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	const node = day.element() as HTMLButtonElement;
+	node.dispatchEvent(
+		new PointerEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			cancelable: true,
+			pointerType: "mouse",
+		}),
+	);
+	await expect.element(day).toHaveFocus();
+});
+
 test("dragging across days selects every date in between", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(
