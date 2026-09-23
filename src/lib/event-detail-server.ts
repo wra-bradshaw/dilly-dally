@@ -3,7 +3,7 @@ import { type EventDetailResponse, HttpError } from "./client";
 import { getDb } from "./db-env";
 import { loadEventDetailFromDb } from "./server-event-detail";
 
-export type EventDetailServerResult =
+type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
 	| { code: string; message: string; ok: false; status: number };
 

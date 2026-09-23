@@ -4,7 +4,7 @@ import { isValidEventId } from "./event-ids";
 import { isExpired } from "./expiry";
 import { getEventDetail } from "./server-availability";
 
-export type LiveEventResult =
+type LiveEventResult =
 	| { event: DillyEvent; ok: true }
 	| { code: "not_found" | "gone"; ok: false; status: 404 | 410 };
 
