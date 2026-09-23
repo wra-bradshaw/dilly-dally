@@ -3,16 +3,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { readGuardedJson } from "#/lib/api-errors";
 import { availabilitySchema } from "#/lib/validation";
 import {
+	allowNamespace,
+	denyNamespace,
+	stubRateLimiter,
+} from "./-rate-limit-test-stub";
+import {
 	getOwnAvailabilityResponse,
 	saveAvailability,
 } from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
 import { handleCreate } from "./index";
-import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
-} from "./rate-limit-test-stub";
 
 afterEach(() => {
 	delete (env as unknown as Record<string, unknown>).RATE_LIMITER;

@@ -1,3 +1,4 @@
 {
+  "routeFileIgnorePattern": "\\.(test|spec)\\.(ts|tsx)$",
   "target": "react"
 }

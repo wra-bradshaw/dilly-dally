@@ -2,16 +2,16 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { insertEvent } from "#/lib/db";
 import { createTestDb } from "#/lib/test-db";
 import {
+	allowNamespace,
+	denyNamespace,
+	stubRateLimiter,
+} from "./-rate-limit-test-stub";
+import {
 	getOwnAvailabilityResponse,
 	saveAvailability,
 } from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
 import { handleCreate } from "./index";
-import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
-} from "./rate-limit-test-stub";
 
 vi.mock("#/lib/db-env", () => ({
 	getDb: () => (globalThis as unknown as Record<string, unknown>).__testDb,
