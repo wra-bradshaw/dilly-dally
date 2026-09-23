@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { originOf } from "#/lib/api-errors";
+import { originOf, securityHeaders } from "#/lib/api-errors";
 import { getOpenApiSpec } from "#/lib/openapi";
 
 export const Route = createFileRoute("/api/openapi.json")({
@@ -7,7 +7,10 @@ export const Route = createFileRoute("/api/openapi.json")({
 		handlers: {
 			GET: ({ request }) => {
 				return Response.json(getOpenApiSpec(originOf(request)), {
-					headers: { "Cache-Control": "public, max-age=3600" },
+					headers: {
+						...securityHeaders(),
+						"Cache-Control": "public, max-age=3600",
+					},
 				});
 			},
 		},

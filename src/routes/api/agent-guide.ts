@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AGENT_GUIDE_MARKDOWN } from "#/lib/agent-guide";
-import { originOf } from "#/lib/api-errors";
+import { originOf, securityHeaders } from "#/lib/api-errors";
 
 export const Route = createFileRoute("/api/agent-guide")({
 	server: {
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/api/agent-guide")({
 				);
 				return new Response(guide, {
 					headers: {
+						...securityHeaders(),
 						"Cache-Control": "public, max-age=3600",
 						"Content-Type": "text/markdown; charset=utf-8",
 					},
