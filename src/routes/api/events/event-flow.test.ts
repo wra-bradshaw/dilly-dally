@@ -109,13 +109,13 @@ describe("event flow", () => {
 		expect(res.status).toBe(400);
 	});
 
-	it("checks own-availability rate limit before the name check", async () => {
+	it("rejects blank names without spending rate-limit budget", async () => {
 		stubRateLimiter(denyNamespace());
 		const res = await getOwnAvailabilityResponse(
 			"AbC123_-XyZ9",
 			new Request("https://x.test/api/events/x/availability"),
 		);
-		expect(res.status).toBe(429);
+		expect(res.status).toBe(400);
 	});
 
 	it("maps expired events to 410", async () => {
