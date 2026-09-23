@@ -1,4 +1,3 @@
-const SLOT_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):(00|15|30|45)$/;
 const WEEKLY_SLOT_RE =
 	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|15|30|45)$/;
 const HOUR_RE = /^([01]\d|2[0-3]):00$/;
@@ -146,22 +145,6 @@ export interface WeeklyUniverseInput {
 	weekdays: number[];
 	startTime: string;
 	endTime: string;
-}
-
-export function isValidSlotId(slot: string): boolean {
-	const m = SLOT_RE.exec(slot);
-	if (!m) return false;
-	const month = Number(m[2]);
-	const day = Number(m[3]);
-	if (month < 1 || month > 12) return false;
-	if (day < 1 || day > 31) return false;
-	const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
-	if (Number.isNaN(d.getTime())) return false;
-	return (
-		d.getUTCFullYear() === Number(m[1]) &&
-		d.getUTCMonth() + 1 === month &&
-		d.getUTCDate() === day
-	);
 }
 
 function hourToMinutes(t: string): number | null {

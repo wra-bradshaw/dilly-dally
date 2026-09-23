@@ -11,14 +11,6 @@ export function windowStartFor(nowMs: number, windowMs: number): number {
 	return Math.floor(nowMs / windowMs) * windowMs;
 }
 
-export function isRateLimited(args: {
-	count: number;
-	limit: number;
-	windowStart: number;
-}): boolean {
-	return args.count >= args.limit;
-}
-
 export const RATE_LIMITS = {
 	availabilityWrite: { limit: 30, windowMs: 60_000 },
 	createEvent: { limit: 10, windowMs: 3_600_000 },

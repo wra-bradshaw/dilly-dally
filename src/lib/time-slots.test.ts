@@ -4,7 +4,6 @@ import {
 	computeCounts,
 	findBestTimes,
 	formatSlotWithDate,
-	isValidSlotId,
 	normalizeSlots,
 } from "./time-slots";
 
@@ -41,20 +40,6 @@ describe("buildSlotUniverse", () => {
 				startTime: "09:00",
 			}),
 		).toEqual([]);
-	});
-});
-
-describe("isValidSlotId", () => {
-	it("accepts quarter-hour slots", () => {
-		expect(isValidSlotId("2026-10-05T09:15")).toBe(true);
-		expect(isValidSlotId("2026-10-05T09:00")).toBe(true);
-	});
-
-	it("rejects off-quarter and malformed", () => {
-		expect(isValidSlotId("2026-10-05T09:07")).toBe(false);
-		expect(isValidSlotId("2026-10-05 09:00")).toBe(false);
-		expect(isValidSlotId("not-a-slot")).toBe(false);
-		expect(isValidSlotId("2026-13-40T25:00")).toBe(false);
 	});
 });
 

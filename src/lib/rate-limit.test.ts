@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRateLimited, rateLimitKey } from "./rate-limit";
+import { rateLimitKey } from "./rate-limit";
 
 describe("rateLimitKey", () => {
 	it("hashes ip and scope without leaking ip", async () => {
@@ -9,12 +9,7 @@ describe("rateLimitKey", () => {
 	});
 });
 
-describe("isRateLimited", () => {
-	it("allows under limit and blocks over", () => {
-		expect(isRateLimited({ count: 9, limit: 10, windowStart: 0 })).toBe(false);
-		expect(isRateLimited({ count: 10, limit: 10, windowStart: 0 })).toBe(true);
-	});
-
+describe("windowStartFor", () => {
 	it("computes window start", async () => {
 		const { windowStartFor } = await import("./rate-limit");
 		expect(windowStartFor(61_000, 60_000)).toBe(60_000);
