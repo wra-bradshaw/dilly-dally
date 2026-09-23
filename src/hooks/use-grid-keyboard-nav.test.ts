@@ -90,4 +90,50 @@ describe("useGridKeyboardNav boundaries", () => {
 		hook.rerender({ cols: [columns[0] as (typeof columns)[number]] });
 		expect(hook.result.current.roving).toBe("a0");
 	});
+
+	it("moves DOM focus to the first cell when the event target is stale", () => {
+		const focus = vi.fn();
+		const tableRef = {
+			current: {
+				querySelector: () => ({ focus }),
+			} as unknown as HTMLTableElement,
+		};
+		const single = [columns[0] as (typeof columns)[number]];
+		const hook = renderHook(() =>
+			useGridKeyboardNav(single, buildGridPos(single), tableRef),
+		);
+		act(() =>
+			hook.result.current.onGridKeyDown({
+				key: "ArrowRight",
+				preventDefault: () => {},
+				target: { dataset: { cell: "gone" } },
+			} as unknown as React.KeyboardEvent),
+		);
+		expect(focus).toHaveBeenCalledTimes(1);
+		expect(hook.result.current.roving).toBe("a0");
+	});
+
+	it("ignores keys when the grid is empty", () => {
+		const tableRef = {
+			current: null,
+		} as unknown as React.RefObject<HTMLTableElement | null>;
+		const hook = renderHook(() =>
+			useGridKeyboardNav([], buildGridPos([]), tableRef),
+		);
+		expect(hook.result.current.roving).toBeNull();
+		act(() => hook.result.current.onGridKeyDown(key("ArrowRight")));
+		expect(hook.result.current.roving).toBeNull();
+	});
+
+	it("reads the cell id from the event target", () => {
+		const { hook } = setup();
+		act(() =>
+			hook.result.current.onGridKeyDown({
+				key: "ArrowDown",
+				preventDefault: () => {},
+				target: { dataset: { cell: "b0" } },
+			} as unknown as React.KeyboardEvent),
+		);
+		expect(hook.result.current.roving).toBe("b1");
+	});
 });

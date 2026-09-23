@@ -55,9 +55,15 @@ export function useGridKeyboardNav(
 
 	const onGridKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
+			const target = e.target as HTMLElement | null;
 			const active = document.activeElement as HTMLElement | null;
-			const id = active?.dataset?.cell ?? roving;
+			const id = target?.dataset?.cell ?? active?.dataset?.cell ?? roving;
 			if (!id) return;
+			if (!pos.get(id)) {
+				const first = values[0];
+				if (first) focusCell(first);
+				return;
+			}
 			if (e.key === "ArrowRight") {
 				e.preventDefault();
 				moveFocus(id, 1, 0);
@@ -78,7 +84,7 @@ export function useGridKeyboardNav(
 				jumpToEdge(id, "end");
 			}
 		},
-		[jumpToEdge, moveFocus, roving],
+		[jumpToEdge, focusCell, moveFocus, pos, roving, values],
 	);
 
 	return { onGridKeyDown, roving, setFocusId, values };
