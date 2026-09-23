@@ -41,8 +41,19 @@ export function useSerialSaver<T>(options: {
 					stateRef.current.pending = undefined;
 					stateRef.current.hasPending = false;
 				}
-				if (failed) callbacksRef.current.onError?.(caught, value);
-				else callbacksRef.current.onSuccess?.(value);
+				if (failed) {
+					try {
+						callbacksRef.current.onError?.(caught, value);
+					} catch (callbackError) {
+						console.error(callbackError);
+					}
+				} else {
+					try {
+						callbacksRef.current.onSuccess?.(value);
+					} catch (callbackError) {
+						console.error(callbackError);
+					}
+				}
 			}
 		} finally {
 			stateRef.current.inFlight = false;
