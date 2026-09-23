@@ -32,9 +32,14 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
 	);
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+	className,
+	level = 2,
+	...props
+}: React.ComponentProps<"h2"> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }) {
+	const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 	return (
-		<div
+		<Tag
 			data-slot="card-title"
 			className={cn(
 				"font-heading text-sm font-medium group-data-[size=sm]/card:text-sm",
