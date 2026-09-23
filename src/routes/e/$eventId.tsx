@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import {
 	buildColumns,
@@ -19,6 +19,7 @@ import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
+import { useSerialSaver } from "#/hooks/use-serial-saver";
 import {
 	fetchOwnAvailability,
 	HttpError,
@@ -87,12 +88,14 @@ function EventPage() {
 	const [saveState, setSaveState] = useState("");
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
+	const lastSavedRef = useRef<Set<string>>(new Set());
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
 			eventMissing,
 			fetchAvailability: fetchOwnAvailability,
 			onCleared: () => {
+				lastSavedRef.current = new Set();
 				setSelected(new Set());
 			},
 			onNeedsPassword: (name) => {
@@ -101,6 +104,7 @@ function EventPage() {
 				setSignError("Enter your password to continue.");
 			},
 			onRestored: (own) => {
+				lastSavedRef.current = new Set(own.slots);
 				setSelected(new Set(own.slots));
 				setActiveName(own.name);
 				setStoredName(own.name);
@@ -159,6 +163,7 @@ function EventPage() {
 				name.trim(),
 				password === "" ? undefined : password,
 			);
+			lastSavedRef.current = new Set(own.slots);
 			setSelected(new Set(own.slots));
 			setActiveName(own.name);
 			setStoredName(own.name);
@@ -172,6 +177,7 @@ function EventPage() {
 				(err.code === "availability_not_found" ||
 					(err.status === 404 && !eventMissing))
 			) {
+				lastSavedRef.current = new Set();
 				setSelected(new Set());
 				setActiveName(name.trim());
 				setStoredName(name.trim());
@@ -193,27 +199,36 @@ function EventPage() {
 		setSignedIn(true);
 	};
 
-	const commit = async (next: Set<string>) => {
-		setSelected(next);
-		if (!signedIn || activeName === "") return;
-		setSaveState("Saving…");
-		try {
+	const saver = useSerialSaver<Set<string>>({
+		onError: (err) => {
+			setSelected(new Set(lastSavedRef.current));
+			if (err instanceof HttpError && err.code === "invalid_password") {
+				setSaveState("Wrong password for this name. Change reverted.");
+			} else if (err instanceof HttpError && err.code === "rate_limited") {
+				setSaveState("Saving too fast. Change reverted; paint again.");
+			} else {
+				setSaveState("Could not save. Change reverted.");
+			}
+		},
+		onSuccess: (value) => {
+			lastSavedRef.current = new Set(value);
+			setSaveState(`Saved ${new Date().toLocaleTimeString()}`);
+			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+		},
+		save: async (value) => {
 			await saveAvailability(eventId, {
 				name: activeName,
 				password: password === "" ? undefined : password,
-				slots: [...next],
+				slots: [...value],
 			});
-			setSaveState(`Saved ${new Date().toLocaleTimeString()}`);
-			await queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-		} catch (err) {
-			if (err instanceof HttpError && err.code === "invalid_password") {
-				setSaveState("Wrong password for this name.");
-			} else if (err instanceof HttpError && err.code === "rate_limited") {
-				setSaveState("Saving too fast. Wait a moment, then paint again.");
-			} else {
-				setSaveState("Could not save. Check your connection.");
-			}
-		}
+		},
+	});
+
+	const commit = (next: Set<string>) => {
+		setSelected(next);
+		if (!signedIn || activeName === "") return;
+		setSaveState("Saving…");
+		saver.submit(next);
 	};
 
 	if (detail.isPending) {
