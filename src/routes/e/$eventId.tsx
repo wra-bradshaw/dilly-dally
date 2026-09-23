@@ -27,7 +27,7 @@ import {
 } from "#/lib/client";
 import { HttpError } from "#/lib/http-error";
 import { patchDetailForSave } from "#/lib/detail-patch";
-import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
+import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 
 export const Route = createFileRoute("/e/$eventId")({
