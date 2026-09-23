@@ -112,7 +112,7 @@ export const Route = createFileRoute("/api/events/$eventId/availability")({
 				);
 				if (!res.ok && res.code === "not_found") {
 					return jsonError(
-						"not_found",
+						"availability_not_found",
 						"No availability for this name",
 						404,
 					);
