@@ -2,15 +2,6 @@
 	"$schema": "https://unpkg.com/knip@6/schema.json",
 	"entry": ["src/router.tsx"],
 	"ignore": [],
-	"ignoreDependencies": [
-		"@tanstack/react-form",
-		"@tanstack/react-store",
-		"@tanstack/store",
-		"cloudflare",
-		"@tanstack/devtools-event-client",
-		"@testing-library/react-hooks",
-		"@testing-library/user-event",
-		"react-test-renderer"
-	],
+	"ignoreDependencies": ["cloudflare"],
 	"ignoreIssues": {}
 }
