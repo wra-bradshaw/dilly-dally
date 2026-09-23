@@ -120,9 +120,12 @@ export const Route = createFileRoute("/api/events/$eventId/availability")({
 						401,
 					);
 				}
-				return Response.json(res, {
-					headers: { "Cache-Control": "no-store" },
-				});
+				return Response.json(
+					{ name: res.name, slots: res.slots },
+					{
+						headers: { "Cache-Control": "no-store" },
+					},
+				);
 			},
 			POST: ({ params, request }) => saveAvailability(request, params.eventId),
 			PUT: ({ params, request }) => saveAvailability(request, params.eventId),
