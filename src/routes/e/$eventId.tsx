@@ -57,9 +57,9 @@ function EventError({ error }: { error: unknown }) {
 					? "Events are deleted after they pass to free up space."
 					: "Check the link and try again."}
 			</p>
-			<a className="mt-4 inline-block" href="/">
-				<Button>Plan a new event</Button>
-			</a>
+			<Button asChild className="mt-4">
+				<a href="/">Plan a new event</a>
+			</Button>
 		</div>
 	);
 }
@@ -219,9 +219,9 @@ function EventPage() {
 						? "Events are deleted after they pass to free up space."
 						: "Check the link and try again."}
 				</p>
-				<a className="mt-4 inline-block" href="/">
-					<Button>Plan a new event</Button>
-				</a>
+				<Button asChild className="mt-4">
+					<a href="/">Plan a new event</a>
+				</Button>
 			</div>
 		);
 	}
@@ -254,22 +254,23 @@ function EventPage() {
 				</CardHeader>
 				<CardContent>
 					<div className="flex flex-col gap-2 sm:flex-row">
-						<Input readOnly value={url} />
+						<Input aria-label="Invite link" readOnly value={url} />
 						<div className="flex gap-2">
 							<Button
+								aria-live="polite"
 								onClick={() => copy(url)}
 								type="button"
 								variant="secondary"
 							>
 								{copied ? "Copied!" : "Copy link"}
 							</Button>
-							<a
-								href={`mailto:?subject=${encodeURIComponent(`When2meet: ${event?.title ?? ""}`)}&body=${encodeURIComponent(`Pick times that work for you: ${url}`)}`}
-							>
-								<Button type="button" variant="outline">
+							<Button asChild variant="outline">
+								<a
+									href={`mailto:?subject=${encodeURIComponent(`When2meet: ${event?.title ?? ""}`)}&body=${encodeURIComponent(`Pick times that work for you: ${url}`)}`}
+								>
 									Email invite
-								</Button>
-							</a>
+								</a>
+							</Button>
 						</div>
 					</div>
 				</CardContent>
@@ -346,6 +347,7 @@ function EventPage() {
 					<legend className="sr-only">Timezone view</legend>
 					{(["event", "local"] as const).map((v) => (
 						<button
+							aria-pressed={view === v}
 							className={
 								view === v
 									? "rounded-md border border-emerald-700 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900"
@@ -367,7 +369,10 @@ function EventPage() {
 					<CardTitle>
 						Your availability{" "}
 						{saveState !== "" && (
-							<span className="text-xs font-normal text-muted-foreground">
+							<span
+								aria-live="polite"
+								className="text-xs font-normal text-muted-foreground"
+							>
 								{saveState}
 							</span>
 						)}

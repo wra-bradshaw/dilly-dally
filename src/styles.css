@@ -206,14 +206,14 @@ body::after {
 }
 
 a {
-  color: var(--lagoon-deep);
+  color: #246f76;
   text-decoration-color: rgba(50, 143, 151, 0.4);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
 a:hover {
-  color: #246f76;
+  color: #1a545b;
 }
 
 code {
