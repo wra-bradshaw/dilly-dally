@@ -1,3 +1,16 @@
+import { originOf, securityHeaders } from "./api-errors";
+
+export function agentGuideResponse(request: Request): Response {
+	const guide = AGENT_GUIDE_MARKDOWN.replaceAll("HOST", originOf(request));
+	return new Response(guide, {
+		headers: {
+			...securityHeaders(),
+			"Cache-Control": "public, max-age=3600",
+			"Content-Type": "text/markdown; charset=utf-8",
+		},
+	});
+}
+
 export const AGENT_GUIDE_MARKDOWN = `# Dilly-Dally Agent Guide
 
 Dilly-Dally is an agent-friendly when2meet replacement. No login. Two curl calls cover the full flow.
