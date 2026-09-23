@@ -42,8 +42,30 @@ describe("GroupHeatmap contrast", () => {
 	it("caps cell alpha at 0.6 so dark count text keeps contrast", () => {
 		expect(heatmapAlpha(1, 1)).toBeCloseTo(0.6, 5);
 		expect(heatmapAlpha(99, 1)).toBeCloseTo(0.6, 5);
-		expect(heatmapAlpha(1, 2)).toBeCloseTo(0.375, 5);
+		expect(heatmapAlpha(1, 2)).toBeCloseTo(0.525, 5);
 		expect(heatmapAlpha(0, 4)).toBeCloseTo(0.15, 5);
+	});
+
+	it("keeps emerald-950 count text contrast at max density", () => {
+		const channel = (c: number) => {
+			const s = c / 255;
+			return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+		};
+		const luminance = (rgb: [number, number, number]) =>
+			0.2126 * channel(rgb[0]) +
+			0.7152 * channel(rgb[1]) +
+			0.0722 * channel(rgb[2]);
+		const alpha = heatmapAlpha(1, 1);
+		const fill: [number, number, number] = [16, 122, 87];
+		const card: [number, number, number] = [255, 255, 255];
+		const blended = fill.map(
+			(c, i) => alpha * c + (1 - alpha) * (card[i] as number),
+		) as [number, number, number];
+		const text: [number, number, number] = [2, 44, 34];
+		const l1 = luminance(blended);
+		const l2 = luminance(text);
+		const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+		expect(ratio).toBeGreaterThanOrEqual(4.5);
 	});
 
 	it("leaves zero-count cells unfilled", () => {

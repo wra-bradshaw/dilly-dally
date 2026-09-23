@@ -12,7 +12,7 @@ interface CellCount {
 export function heatmapAlpha(count: number, max: number): number {
 	if (!(max > 0)) return 0.15;
 	const ratio = Math.min(1, Math.max(0, count / max));
-	return 0.15 + 0.45 * ratio;
+	return Math.min(0.6, 0.15 + 0.75 * ratio);
 }
 
 interface GroupHeatmapProps {
