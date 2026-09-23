@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 	shellComponent: RootDocument,
 });
 
-function routeTitle(
+export function routeTitle(
 	pathname: string,
 	eventTitle: string | undefined,
 	eventError: unknown,
@@ -86,7 +86,8 @@ function RootComponent() {
 	useDocumentTitle(
 		routeTitle(pathname, detail.data?.event.title, detail.error),
 	);
-	useRouteFocus(pathname);
+	const settled = eventId === "" || !detail.isPending;
+	useRouteFocus(settled ? `${pathname}#ready` : `${pathname}#loading`);
 	return (
 		<>
 			<a
