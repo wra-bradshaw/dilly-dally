@@ -134,6 +134,7 @@ function EventPage() {
 		slots: Set<string>;
 	} | null>(null);
 	const signErrorId = useId();
+	const signInTitleId = useId();
 	const inviteHintId = useId();
 	const copyStatusId = useId();
 	const restoreStatusId = useId();
@@ -381,13 +382,13 @@ function EventPage() {
 			<p className="mt-1 text-sm text-muted-foreground">
 				{event?.timezone} ·{" "}
 				<a
-					aria-describedby={`${inviteHintId} ${copyStatusId}`}
-					aria-label="Invite link — open this event"
+					aria-describedby={copyStatusId}
 					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href={url}
 					suppressHydrationWarning
 				>
 					{url}
+					<span className="sr-only"> (invite link — open this event)</span>
 				</a>{" "}
 				<Tooltip open={copied || copyError ? true : undefined}>
 					<TooltipTrigger asChild>
@@ -481,7 +482,9 @@ function EventPage() {
 				{!signedIn ? (
 					<Card className="mt-4">
 						<CardHeader>
-							<CardTitle>Sign in to add your availability</CardTitle>
+							<CardTitle id={signInTitleId}>
+								Sign in to add your availability
+							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="mb-4 text-sm text-muted-foreground">
@@ -489,6 +492,7 @@ function EventPage() {
 								up a password. Returning? Use the same name and password.
 							</p>
 							<form
+								aria-labelledby={signInTitleId}
 								className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
 								onSubmit={(e) => {
 									e.preventDefault();
