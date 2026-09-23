@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { cn } from "#/lib/utils";
 import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
 import { TimeGrid } from "./time-grid";
@@ -27,49 +28,12 @@ export function GroupHeatmap({
 }: GroupHeatmapProps) {
 	const [hovered, setHovered] = useState<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
-	const values = useMemo(
-		() => columns.flatMap((c) => c.cells.map((cell) => cell.id)),
-		[columns],
-	);
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
-	const [focusId, setFocusId] = useState<string | null>(null);
-	const roving = focusId ?? values[0] ?? null;
-
-	const focusCell = (id: string) => {
-		setFocusId(id);
-		tableRef.current
-			?.querySelector<HTMLButtonElement>(`[data-cell="${id}"]`)
-			?.focus();
-	};
-
-	const moveFocus = (id: string, dc: number, dr: number) => {
-		const p = pos.get(id);
-		if (!p) return;
-		const nc = Math.min(columns.length - 1, Math.max(0, p.c + dc));
-		const rows = columns[nc]?.cells ?? [];
-		const nr = Math.min(rows.length - 1, Math.max(0, p.r + dr));
-		const target = rows[nr]?.id;
-		if (target) focusCell(target);
-	};
-
-	const onGridKeyDown = (e: React.KeyboardEvent) => {
-		const active = document.activeElement as HTMLElement | null;
-		const id = active?.dataset?.cell ?? roving;
-		if (!id) return;
-		if (e.key === "ArrowRight") {
-			e.preventDefault();
-			moveFocus(id, 1, 0);
-		} else if (e.key === "ArrowLeft") {
-			e.preventDefault();
-			moveFocus(id, -1, 0);
-		} else if (e.key === "ArrowDown") {
-			e.preventDefault();
-			moveFocus(id, 0, 1);
-		} else if (e.key === "ArrowUp") {
-			e.preventDefault();
-			moveFocus(id, 0, -1);
-		}
-	};
+	const { onGridKeyDown, roving, setFocusId } = useGridKeyboardNav(
+		columns,
+		pos,
+		tableRef,
+	);
 	const max = useMemo(() => {
 		let top = 1;
 		for (const c of counts.values()) {
