@@ -204,3 +204,59 @@ test("failed restore shows retry and recovers on retry", async () => {
 	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
 	expect(fetchAvailability).toHaveBeenCalledTimes(2);
 });
+
+function GoneHarness({
+	fetchAvailability,
+}: {
+	fetchAvailability: FetchAvailability;
+}) {
+	const [storedName] = useLocalStorage(nameKey, "");
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const { retry, status } = useOwnAvailabilityRestore({
+		eventId,
+		fetchAvailability,
+		onCleared: () => setSelected(new Set()),
+		onRestored: (own) => setSelected(new Set(own.slots)),
+		storedName,
+	});
+	const gone = status === "gone";
+	return (
+		<div>
+			{gone && <p>This event has expired. Reload the page.</p>}
+			{status === "failed" && (
+				<p>
+					Could not restore your availability.{" "}
+					<button onClick={retry} type="button">
+						Retry
+					</button>
+				</p>
+			)}
+			<AvailabilityGrid
+				columns={columns()}
+				disabled={status === "restoring" || status === "failed" || gone}
+				onCommit={setSelected}
+				selected={selected}
+			/>
+		</div>
+	);
+}
+
+test("expired event shows gone banner with disabled grid and no retry", async () => {
+	localStorage.clear();
+	localStorage.setItem(nameKey, "Ada");
+	const fetchAvailability = vi
+		.fn()
+		.mockRejectedValue(new HttpError(410, "gone", "Event has expired"));
+	const screen = await render(
+		<GoneHarness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByText("This event has expired. Reload the page."))
+		.toBeVisible();
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeDisabled();
+	expect(screen.getByRole("button", { name: "Retry" }).all()).toHaveLength(
+		0,
+	);
+	expect(fetchAvailability).toHaveBeenCalledTimes(1);
+});

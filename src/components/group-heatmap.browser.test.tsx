@@ -81,3 +81,53 @@ test("arrow keys move focus between heatmap slots and announce counts", async ()
 	await expect.element(second).toHaveFocus();
 	await expect.element(screen.getByText("1/1 available")).toBeVisible();
 });
+
+function twoColumns() {
+	return buildColumns(
+		[
+			"2026-09-28T09:00",
+			"2026-09-28T09:15",
+			"2026-09-29T09:00",
+			"2026-09-29T09:15",
+		],
+		"UTC",
+		"UTC",
+	);
+}
+
+function press(el: { element: () => Element }, key: string) {
+	el.element().dispatchEvent(
+		new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key }),
+	);
+}
+
+test("heatmap arrows move Up Left Right with roving tabindex", async () => {
+	const cols = twoColumns();
+	const counts = new Map(
+		cols.flatMap((c) =>
+			c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+		),
+	);
+	const screen = await render(
+		<GroupHeatmap
+			allNames={["Ada"]}
+			columns={cols}
+			counts={counts}
+			eventTimezone="UTC"
+			total={1}
+			viewTimezone="UTC"
+		/>,
+	);
+	const lower = screen.getByRole("button", { name: /9\/28 9:15 AM/ });
+	await lower.click();
+	press(lower, "ArrowUp");
+	const upper = screen.getByRole("button", { name: /9\/28 9:00 AM/ });
+	await expect.element(upper).toHaveFocus();
+	press(upper, "ArrowRight");
+	const nextDay = screen.getByRole("button", { name: /9\/29 9:00 AM/ });
+	await expect.element(nextDay).toHaveFocus();
+	press(nextDay, "ArrowLeft");
+	await expect.element(upper).toHaveFocus();
+	await expect.element(nextDay).toHaveAttribute("tabindex", "-1");
+	await expect.element(upper).toHaveAttribute("tabindex", "0");
+});
