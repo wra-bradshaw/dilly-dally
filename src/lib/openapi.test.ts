@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getOpenApiSpec } from "./openapi";
 
@@ -45,5 +47,37 @@ describe("openapi availability errors", () => {
 		expect(availability.put.responses["415"]).toBeDefined();
 		expect(availability.post.responses["413"]).toBeDefined();
 		expect(availability.post.responses["415"]).toBeDefined();
+	});
+});
+
+describe("openapi drift guard", () => {
+	it("matches committed scripts/openapi.json", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const committed = readFileSync(
+			join(process.cwd(), "scripts", "openapi.json"),
+			"utf8",
+		);
+		expect(`${JSON.stringify(spec, null, 2)}\n`).toBe(committed);
+	});
+
+	it("keeps api-schema.d.ts fresh with spec operations and schemas", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const dts = readFileSync(
+			join(process.cwd(), "src", "lib", "api-schema.d.ts"),
+			"utf8",
+		);
+		const ops = new Set<string>();
+		for (const path of Object.values(spec.paths)) {
+			for (const method of Object.values(
+				path as Record<string, { operationId?: string }>,
+			)) {
+				if (method?.operationId) ops.add(method.operationId);
+			}
+		}
+		expect(ops.size).toBeGreaterThan(0);
+		for (const op of ops) expect(dts).toContain(op);
+		for (const name of Object.keys(spec.components.schemas)) {
+			expect(dts).toContain(name);
+		}
 	});
 });
