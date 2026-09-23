@@ -6,7 +6,7 @@ import {
 	default as openapiTS,
 } from "openapi-typescript";
 import { describe, expect, it } from "vitest";
-import { getOpenApiSpec } from "./openapi";
+import { getOpenApiSpec, serializeSpec } from "./openapi";
 
 describe("openapi availability errors", () => {
 	const spec = getOpenApiSpec("https://example.com");
@@ -62,7 +62,7 @@ describe("openapi drift guard", () => {
 			join(process.cwd(), "scripts", "openapi.json"),
 			"utf8",
 		);
-		expect(`${JSON.stringify(spec, null, 2)}\n`).toBe(committed);
+		expect(serializeSpec(spec)).toBe(committed);
 	});
 
 	it("keeps api-schema.d.ts byte-identical to the generated output", async () => {

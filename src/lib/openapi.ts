@@ -27,6 +27,10 @@ export interface OpenApiSpec {
 	servers: { url: string }[];
 }
 
+export function serializeSpec(spec: OpenApiSpec): string {
+	return `${JSON.stringify(spec, null, 2)}\n`;
+}
+
 export function getOpenApiSpec(origin: string): OpenApiSpec {
 	const slotId: OpenApiSchema = {
 		description:
