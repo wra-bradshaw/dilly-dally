@@ -148,7 +148,13 @@ function Home() {
 					<CardTitle>Plan a new event</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid gap-5">
+					<form
+						className="grid gap-5"
+						onSubmit={(e) => {
+							e.preventDefault();
+							void submit();
+						}}
+					>
 						<div className="grid gap-2">
 							<Label htmlFor="event-name">New event name</Label>
 							<Input
@@ -229,7 +235,7 @@ function Home() {
 									No earlier than
 								</span>
 								<Select onValueChange={setStartTime} value={startTime}>
-									<SelectTrigger aria-label="No earlier than" className="w-32">
+									<SelectTrigger aria-label="No earlier than" className="w-32" type="button">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -244,7 +250,7 @@ function Home() {
 									No later than
 								</span>
 								<Select onValueChange={setEndTime} value={endTime}>
-									<SelectTrigger aria-label="No later than" className="w-32">
+									<SelectTrigger aria-label="No later than" className="w-32" type="button">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -276,10 +282,10 @@ function Home() {
 								{error}
 							</p>
 						)}
-						<Button disabled={saving} onClick={submit} size="lg">
+						<Button disabled={saving} size="lg" type="submit">
 							{saving ? "Creating…" : "Create event"}
 						</Button>
-					</div>
+					</form>
 				</CardContent>
 			</Card>
 
