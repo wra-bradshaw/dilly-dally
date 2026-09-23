@@ -112,7 +112,20 @@ test("preset name restores cells after reload with a Restoring state", async () 
 	);
 	await expect.element(screen.getByText("Restoring…")).toBeVisible();
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
-	await expect.element(cell).toBeDisabled();
+	await expect.element(cell).toHaveAttribute("aria-disabled", "true");
+	expect(cell.element().hasAttribute("disabled")).toBe(false);
+	(cell.element() as HTMLButtonElement).focus();
+	await expect.element(cell).toHaveFocus();
+	const restoringReason = (
+		cell.element().getAttribute("aria-describedby") ?? ""
+	)
+		.split(" ")
+		.map(
+			(id) =>
+				screen.container.querySelector(`#${CSS.escape(id)}`)?.textContent ?? "",
+		)
+		.join(" ");
+	expect(restoringReason).toContain("temporarily unavailable");
 	resolveFetch({ name: "Ada", slots: ["2026-09-28T09:00"] });
 	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
 	expect(fetchAvailability).toHaveBeenCalledWith(eventId, "Ada", undefined);
@@ -216,7 +229,18 @@ test("failed restore shows retry and recovers on retry", async () => {
 		.element(screen.getByText(/Could not restore your availability/))
 		.toBeVisible();
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
-	await expect.element(cell).toBeDisabled();
+	await expect.element(cell).toHaveAttribute("aria-disabled", "true");
+	expect(cell.element().hasAttribute("disabled")).toBe(false);
+	(cell.element() as HTMLButtonElement).focus();
+	await expect.element(cell).toHaveFocus();
+	const retryReason = (cell.element().getAttribute("aria-describedby") ?? "")
+		.split(" ")
+		.map(
+			(id) =>
+				screen.container.querySelector(`#${CSS.escape(id)}`)?.textContent ?? "",
+		)
+		.join(" ");
+	expect(retryReason).toContain("temporarily unavailable");
 	await screen.getByRole("button", { name: "Retry" }).click();
 	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
 	expect(fetchAvailability).toHaveBeenCalledTimes(2);
@@ -271,7 +295,18 @@ test("expired event shows gone banner with disabled grid and no retry", async ()
 		.element(screen.getByText("This event has expired. Reload the page."))
 		.toBeVisible();
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
-	await expect.element(cell).toBeDisabled();
+	await expect.element(cell).toHaveAttribute("aria-disabled", "true");
+	expect(cell.element().hasAttribute("disabled")).toBe(false);
+	(cell.element() as HTMLButtonElement).focus();
+	await expect.element(cell).toHaveFocus();
+	const goneReason = (cell.element().getAttribute("aria-describedby") ?? "")
+		.split(" ")
+		.map(
+			(id) =>
+				screen.container.querySelector(`#${CSS.escape(id)}`)?.textContent ?? "",
+		)
+		.join(" ");
+	expect(goneReason).toContain("temporarily unavailable");
 	expect(screen.getByRole("button", { name: "Retry" }).all()).toHaveLength(0);
 	expect(fetchAvailability).toHaveBeenCalledTimes(1);
 });
