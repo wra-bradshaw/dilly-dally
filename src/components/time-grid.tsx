@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, type Ref, useMemo } from "react";
+import { Fragment, type ReactNode, type Ref, useId, useMemo } from "react";
 import { cn } from "#/lib/utils";
 import {
 	buildTimeRows,
@@ -62,6 +62,9 @@ export function TimeGrid({
 }: TimeGridProps) {
 	const { breaksByCol, gapByAfter, gaps, rows, summary, totalSkipped } =
 		useTimeGrid(columns);
+	const rawId = useId();
+	const baseId = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
+	const captionId = `${baseId}-caption`;
 	const fullLabel =
 		gaps.length > 0
 			? `${tableLabel} Dates are non-contiguous; gaps marked ${totalSkipped} days skipped.`
@@ -75,7 +78,7 @@ export function TimeGrid({
 				</output>
 			) : null}
 			<table
-				aria-label={fullLabel}
+				aria-labelledby={captionId}
 				className={cn("w-full border-collapse select-none", tableClassName)}
 				onKeyDown={onKeyDown}
 				onPointerCancel={onPointerCancel}
@@ -83,6 +86,9 @@ export function TimeGrid({
 				onPointerUp={onPointerUp}
 				ref={tableRef}
 			>
+				<caption className="sr-only" id={captionId}>
+					{fullLabel}
+				</caption>
 				<thead>
 					<tr>
 						<th className="w-16" scope="col">
@@ -98,7 +104,7 @@ export function TimeGrid({
 									>
 										<span
 											aria-hidden="true"
-											className="inline-block rounded border border-dashed border-muted-foreground/60 bg-muted px-1 text-[10px] text-muted-foreground"
+											className="inline-block rounded border border-dashed border-muted-foreground bg-muted px-1 text-[10px] text-foreground"
 										>
 											+{gapByAfter.get(i - 1)?.skipped}
 										</span>
@@ -109,7 +115,15 @@ export function TimeGrid({
 										</span>
 									</th>
 								) : null}
-								<th className="min-w-9 px-0.5" scope="col" />
+								<th
+									className="min-w-9 px-0.5"
+									id={`${baseId}-col-${i}`}
+									scope="col"
+								>
+									<span className="sr-only">
+										Available times for {col.header}
+									</span>
+								</th>
 							</Fragment>
 						))}
 					</tr>
@@ -120,7 +134,7 @@ export function TimeGrid({
 							return (
 								// biome-ignore lint/suspicious/noArrayIndexKey: interleaved marker/cell rows are positional and never reorder
 								<tr key={`marker-${ri}`}>
-									<td className="p-0" aria-hidden="true">
+									<td aria-hidden="true" className="p-0">
 										<span className="block h-1 w-16" />
 									</td>
 									{columns.map((col, i) => {
@@ -131,7 +145,7 @@ export function TimeGrid({
 												{gap ? (
 													<td
 														aria-hidden="true"
-														className="border-r border-dashed border-muted-foreground/40 bg-muted/40 p-0"
+														className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
 													>
 														<span className="block h-7 w-4" />
 													</td>
@@ -142,9 +156,10 @@ export function TimeGrid({
 															"px-0.5 pb-1",
 															marker.rowIndex === 0 ? "pt-1" : "pt-4",
 														)}
+														id={`${baseId}-date-${col.key}-${marker.rowIndex}`}
 														scope="col"
 													>
-														<div className="text-xs font-semibold">
+														<div className="text-[11px] font-semibold">
 															{marker.label}
 														</div>
 													</th>
@@ -161,14 +176,23 @@ export function TimeGrid({
 						}
 						const r = row.rowIndex;
 						const gutter = columns.map((c) => c.cells[r]).find(Boolean) ?? null;
+						const rowId =
+							gutter?.hourStart === true ? `${baseId}-row-${r}` : null;
 						return (
 							<tr key={`row-${r}`}>
-								<th
-									className="pr-1 text-right align-top text-[10px] leading-6 font-normal text-muted-foreground"
-									scope="row"
-								>
-									{gutter?.hourStart ? gutter.label : ""}
-								</th>
+								{gutter?.hourStart === true && gutter ? (
+									<th
+										className="pr-1 text-right align-top text-[10px] leading-6 font-normal text-muted-foreground"
+										id={rowId ?? undefined}
+										scope="row"
+									>
+										{gutter.label}
+									</th>
+								) : (
+									<td aria-hidden="true" className="p-0">
+										<span className="block h-6 w-16" />
+									</td>
+								)}
 								{columns.map((col, i) => {
 									const gap = i > 0 ? gapByAfter.get(i - 1) : undefined;
 									const cell = col.cells[r];
@@ -176,18 +200,26 @@ export function TimeGrid({
 									const segment = cell ? segmentForCell(breaks, r) : null;
 									const afterBreak =
 										segment !== null && segment.rowIndex === r && r !== 0;
+									const colId = `${baseId}-col-${i}`;
+									const dateId =
+										segment !== null
+											? `${baseId}-date-${col.key}-${segment.rowIndex}`
+											: null;
+									const headers = [colId, dateId, rowId]
+										.filter((v): v is string => v !== null)
+										.join(" ");
 									return (
 										<Fragment key={col.key}>
 											{gap ? (
 												<td
 													aria-hidden="true"
-													className="border-r border-dashed border-muted-foreground/40 bg-muted/40 p-0"
+													className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
 												>
 													<span className="block h-6 w-4" />
 												</td>
 											) : null}
 											{cell && segment ? (
-												<td className="p-0" key={cell.id}>
+												<td className="p-0" headers={headers} key={cell.id}>
 													{renderCell(cell, {
 														afterBreak,
 														column: col,

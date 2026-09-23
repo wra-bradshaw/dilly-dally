@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { cn } from "#/lib/utils";
 import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
@@ -9,16 +9,25 @@ interface CellCount {
 	names: string[];
 }
 
-export const HEATMAP_FILL_RGB = [16, 122, 87] as const;
-
-export function heatmapAlpha(count: number, max: number): number {
-	if (!(max > 0)) return 0.15;
-	const ratio = Math.min(1, Math.max(0, count / max));
-	return Math.min(0.6, 0.15 + 0.75 * ratio);
-}
-
 export function heatmapAnnounce(signedIn: boolean): boolean {
 	return !signedIn;
+}
+
+export function heatmapFill(count: number, total: number): string {
+	if (!(count > 0)) {
+		return "border-rose-600 bg-rose-100 dark:border-rose-400 dark:bg-rose-950/40";
+	}
+	const ratio = total > 0 ? count / total : 0;
+	if (ratio >= 1) {
+		return "border-emerald-800 bg-emerald-400 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-700 dark:text-emerald-100";
+	}
+	if (ratio >= 0.6) {
+		return "border-emerald-800 bg-emerald-300 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-800 dark:text-emerald-100";
+	}
+	if (ratio >= 0.3) {
+		return "border-emerald-800 bg-emerald-200 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-900 dark:text-emerald-100";
+	}
+	return "border-emerald-800 bg-emerald-100 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-950 dark:text-emerald-100";
 }
 
 interface GroupHeatmapProps {
@@ -44,6 +53,8 @@ export function GroupHeatmap({
 	const [focusedId, setFocusedId] = useState<string | null>(null);
 	const tapped = useRef<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
+	const rawDetailId = useId();
+	const detailId = rawDetailId.replace(/[^a-zA-Z0-9_-]/g, "");
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
 	const { onGridKeyDown, roving, setFocusId } = useGridKeyboardNav(
 		columns,
@@ -58,13 +69,6 @@ export function GroupHeatmap({
 		}
 		onGridKeyDown(e);
 	};
-	const max = useMemo(() => {
-		let top = 1;
-		for (const c of counts.values()) {
-			if (c.count > top) top = c.count;
-		}
-		return top;
-	}, [counts]);
 	const info = hovered ? counts.get(hovered) : undefined;
 	const unavailable = useMemo(
 		() => (info ? allNames.filter((n) => !info.names.includes(n)) : []),
@@ -84,14 +88,14 @@ export function GroupHeatmap({
 					onKeyDown={onHeatmapKeyDown}
 					renderCell={(cell, ctx) => (
 						<button
+							aria-controls={detailId}
+							aria-expanded={hovered === cell.id}
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
-								"block h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold first:border-t",
-								(counts.get(cell.id)?.count ?? 0) === 0
-									? "border-rose-200 bg-rose-50 text-rose-400 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300/70"
-									: "border-emerald-800 text-emerald-950 underline decoration-emerald-900/40 underline-offset-2 dark:border-emerald-600 dark:text-emerald-100",
+								"block h-6 min-h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
+								heatmapFill(counts.get(cell.id)?.count ?? 0, total),
 								ctx.afterBreak && "border-t-2 border-t-foreground/50",
-								hovered === cell.id && "ring-2 ring-inset ring-primary",
+								hovered === cell.id && "ring-2 ring-inset ring-ring",
 							)}
 							data-cell={cell.id}
 							onBlur={(e) => {
@@ -133,13 +137,6 @@ export function GroupHeatmap({
 								}
 								setHovered(null);
 							}}
-							style={
-								(counts.get(cell.id)?.count ?? 0) === 0
-									? undefined
-									: {
-											backgroundColor: `rgba(${HEATMAP_FILL_RGB[0]}, ${HEATMAP_FILL_RGB[1]}, ${HEATMAP_FILL_RGB[2]}, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
-										}
-							}
 							tabIndex={cell.id === roving ? 0 : -1}
 							type="button"
 						>
@@ -148,44 +145,52 @@ export function GroupHeatmap({
 								: ""}
 						</button>
 					)}
-					tableLabel="Group availability. Darker green means more people are free. Counts are shown as numbers."
+					tableLabel="Group availability. Green means available. Counts are shown as numbers."
 					tableRef={tableRef}
 				/>
 			</div>
 			<div
 				aria-live="polite"
 				className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
+				id={detailId}
 			>
 				{info && hovered ? (
 					<div>
-						<div className="font-semibold">
+						<h3 className="font-semibold">
 							{info.count}/{total} available
-						</div>
-						<div className="mt-1 text-xs text-muted-foreground" title={hovered}>
+						</h3>
+						<p className="mt-1 text-xs text-muted-foreground" title={hovered}>
 							{hoveredDisplay}
-						</div>
+						</p>
 						{info.names.length > 0 && (
 							<div className="mt-2">
-								<div className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
+								<h4 className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
 									Available
-								</div>
-								<div className="text-xs">{info.names.join(", ")}</div>
+								</h4>
+								<ul className="text-xs">
+									{info.names.map((name) => (
+										<li key={name}>{name}</li>
+									))}
+								</ul>
 							</div>
 						)}
 						{unavailable.length > 0 && (
 							<div className="mt-2">
-								<div className="text-xs font-medium text-rose-800 dark:text-rose-300">
+								<h4 className="text-xs font-medium text-rose-800 dark:text-rose-300">
 									Unavailable
-								</div>
-								<div className="text-xs">{unavailable.join(", ")}</div>
+								</h4>
+								<ul className="text-xs">
+									{unavailable.map((name) => (
+										<li key={name}>{name}</li>
+									))}
+								</ul>
 							</div>
 						)}
 					</div>
 				) : (
-					<div className="text-xs text-muted-foreground">
-						Hover or tap a time slot to see who is available. Darker green means
-						more people.
-					</div>
+					<p className="text-xs text-muted-foreground">
+						Hover or tap a time slot to see who is available.
+					</p>
 				)}
 			</div>
 		</div>
