@@ -44,9 +44,3 @@ export const participants = sqliteTable(
 		}).onDelete("cascade"),
 	],
 );
-
-export const rateCounters = sqliteTable("rate_counters", {
-	count: integer("count").notNull(),
-	key: text("key").primaryKey(),
-	windowStart: integer("window_start").notNull(),
-});

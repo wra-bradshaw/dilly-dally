@@ -1,4 +1,4 @@
-import { and, eq, lt, lte } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
@@ -128,9 +128,6 @@ export async function purgeExpired(
 	if (expired.length > 0) {
 		await db.delete(schema.events).where(lte(schema.events.expiresAt, now));
 	}
-	await db
-		.delete(schema.rateCounters)
-		.where(lt(schema.rateCounters.windowStart, now - 2 * 3_600_000));
 	return expired.length;
 }
 
