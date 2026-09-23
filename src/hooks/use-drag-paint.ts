@@ -47,7 +47,10 @@ export function useDragPaint<T>(options: DragPaintOptions<T>): DragPaintApi<T> {
 			setDrag({ anchor: value, current: value, paint: !selected.has(value) });
 		},
 		onPointerEnter: (value: T) => {
-			if (drag) setDrag({ ...drag, current: value });
+			setDrag((prev) => {
+				if (!prev || prev.current === value) return prev;
+				return { ...prev, current: value };
+			});
 		},
 		onPointerUp: (finalValue?: T) => {
 			if (!drag) return;
