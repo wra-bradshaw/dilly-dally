@@ -24,7 +24,7 @@ export async function handleGetDetail(
 		RATE_LIMITS.read.windowMs,
 		RATE_LIMITS.read.limit,
 	);
-	if (!rl.allowed) return rateLimited(rl.resetMs);
+	if (!rl.allowed) return rateLimited(rl.resetMs, { noStore: true });
 	try {
 		const detail = await loadEventDetailFromDb(db, eventId, now);
 		return Response.json(detail, {

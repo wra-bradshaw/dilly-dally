@@ -27,20 +27,26 @@ export function securityHeaders(): Record<string, string> {
 	};
 }
 
-export function rateLimited(resetMs: number): Response {
+export function documentSecurityHeaders(): Record<string, string> {
+	return { ...securityHeaders(), "X-Frame-Options": "DENY" };
+}
+
+export function rateLimited(
+	resetMs: number,
+	opts?: { noStore?: boolean },
+): Response {
 	const retryAfter = Math.max(1, Math.ceil((resetMs - Date.now()) / 1000));
+	const headers: Record<string, string> = {
+		...securityHeaders(),
+		"Content-Type": "application/json",
+		"Retry-After": String(retryAfter),
+	};
+	if (opts?.noStore) headers["Cache-Control"] = "no-store";
 	return new Response(
 		JSON.stringify({
 			error: { code: "rate_limited", message: "Too many requests" },
 		}),
-		{
-			headers: {
-				...securityHeaders(),
-				"Content-Type": "application/json",
-				"Retry-After": String(retryAfter),
-			},
-			status: 429,
-		},
+		{ headers, status: 429 },
 	);
 }
 

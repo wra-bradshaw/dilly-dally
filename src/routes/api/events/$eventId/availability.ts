@@ -95,7 +95,7 @@ export async function getOwnAvailabilityResponse(
 		RATE_LIMITS.read.windowMs,
 		RATE_LIMITS.read.limit,
 	);
-	if (!rl.allowed) return rateLimited(rl.resetMs);
+	if (!rl.allowed) return rateLimited(rl.resetMs, { noStore: true });
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
 		return jsonError(
