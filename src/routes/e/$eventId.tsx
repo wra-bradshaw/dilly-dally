@@ -208,6 +208,15 @@ function EventPage() {
 			setSelected(new Set(lastSavedRef.current));
 			if (err instanceof HttpError && err.code === "invalid_password") {
 				setSaveState("Wrong password for this name. Change reverted.");
+			} else if (err instanceof HttpError && err.code === "invalid_slot") {
+				setSaveState("Some times are outside the event. Reload and retry.");
+			} else if (
+				err instanceof HttpError &&
+				(err.code === "gone" || err.status === 410)
+			) {
+				setSaveState("This event has expired. Reload the page.");
+			} else if (err instanceof HttpError && err.code === "bad_request") {
+				setSaveState("Could not save. Check your input and retry.");
 			} else if (err instanceof HttpError && err.code === "rate_limited") {
 				setSaveState("Saving too fast. Change reverted; paint again.");
 			} else {
