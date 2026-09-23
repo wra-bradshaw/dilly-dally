@@ -9,7 +9,7 @@ export function computeExpiry(args: {
 	if ((args.mode ?? "dates") === "weekly") return args.createdAt + 90 * DAY_MS;
 	const lastDate = [...args.dates].sort().at(-1);
 	if (!lastDate) return args.createdAt + 90 * DAY_MS;
-	const graceEnd = new Date(`${lastDate}T00:00:00.000Z`).getTime() + DAY_MS;
+	const graceEnd = new Date(`${lastDate}T00:00:00.000Z`).getTime() + 2 * DAY_MS;
 	return Math.min(args.createdAt + 90 * DAY_MS, graceEnd);
 }
 

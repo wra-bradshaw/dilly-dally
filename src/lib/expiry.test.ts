@@ -9,7 +9,17 @@ describe("computeExpiry", () => {
 			dates: ["2026-10-05"],
 		});
 		expect(expiry).toBeGreaterThan(createdAt);
-		expect(new Date(expiry).toISOString()).toBe("2026-10-06T00:00:00.000Z");
+		expect(new Date(expiry).toISOString()).toBe("2026-10-07T00:00:00.000Z");
+	});
+
+	it("keeps local-today events west of UTC alive at creation", () => {
+		const createdAt = new Date("2026-09-23T00:00:00.000Z").getTime();
+		const expiry = computeExpiry({
+			createdAt,
+			dates: ["2026-09-22"],
+		});
+		expect(isExpired(expiry, createdAt)).toBe(false);
+		expect(new Date(expiry).toISOString()).toBe("2026-09-24T00:00:00.000Z");
 	});
 
 	it("caps at 90 days", () => {
