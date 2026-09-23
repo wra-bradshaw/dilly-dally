@@ -14,6 +14,22 @@ export async function checkRateLimit(
 	return stub.check(nowMs, windowMs, limit);
 }
 
+export async function doRateLimit(
+	request: Request,
+	scope: string,
+	budget: { limit: number; windowMs: number },
+	namespace: DurableObjectNamespace<RateLimiter> = env.RATE_LIMITER,
+): Promise<RateLimitResult> {
+	const key = await rateLimitKey(clientIp(request), scope);
+	return checkRateLimit(
+		key,
+		Date.now(),
+		budget.windowMs,
+		budget.limit,
+		namespace,
+	);
+}
+
 export async function guardRateLimit(
 	request: Request,
 	scope: string,
@@ -21,14 +37,7 @@ export async function guardRateLimit(
 	opts?: { noStore?: boolean },
 	namespace: DurableObjectNamespace<RateLimiter> = env.RATE_LIMITER,
 ): Promise<Response | null> {
-	const key = await rateLimitKey(clientIp(request), scope);
-	const result = await checkRateLimit(
-		key,
-		Date.now(),
-		budget.windowMs,
-		budget.limit,
-		namespace,
-	);
+	const result = await doRateLimit(request, scope, budget, namespace);
 	if (!result.allowed) return rateLimited(result.resetMs, opts);
 	return null;
 }

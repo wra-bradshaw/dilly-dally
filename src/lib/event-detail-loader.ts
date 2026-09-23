@@ -1,12 +1,11 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
-import { clientIp } from "./api-errors";
 import type { EventDetailResponse } from "./client";
 import { getDb } from "./db-env";
 import { retryAfterSeconds } from "./denials";
 import { HttpError } from "./http-error";
-import { RATE_LIMITS, rateLimitKey } from "./rate-limit";
+import { RATE_LIMITS } from "./rate-limit";
 import { loadEventDetailFromDb } from "./server-event-detail";
-import { checkRateLimit } from "./server-rate-limit";
+import { doRateLimit } from "./server-rate-limit";
 
 type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
@@ -32,14 +31,8 @@ export function readLimitContext(
 
 const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {
-		const key = await rateLimitKey(clientIp(request), "read");
 		const now = Date.now();
-		const rl = await checkRateLimit(
-			key,
-			now,
-			RATE_LIMITS.read.windowMs,
-			RATE_LIMITS.read.limit,
-		);
+		const rl = await doRateLimit(request, "read", RATE_LIMITS.read);
 		const decision = readLimitContext(rl.allowed, rl.resetMs, now);
 		return next({
 			context: {

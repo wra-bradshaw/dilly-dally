@@ -23,15 +23,18 @@ export async function loadLiveEvent(
 	now: number,
 ): Promise<LiveEventResult> {
 	if (!isValidEventId(eventId)) {
-		return { code: "not_found", ok: false, status: 404 };
+		const denial = liveEventDenial("not_found");
+		return { code: denial.code, ok: false, status: denial.status };
 	}
 	const event = await fetchEvent(db, eventId);
 	if (!event) {
-		return { code: "not_found", ok: false, status: 404 };
+		const denial = liveEventDenial("not_found");
+		return { code: denial.code, ok: false, status: denial.status };
 	}
 	if (isExpired(event.expiresAt, now)) {
 		await deleteEvent(db, event.id);
-		return { code: "gone", ok: false, status: 410 };
+		const denial = liveEventDenial("gone");
+		return { code: denial.code, ok: false, status: denial.status };
 	}
 	return { event, ok: true };
 }

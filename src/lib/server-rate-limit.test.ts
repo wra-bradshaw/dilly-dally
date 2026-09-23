@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { decideRateLimit, type RateLimitState } from "./rate-limit";
 import { RateLimiter } from "./rate-limiter-do";
-import { checkRateLimit, guardRateLimit } from "./server-rate-limit";
+import {
+	checkRateLimit,
+	doRateLimit,
+	guardRateLimit,
+} from "./server-rate-limit";
 
 function createFakeStorage() {
 	let row: { count: number; window_start: number } | null = null;
@@ -182,6 +186,37 @@ describe("guardRateLimit", () => {
 			(
 				await guardRateLimit(
 					request("4.4.4.4"),
+					"read",
+					budget,
+					undefined,
+					namespace,
+				)
+			)?.status,
+		).toBe(429);
+	});
+});
+describe("doRateLimit", () => {
+	function request(ip: string) {
+		return new Request("https://x.test/api/events", {
+			headers: { "cf-connecting-ip": ip },
+		});
+	}
+
+	it("shares the core check with guardRateLimit", async () => {
+		const namespace = fakeNamespace();
+		const budget = { limit: 1, windowMs: 60_000 };
+		expect(
+			(await doRateLimit(request("6.6.6.6"), "read", budget, namespace))
+				.allowed,
+		).toBe(true);
+		expect(
+			(await doRateLimit(request("6.6.6.6"), "read", budget, namespace))
+				.allowed,
+		).toBe(false);
+		expect(
+			(
+				await guardRateLimit(
+					request("6.6.6.6"),
 					"read",
 					budget,
 					undefined,
