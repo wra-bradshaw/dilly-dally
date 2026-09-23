@@ -23,10 +23,7 @@ export type SignInDecision =
 	| { kind: "fresh" }
 	| { kind: "message"; text: string };
 
-export function decideSignInError(
-	err: unknown,
-	_eventMissing?: boolean,
-): SignInDecision {
+export function decideSignInError(err: unknown): SignInDecision {
 	if (err instanceof HttpError && err.code === "invalid_password") {
 		return {
 			kind: "message",

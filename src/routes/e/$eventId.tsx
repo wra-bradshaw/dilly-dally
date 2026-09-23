@@ -106,11 +106,6 @@ function inviteUrl(eventId: string): string {
 function EventPage() {
 	const { eventId } = Route.useParams();
 	const detail = useEventDetail(eventId);
-	const eventMissing =
-		detail.isError &&
-		!detail.data &&
-		detail.error instanceof HttpError &&
-		(detail.error.status === 404 || detail.error.status === 410);
 	const queryClient = useQueryClient();
 	const { copied, copy, copyError } = useCopyToClipboard();
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
@@ -211,7 +206,7 @@ function EventPage() {
 			setActiveName(own.name);
 			setStoredName(own.name);
 		} catch (err) {
-			const decision = decideSignInError(err, eventMissing);
+			const decision = decideSignInError(err);
 			if (decision.kind === "message") {
 				setSignError(decision.text);
 				return;
