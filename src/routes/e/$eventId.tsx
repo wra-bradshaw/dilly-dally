@@ -23,6 +23,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "#/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "#/components/ui/tooltip";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useLocalStorage } from "#/hooks/use-local-storage";
@@ -202,11 +207,6 @@ function EventPage() {
 	const bestTimes = useMemo(() => {
 		return [...(detail.data?.bestTimes ?? [])].slice(0, 10);
 	}, [detail.data]);
-	const dateSummary = event
-		? (event.mode ?? "dates") === "weekly"
-			? summarizeWeekdays(event.weekdays ?? [])
-			: summarizeDates(event.dates)
-		: "";
 
 	const signIn = async () => {
 		setSignError("");
@@ -378,41 +378,33 @@ function EventPage() {
 
 			<h1 className="font-heading mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
-				{event?.timezone} · {dateSummary} · {event?.startTime}–{event?.endTime}{" "}
-				· Expires {event ? new Date(event.expiresAt).toLocaleDateString() : ""}
+				{event?.timezone} ·{" "}
+				<Tooltip open={copied ? true : undefined}>
+					<TooltipTrigger asChild>
+						<a
+							className="text-primary underline underline-offset-4 hover:text-accent-foreground"
+							href={url}
+							onClick={(e) => {
+								e.preventDefault();
+								copy(url);
+							}}
+							suppressHydrationWarning
+						>
+							{url}
+						</a>
+					</TooltipTrigger>
+					<TooltipContent>
+						{copyError
+							? "Copy failed — long-press the link to copy it manually"
+							: copied
+								? "Copied!"
+								: "Click to copy invite link"}
+					</TooltipContent>
+				</Tooltip>
+				<span aria-live="polite" className="sr-only">
+					{copied ? "Invite link copied to clipboard" : ""}
+				</span>
 			</p>
-
-			<Card className="mt-6">
-				<CardHeader>
-					<CardTitle>Invite people</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="flex flex-col gap-2 sm:flex-row">
-						<Input aria-label="Invite link" readOnly value={url} />
-						<div className="flex gap-2">
-							<Button
-								aria-live="polite"
-								onClick={() => copy(url)}
-								type="button"
-								variant="secondary"
-							>
-								{copyError
-									? "Copy failed — select the link manually"
-									: copied
-										? "Copied!"
-										: "Copy link"}
-							</Button>
-							<Button asChild variant="outline">
-								<a
-									href={`mailto:?subject=${encodeURIComponent(`When2meet: ${event?.title ?? ""}`)}&body=${encodeURIComponent(`Pick times that work for you: ${url}`)}`}
-								>
-									Email invite
-								</a>
-							</Button>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
 
 			{!signedIn ? (
 				<Card className="mt-4">
