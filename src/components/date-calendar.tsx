@@ -66,7 +66,9 @@ export function DateCalendar({
 		day !== null && day >= minDate && day <= maxDate;
 
 	const commitEnabled = (next: Set<string>) => {
-		onCommit(filterCalendarCommit(next, selected, matrix.flat(), minDate, maxDate));
+		onCommit(
+			filterCalendarCommit(next, selected, matrix.flat(), minDate, maxDate),
+		);
 	};
 
 	const surface = usePaintSurface<string, HTMLDivElement>({
