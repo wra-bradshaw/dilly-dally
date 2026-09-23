@@ -149,12 +149,52 @@ describe("useSerialSaver", () => {
 		act(() => {
 			result.current.cancel();
 		});
-		expect(result.current.inFlight).toBe(false);
+		expect(result.current.inFlight).toBe(true);
 		await act(async () => {
 			first.resolve();
 		});
 		expect(save).toHaveBeenCalledTimes(1);
 		expect(onSuccess).not.toHaveBeenCalled();
 		expect(onError).not.toHaveBeenCalled();
+		expect(result.current.inFlight).toBe(false);
+	});
+
+	it("serializes a resubmit after cancel without concurrent runs", async () => {
+		const first = deferred<void>();
+		const second = deferred<void>();
+		const save = vi
+			.fn()
+			.mockReturnValueOnce(first.promise)
+			.mockReturnValueOnce(second.promise);
+		const onSuccess = vi.fn();
+		const onError = vi.fn();
+		const { result } = renderHook(() =>
+			useSerialSaver({ onError, onSuccess, save }),
+		);
+		act(() => {
+			result.current.submit("a");
+		});
+		act(() => {
+			result.current.submit("b");
+		});
+		act(() => {
+			result.current.cancel();
+		});
+		act(() => {
+			result.current.submit("c");
+		});
+		expect(save).toHaveBeenCalledTimes(1);
+		await act(async () => {
+			first.resolve();
+		});
+		expect(save).toHaveBeenCalledTimes(2);
+		expect(save).toHaveBeenLastCalledWith("c");
+		await act(async () => {
+			second.resolve();
+		});
+		expect(onSuccess).toHaveBeenCalledTimes(1);
+		expect(onSuccess).toHaveBeenCalledWith("c");
+		expect(onError).not.toHaveBeenCalled();
+		expect(result.current.inFlight).toBe(false);
 	});
 });

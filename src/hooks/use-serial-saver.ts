@@ -19,6 +19,7 @@ export function useSerialSaver<T>(options: {
 	const [inFlight, setInFlight] = useState(false);
 
 	const run = useCallback(async (first: T, epoch: number) => {
+		let runEpoch = epoch;
 		stateRef.current.inFlight = true;
 		setInFlight(true);
 		try {
@@ -36,7 +37,19 @@ export function useSerialSaver<T>(options: {
 					failed = true;
 					caught = error;
 				}
-				if (stateRef.current.epoch !== epoch) return;
+				if (stateRef.current.epoch !== runEpoch) {
+					if (stateRef.current.hasPending) {
+						runEpoch = stateRef.current.epoch;
+						current = stateRef.current.pending;
+						hasCurrent = true;
+						stateRef.current.pending = undefined;
+						stateRef.current.hasPending = false;
+						continue;
+					}
+					stateRef.current.inFlight = false;
+					setInFlight(false);
+					return;
+				}
 				if (stateRef.current.hasPending) {
 					current = stateRef.current.pending;
 					hasCurrent = true;
@@ -58,7 +71,7 @@ export function useSerialSaver<T>(options: {
 				}
 			}
 		} finally {
-			if (stateRef.current.epoch === epoch) {
+			if (stateRef.current.epoch === runEpoch) {
 				stateRef.current.inFlight = false;
 				setInFlight(false);
 			}
@@ -81,8 +94,6 @@ export function useSerialSaver<T>(options: {
 		stateRef.current.epoch += 1;
 		stateRef.current.pending = undefined;
 		stateRef.current.hasPending = false;
-		stateRef.current.inFlight = false;
-		setInFlight(false);
 	}, []);
 
 	return { cancel, inFlight, submit };
