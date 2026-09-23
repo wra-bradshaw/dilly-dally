@@ -131,4 +131,30 @@ describe("useSerialSaver", () => {
 		expect(onError.mock.calls[0]?.[1]).toBe("b");
 		expect(result.current.inFlight).toBe(false);
 	});
+
+	it("drops pending and ignores in-flight callbacks after cancel", async () => {
+		const first = deferred<void>();
+		const save = vi.fn().mockReturnValueOnce(first.promise);
+		const onSuccess = vi.fn();
+		const onError = vi.fn();
+		const { result } = renderHook(() =>
+			useSerialSaver({ onError, onSuccess, save }),
+		);
+		act(() => {
+			result.current.submit("a");
+		});
+		act(() => {
+			result.current.submit("b");
+		});
+		act(() => {
+			result.current.cancel();
+		});
+		expect(result.current.inFlight).toBe(false);
+		await act(async () => {
+			first.resolve();
+		});
+		expect(save).toHaveBeenCalledTimes(1);
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(onError).not.toHaveBeenCalled();
+	});
 });

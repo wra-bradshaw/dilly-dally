@@ -4,20 +4,21 @@ export function useSerialSaver<T>(options: {
 	save: (value: T) => Promise<void>;
 	onSuccess?: (value: T) => void;
 	onError?: (error: unknown, value: T) => void;
-}): { inFlight: boolean; submit: (value: T) => void } {
+}): { cancel: () => void; inFlight: boolean; submit: (value: T) => void } {
 	const { onError, onSuccess, save } = options;
 	const saveRef = useRef(save);
 	saveRef.current = save;
 	const callbacksRef = useRef({ onError, onSuccess });
 	callbacksRef.current = { onError, onSuccess };
 	const stateRef = useRef<{
+		epoch: number;
 		hasPending: boolean;
 		inFlight: boolean;
 		pending: T | undefined;
-	}>({ hasPending: false, inFlight: false, pending: undefined });
+	}>({ epoch: 0, hasPending: false, inFlight: false, pending: undefined });
 	const [inFlight, setInFlight] = useState(false);
 
-	const run = useCallback(async (first: T) => {
+	const run = useCallback(async (first: T, epoch: number) => {
 		stateRef.current.inFlight = true;
 		setInFlight(true);
 		try {
@@ -35,6 +36,7 @@ export function useSerialSaver<T>(options: {
 					failed = true;
 					caught = error;
 				}
+				if (stateRef.current.epoch !== epoch) return;
 				if (stateRef.current.hasPending) {
 					current = stateRef.current.pending;
 					hasCurrent = true;
@@ -56,8 +58,10 @@ export function useSerialSaver<T>(options: {
 				}
 			}
 		} finally {
-			stateRef.current.inFlight = false;
-			setInFlight(false);
+			if (stateRef.current.epoch === epoch) {
+				stateRef.current.inFlight = false;
+				setInFlight(false);
+			}
 		}
 	}, []);
 
@@ -68,10 +72,18 @@ export function useSerialSaver<T>(options: {
 				stateRef.current.hasPending = true;
 				return;
 			}
-			void run(value);
+			void run(value, stateRef.current.epoch);
 		},
 		[run],
 	);
 
-	return { inFlight, submit };
+	const cancel = useCallback(() => {
+		stateRef.current.epoch += 1;
+		stateRef.current.pending = undefined;
+		stateRef.current.hasPending = false;
+		stateRef.current.inFlight = false;
+		setInFlight(false);
+	}, []);
+
+	return { cancel, inFlight, submit };
 }

@@ -110,7 +110,7 @@ function EventPage() {
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
 	const lastSavedRef = useRef<Set<string>>(new Set());
-	const lastSubmittedRef = useRef<Set<string> | null>(null);
+	const lastSubmittedRef = useRef<{ password: string | undefined; identity: string; slots: Set<string> } | null>(null);
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
@@ -209,7 +209,7 @@ function EventPage() {
 		setSignedIn(true);
 	};
 
-	const saver = useSerialSaver<Set<string>>({
+	const saver = useSerialSaver<{ password: string | undefined; identity: string; slots: Set<string> }>({
 		onError: (err, value) => {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(lastSavedRef.current));
@@ -217,27 +217,26 @@ function EventPage() {
 			setSaveState(saveErrorMessage(err));
 		},
 		onSuccess: (value) => {
-			lastSavedRef.current = new Set(value);
+			lastSavedRef.current = new Set(value.slots);
 			if (value === lastSubmittedRef.current) {
-				setSelected(new Set(value));
+				setSelected(new Set(value.slots));
 			}
 			const at = new Date();
 			setSaveState(`Saved ${at.toLocaleTimeString()}`);
-			if (activeName.trim() !== "") {
+			if (value.identity.trim() !== "") {
 				const stamp = at.toISOString();
-				const saverName = activeName;
 				queryClient.setQueryData(
 					["event", eventId],
 					(old: EventDetailResponse | undefined) =>
-						old ? patchDetailForSave(old, saverName, value, stamp) : old,
+						old ? patchDetailForSave(old, value.identity, value.slots, stamp) : old,
 				);
 			}
 		},
 		save: async (value) => {
 			await saveAvailability(eventId, {
-				name: activeName,
-				password: password === "" ? undefined : password,
-				slots: [...value],
+				name: value.identity,
+				password: value.password,
+				slots: [...value.slots],
 			});
 		},
 	});
@@ -246,8 +245,13 @@ function EventPage() {
 		setSelected(next);
 		if (!signedIn || activeName === "") return;
 		setSaveState("Saving…");
-		lastSubmittedRef.current = next;
-		saver.submit(next);
+		const tagged = {
+			identity: activeName,
+			password: password === "" ? undefined : password,
+			slots: next,
+		};
+		lastSubmittedRef.current = tagged;
+		saver.submit(tagged);
 	};
 
 	if (detail.isPending) {
@@ -423,6 +427,8 @@ function EventPage() {
 					<button
 						className="nav-link text-sm"
 						onClick={() => {
+							saver.cancel();
+							lastSubmittedRef.current = null;
 							setSignedIn(false);
 							setPassword("");
 							setSelected(new Set());
