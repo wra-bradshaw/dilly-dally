@@ -100,8 +100,28 @@ describe("findBestTimes", () => {
 });
 
 describe("formatSlotWithDate", () => {
-	it("includes month, day, and time", () => {
-		expect(formatSlotWithDate("2026-10-06T00:00")).toBe("Oct 6, 12:00 AM");
-		expect(formatSlotWithDate("2026-09-28T09:15")).toBe("Sep 28, 9:15 AM");
+	it("includes month, day, and time in the runtime locale", () => {
+		const monthDay = (date: string) => {
+			const [y, m, d] = date.split("-").map(Number);
+			return new Intl.DateTimeFormat(undefined, {
+				day: "numeric",
+				month: "short",
+				timeZone: "UTC",
+			}).format(new Date(Date.UTC(y, m - 1, d)));
+		};
+		const time = (t: string) => {
+			const [hh, mm] = t.split(":").map(Number);
+			return new Intl.DateTimeFormat(undefined, {
+				hour: "numeric",
+				minute: "2-digit",
+				timeZone: "UTC",
+			}).format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
+		};
+		expect(formatSlotWithDate("2026-10-06T00:00")).toBe(
+			`${monthDay("2026-10-06")}, ${time("00:00")}`,
+		);
+		expect(formatSlotWithDate("2026-09-28T09:15")).toBe(
+			`${monthDay("2026-09-28")}, ${time("09:15")}`,
+		);
 	});
 });

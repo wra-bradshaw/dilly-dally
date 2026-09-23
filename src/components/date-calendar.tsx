@@ -60,14 +60,11 @@ export function DateCalendar({
 		values: matrix.flat().filter((d): d is string => d !== null),
 	});
 
-	const monthLabel = new Date(Date.UTC(ym.y, ym.m, 1)).toLocaleDateString(
-		"en-US",
-		{
-			month: "long",
-			timeZone: "UTC",
-			year: "numeric",
-		},
-	);
+	const monthLabel = new Intl.DateTimeFormat(undefined, {
+		month: "long",
+		timeZone: "UTC",
+		year: "numeric",
+	}).format(new Date(Date.UTC(ym.y, ym.m, 1)));
 	const canPrev =
 		`${ym.y}-${String(ym.m + 1).padStart(2, "0")}-01` > minDate.slice(0, 7);
 	const lastDay = matrix.flat().filter(Boolean).at(-1) ?? "";

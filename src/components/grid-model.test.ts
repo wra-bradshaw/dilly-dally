@@ -2,10 +2,34 @@ import { describe, expect, it } from "vitest";
 import { buildSlotUniverse } from "#/lib/time-slots";
 import {
 	buildColumns,
+	buildTimeRows,
+	buildWeeklyColumns,
+	formatMarkerDate,
+	getDateBreaks,
 	getDayGaps,
 	gridRectangleIds,
+	segmentForCell,
 	summarizeDates,
 } from "./grid-model";
+
+function expectedTime(time: string): string {
+	const [hh, mm] = time.split(":").map(Number);
+	return new Intl.DateTimeFormat(undefined, {
+		hour: "numeric",
+		minute: "2-digit",
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
+}
+
+function expectedMarker(date: string): string {
+	const [y, m, d] = date.split("-").map(Number);
+	return new Intl.DateTimeFormat(undefined, {
+		day: "numeric",
+		month: "numeric",
+		timeZone: "UTC",
+		weekday: "short",
+	}).format(new Date(Date.UTC(y, m - 1, d)));
+}
 
 describe("buildColumns", () => {
 	it("groups slots by date with labels", () => {
@@ -19,9 +43,22 @@ describe("buildColumns", () => {
 			"2026-10-05T09:00",
 			"2026-10-05T09:15",
 		]);
-		expect(cols[0].cells[0].label).toBe("9:00 AM");
+		expect(cols[0].cells[0].label).toBe(expectedTime("09:00"));
 		expect(cols[0].cells[0].hourStart).toBe(true);
 		expect(cols[0].cells[1].hourStart).toBe(false);
+	});
+
+	it("uses single-line headers with no annotations", () => {
+		const cols = buildColumns(
+			["2026-10-05T09:00", "2026-10-05T09:15"],
+			"America/New_York",
+			"America/New_York",
+		);
+		expect(cols[0].header).toBe(expectedMarker("2026-10-05"));
+		expect(cols[0]).not.toHaveProperty("subheader");
+		expect(cols[0]).not.toHaveProperty("viewerNote");
+		expect(cols[0]).not.toHaveProperty("viewerDates");
+		expect(cols[0].cells[0]).not.toHaveProperty("dayShift");
 	});
 
 	it("keys columns by event date and relabels cells in viewer time", () => {
@@ -31,7 +68,7 @@ describe("buildColumns", () => {
 			"Australia/Sydney",
 		);
 		expect(cols[0].date).toBe("2026-10-05");
-		expect(cols[0].cells[0].label).toBe("12:00 AM +1d");
+		expect(cols[0].cells[0].label).toBe(expectedTime("00:00"));
 		expect(cols[0].cells[0].display).toBe("2026-10-06T00:00");
 	});
 
@@ -210,5 +247,131 @@ describe("summarizeDates", () => {
 
 	it("handles a single day", () => {
 		expect(summarizeDates(["2026-10-05"])).toBe("Showing 1 day in 1 group.");
+	});
+});
+
+describe("formatMarkerDate", () => {
+	it("formats as single-line weekday date", () => {
+		expect(formatMarkerDate("2026-09-23")).toBe(expectedMarker("2026-09-23"));
+		expect(formatMarkerDate("2026-10-05")).toBe(expectedMarker("2026-10-05"));
+	});
+});
+
+describe("getDateBreaks", () => {
+	it("marks a single date above the top cell in event time", () => {
+		const cols = buildColumns(
+			["2026-10-05T09:00", "2026-10-05T09:15"],
+			"America/New_York",
+			"America/New_York",
+		);
+		expect(getDateBreaks(cols[0])).toEqual([
+			{
+				label: expectedMarker("2026-10-05"),
+				rowIndex: 0,
+				viewerDate: "2026-10-05",
+			},
+		]);
+	});
+
+	it("marks the midnight cell when viewer time crosses days", () => {
+		const cols = buildColumns(
+			[
+				"2026-10-05T19:00",
+				"2026-10-05T20:00",
+				"2026-10-05T21:00",
+				"2026-10-05T22:00",
+			],
+			"America/New_York",
+			"UTC",
+		);
+		expect(getDateBreaks(cols[0])).toEqual([
+			{
+				label: expectedMarker("2026-10-05"),
+				rowIndex: 0,
+				viewerDate: "2026-10-05",
+			},
+			{
+				label: expectedMarker("2026-10-06"),
+				rowIndex: 1,
+				viewerDate: "2026-10-06",
+			},
+		]);
+	});
+
+	it("resolves the active segment for each cell", () => {
+		const cols = buildColumns(
+			["2026-10-05T19:00", "2026-10-05T20:00"],
+			"America/New_York",
+			"UTC",
+		);
+		const breaks = getDateBreaks(cols[0]);
+		expect(segmentForCell(breaks, 0)?.viewerDate).toBe("2026-10-05");
+		expect(segmentForCell(breaks, 1)?.viewerDate).toBe("2026-10-06");
+	});
+
+	it("marks weekly columns once above the top cell", () => {
+		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:15"]);
+		expect(cols[0].header).toBe(
+			new Intl.DateTimeFormat(undefined, {
+				timeZone: "UTC",
+				weekday: "short",
+			}).format(new Date(Date.UTC(2000, 0, 3))),
+		);
+		expect(getDateBreaks(cols[0])).toEqual([
+			{ label: cols[0].header, rowIndex: 0, viewerDate: "MON" },
+		]);
+		expect(buildTimeRows(cols)).toEqual([
+			{
+				kind: "markers",
+				markers: [{ label: cols[0].header, rowIndex: 0, viewerDate: "MON" }],
+			},
+			{ kind: "cells", rowIndex: 0 },
+			{ kind: "cells", rowIndex: 1 },
+		]);
+	});
+
+	it("returns no rows for empty columns", () => {
+		expect(buildTimeRows([])).toEqual([]);
+	});
+});
+
+describe("buildTimeRows", () => {
+	it("inserts one marker row per column in event time", () => {
+		const cols = buildColumns(
+			["2026-09-28T09:00", "2026-09-29T09:00"],
+			"UTC",
+			"UTC",
+		);
+		const rows = buildTimeRows(cols);
+		expect(rows.filter((r) => r.kind === "markers")).toHaveLength(1);
+		expect(rows[0].kind).toBe("markers");
+		expect(rows[1]).toEqual({ kind: "cells", rowIndex: 0 });
+	});
+
+	it("inserts a mid-column marker while keeping rows aligned", () => {
+		const cols = buildColumns(
+			[
+				"2026-10-05T19:00",
+				"2026-10-05T20:00",
+				"2026-10-05T21:00",
+				"2026-10-05T22:00",
+				"2026-10-06T19:00",
+				"2026-10-06T20:00",
+				"2026-10-06T21:00",
+				"2026-10-06T22:00",
+			],
+			"America/New_York",
+			"UTC",
+		);
+		const rows = buildTimeRows(cols);
+		const cellRows = rows.filter((r) => r.kind === "cells");
+		expect(cellRows).toHaveLength(4);
+		const markerRows = rows.filter((r) => r.kind === "markers");
+		expect(markerRows).toHaveLength(2);
+		for (const row of rows) {
+			if (row.kind === "markers") {
+				expect(row.markers).toHaveLength(cols.length);
+			}
+		}
 	});
 });

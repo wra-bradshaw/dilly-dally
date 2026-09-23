@@ -7,21 +7,17 @@ import {
 	weekdayForCode,
 } from "#/lib/time-slots";
 
-interface GridCell {
+export interface GridCell {
 	id: string;
 	label: string;
 	hourStart: boolean;
 	display: string;
-	dayShift: number;
 }
 
 export interface GridColumn {
 	date: string;
 	header: string;
-	subheader: string;
 	cells: GridCell[];
-	viewerDates: string[];
-	viewerNote: string;
 }
 
 export interface DayGap {
@@ -31,25 +27,24 @@ export interface DayGap {
 	skipped: number;
 }
 
-const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAY_LONG = [
-	"Sundays",
-	"Mondays",
-	"Tuesdays",
-	"Wednesdays",
-	"Thursdays",
-	"Fridays",
-	"Saturdays",
-];
+export interface DateMarker {
+	rowIndex: number;
+	viewerDate: string;
+	label: string;
+}
 
-export function headerForWeekday(weekday: number): {
-	header: string;
-	subheader: string;
-} {
-	return {
-		header: WEEKDAY_SHORT[weekday] ?? `Day ${weekday}`,
-		subheader: WEEKDAY_LONG[weekday] ?? "",
-	};
+export type TimeRow =
+	| { kind: "cells"; rowIndex: number }
+	| { kind: "markers"; markers: (DateMarker | null)[] };
+
+export function headerForWeekday(weekday: number): string {
+	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+		return `Day ${weekday}`;
+	}
+	return new Intl.DateTimeFormat(undefined, {
+		timeZone: "UTC",
+		weekday: "short",
+	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
 }
 
 export function summarizeWeekdays(weekdays: number[]): string {
@@ -72,39 +67,90 @@ export function summarizeWeekdays(weekdays: number[]): string {
 	return `Showing ${uniq.length} ${dayWord} in ${groups} groups, ${skipped} ${skippedWord} skipped.`;
 }
 
-function headerFor(date: string): { header: string; subheader: string } {
+export function formatMarkerDate(date: string): string {
 	const [y, m, d] = date.split("-").map(Number);
 	const dt = new Date(Date.UTC(y, m - 1, d));
-	const header = dt.toLocaleDateString("en-US", {
-		month: "numeric",
+	return new Intl.DateTimeFormat(undefined, {
 		day: "numeric",
+		month: "numeric",
 		timeZone: "UTC",
 		weekday: "short",
+	}).format(dt);
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function segmentDateFor(column: GridColumn, cell: GridCell): string {
+	const candidate = cell.display.slice(0, 10);
+	if (DATE_RE.test(candidate)) return candidate;
+	return column.date;
+}
+
+function markerLabelFor(column: GridColumn, viewerDate: string): string {
+	if (DATE_RE.test(viewerDate)) return formatMarkerDate(viewerDate);
+	return column.header;
+}
+
+export function getDateBreaks(column: GridColumn): DateMarker[] {
+	const breaks: DateMarker[] = [];
+	let prev: string | null = null;
+	column.cells.forEach((cell, rowIndex) => {
+		const viewerDate = segmentDateFor(column, cell);
+		if (viewerDate !== prev) {
+			breaks.push({
+				label: markerLabelFor(column, viewerDate),
+				rowIndex,
+				viewerDate,
+			});
+			prev = viewerDate;
+		}
 	});
-	const subheader = dt.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
+	return breaks;
+}
+
+export function segmentForCell(
+	breaks: DateMarker[],
+	rowIndex: number,
+): DateMarker | null {
+	let current: DateMarker | null = null;
+	for (const b of breaks) {
+		if (b.rowIndex <= rowIndex) current = b;
+		else break;
+	}
+	return current;
+}
+
+export function buildTimeRows(columns: GridColumn[]): TimeRow[] {
+	const breaksByCol = columns.map((c) => getDateBreaks(c));
+	const breakRows = new Map<number, Map<number, DateMarker>>();
+	breaksByCol.forEach((breaks, colIndex) => {
+		for (const b of breaks) {
+			let at = breakRows.get(b.rowIndex);
+			if (!at) {
+				at = new Map();
+				breakRows.set(b.rowIndex, at);
+			}
+			at.set(colIndex, b);
+		}
 	});
-	return { header, subheader };
+	const rowCount = columns.reduce((n, c) => Math.max(n, c.cells.length), 0);
+	const rows: TimeRow[] = [];
+	for (let r = 0; r < rowCount; r++) {
+		const at = breakRows.get(r);
+		if (at) {
+			rows.push({
+				kind: "markers",
+				markers: columns.map((_, c) => at.get(c) ?? null),
+			});
+		}
+		rows.push({ kind: "cells", rowIndex: r });
+	}
+	return rows;
 }
 
 function dateToMs(date: string): number {
 	const [y, m, d] = date.split("-").map(Number);
 	return Date.UTC(y, m - 1, d);
-}
-
-function dayShiftFor(eventDate: string, displayDate: string): number {
-	return Math.round((dateToMs(displayDate) - dateToMs(eventDate)) / 86400000);
-}
-
-function shortViewerDate(date: string): string {
-	const [y, m, d] = date.split("-").map(Number);
-	return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "short",
-		timeZone: "UTC",
-	});
 }
 
 export function gridRectangleIds(
@@ -159,8 +205,6 @@ export function getDayGaps(columns: { date: string }[]): DayGap[] {
 	return gaps;
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 export function summarizeDates(
 	dates: string[] | Set<string> | { date: string }[],
 ): string {
@@ -196,11 +240,7 @@ export function formatViewerSlot(
 	return formatSlotWithDate(convertSlotZone(slot, eventTimezone, viewTimezone));
 }
 
-export function buildWeeklyColumns(
-	universe: string[],
-	eventTimezone?: string,
-	viewTimezone?: string,
-): GridColumn[] {
+export function buildWeeklyColumns(universe: string[]): GridColumn[] {
 	const byWeekday = new Map<number, GridCell[]>();
 	for (const id of universe) {
 		if (!isWeeklySlotId(id)) continue;
@@ -211,7 +251,6 @@ export function buildWeeklyColumns(
 		const minutes = time.slice(3, 5);
 		const list = byWeekday.get(weekday) ?? [];
 		list.push({
-			dayShift: 0,
 			display: id,
 			hourStart: minutes === "00",
 			id,
@@ -219,10 +258,6 @@ export function buildWeeklyColumns(
 		});
 		byWeekday.set(weekday, list);
 	}
-	const sameZone =
-		eventTimezone === undefined ||
-		viewTimezone === undefined ||
-		eventTimezone === viewTimezone;
 	return [...byWeekday.entries()]
 		.sort(([a], [b]) => a - b)
 		.map(([weekday, cells]) => {
@@ -230,9 +265,7 @@ export function buildWeeklyColumns(
 			return {
 				cells,
 				date: code,
-				viewerDates: [],
-				viewerNote: sameZone ? "" : "Same every week",
-				...headerForWeekday(weekday),
+				header: headerForWeekday(weekday),
 			};
 		});
 }
@@ -246,15 +279,10 @@ export function buildColumns(
 	for (const id of universe) {
 		const eventDate = id.slice(0, 10);
 		const display = convertSlotZone(id, eventTimezone, viewTimezone);
-		const displayDate = display.slice(0, 10);
-		const shift = dayShiftFor(eventDate, displayDate);
-		const base = formatSlotLabel(display);
-		const label =
-			shift === 0 ? base : `${base} ${shift > 0 ? `+${shift}d` : `${shift}d`}`;
+		const label = formatSlotLabel(display);
 		const minutes = display.slice(14, 16);
 		const list = byEventDate.get(eventDate) ?? [];
 		list.push({
-			dayShift: shift,
 			display,
 			hourStart: minutes === "00",
 			id,
@@ -262,16 +290,11 @@ export function buildColumns(
 		});
 		byEventDate.set(eventDate, list);
 	}
-	const sameZone = eventTimezone === viewTimezone;
 	return [...byEventDate.entries()]
 		.sort(([a], [b]) => (a < b ? -1 : 1))
-		.map(([date, cells]) => {
-			const viewerDates = [
-				...new Set(cells.map((c) => c.display.slice(0, 10))),
-			].sort();
-			const viewerNote = sameZone
-				? ""
-				: `Shows as ${viewerDates.map(shortViewerDate).join(", ")}`;
-			return { cells, date, viewerDates, viewerNote, ...headerFor(date) };
-		});
+		.map(([date, cells]) => ({
+			cells,
+			date,
+			header: formatMarkerDate(date),
+		}));
 }

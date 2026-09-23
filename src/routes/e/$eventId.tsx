@@ -115,11 +115,7 @@ function EventPage() {
 	const columns = useMemo(() => {
 		if (!detail.data) return [];
 		if ((detail.data.event.mode ?? "dates") === "weekly") {
-			return buildWeeklyColumns(
-				detail.data.slotUniverse,
-				detail.data.event.timezone,
-				viewTimezone,
-			);
+			return buildWeeklyColumns(detail.data.slotUniverse);
 		}
 		return buildColumns(
 			detail.data.slotUniverse,

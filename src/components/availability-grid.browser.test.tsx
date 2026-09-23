@@ -42,16 +42,16 @@ function gapColumns() {
 	);
 }
 
-function shiftedColumns() {
+function midnightCrossingColumns() {
 	return buildColumns(
 		[
-			"2026-10-05T09:00",
-			"2026-10-05T09:15",
-			"2026-10-06T09:00",
-			"2026-10-06T09:15",
+			"2026-10-05T19:00",
+			"2026-10-05T20:00",
+			"2026-10-05T21:00",
+			"2026-10-05T22:00",
 		],
 		"America/New_York",
-		"Australia/Melbourne",
+		"UTC",
 	);
 }
 
@@ -165,7 +165,7 @@ test("non-contiguous days show a visible gap with screen-reader text", async () 
 test("viewer-time shift keeps every slot rendered and aligned", async () => {
 	const screen = await render(
 		<AvailabilityGrid
-			columns={shiftedColumns()}
+			columns={midnightCrossingColumns()}
 			onCommit={() => {}}
 			selected={new Set()}
 		/>,
@@ -173,4 +173,39 @@ test("viewer-time shift keeps every slot rendered and aligned", async () => {
 	const buttons = screen.getByRole("button", { name: /AM|PM/ });
 	await expect.element(buttons.first()).toBeVisible();
 	expect(buttons.all()).toHaveLength(4);
+});
+
+test("shows a single inline date with no annotations", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	await expect.element(screen.getByText("Mon, 9/28")).toBeVisible();
+	expect(screen.getByText("Sep 28").all()).toHaveLength(0);
+	expect(screen.getByText("Shows as").all()).toHaveLength(0);
+	expect(screen.getByText("+1d").all()).toHaveLength(0);
+});
+
+test("marks the day crossing inline above the midnight cell", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={midnightCrossingColumns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
+	await expect.element(screen.getByText("Tue, 10/6")).toBeVisible();
+	const before = screen.getByRole("button", { name: "Mon, 10/5 11:00 PM" });
+	const after = screen.getByRole("button", { name: "Tue, 10/6 12:00 AM" });
+	await expect.element(before).toBeVisible();
+	await expect.element(after).toBeVisible();
+	const afterRow = after.element().closest("tr");
+	const beforeRow = before.element().closest("tr");
+	expect(afterRow?.previousElementSibling?.textContent).toContain("Tue, 10/6");
+	expect(beforeRow?.nextElementSibling?.textContent).toContain("Tue, 10/6");
+	expect(after.element().className).toContain("border-t-2");
 });

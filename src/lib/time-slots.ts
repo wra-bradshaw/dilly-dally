@@ -85,11 +85,21 @@ export function convertSlotZone(
 
 export function formatSlotLabel(slot: string): string {
 	const [, time] = slot.split("T");
-	const [hh, mm] = time.split(":");
-	let h = Number(hh);
-	const suffix = h >= 12 ? "PM" : "AM";
-	h = h % 12 === 0 ? 12 : h % 12;
-	return `${h}:${mm} ${suffix}`;
+	const [hh, mm] = time.split(":").map(Number);
+	return new Intl.DateTimeFormat(undefined, {
+		hour: "numeric",
+		minute: "2-digit",
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
+}
+
+function weekdayShortForCode(code: string): string {
+	const idx = weekdayForCode(code);
+	if (idx === null) return code;
+	return new Intl.DateTimeFormat(undefined, {
+		timeZone: "UTC",
+		weekday: "short",
+	}).format(new Date(Date.UTC(2000, 0, 2 + idx)));
 }
 
 export function formatWeeklySlot(slot: string): string {
@@ -97,12 +107,7 @@ export function formatWeeklySlot(slot: string): string {
 	if (dash === -1 || !isWeeklySlotId(slot)) return slot;
 	const code = slot.slice(0, dash);
 	const time = slot.slice(dash + 1);
-	const idx = weekdayForCode(code);
-	const day =
-		idx === null
-			? code
-			: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][idx];
-	return `${day}, ${formatSlotLabel(`2000-01-01T${time}`)}`;
+	return `${weekdayShortForCode(code)}, ${formatSlotLabel(`2000-01-01T${time}`)}`;
 }
 
 export function weeklySlotRank(slot: string): number | null {
@@ -121,11 +126,11 @@ export function formatSlotWithDate(slot: string): string {
 	const [date] = slot.split("T");
 	const [y, m, d] = date.split("-").map(Number);
 	const dt = new Date(Date.UTC(y, m - 1, d));
-	const monthDay = dt.toLocaleDateString("en-US", {
+	const monthDay = new Intl.DateTimeFormat(undefined, {
 		day: "numeric",
 		month: "short",
 		timeZone: "UTC",
-	});
+	}).format(dt);
 	return `${monthDay}, ${formatSlotLabel(slot)}`;
 }
 

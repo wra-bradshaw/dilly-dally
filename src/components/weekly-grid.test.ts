@@ -23,8 +23,14 @@ describe("buildWeeklyColumns", () => {
 	it("labels cells with weekday headers and hour times", () => {
 		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:15"]);
 		expect(cols).toHaveLength(1);
-		expect(cols[0].header).toBe("Mon");
-		expect(cols[0].cells[0].label).toBe("9:00 AM");
+		expect(cols[0].header).toBe(headerForWeekday(1));
+		expect(cols[0].cells[0].label).toBe(
+			new Intl.DateTimeFormat(undefined, {
+				hour: "numeric",
+				minute: "2-digit",
+				timeZone: "UTC",
+			}).format(new Date(Date.UTC(2000, 0, 1, 9, 0))),
+		);
 		expect(cols[0].cells[0].hourStart).toBe(true);
 		expect(cols[0].cells[1].hourStart).toBe(false);
 	});
@@ -46,15 +52,15 @@ describe("buildWeeklyColumns", () => {
 });
 
 describe("headerForWeekday", () => {
-	it("names each weekday", () => {
-		expect(headerForWeekday(1)).toEqual({
-			header: "Mon",
-			subheader: "Mondays",
-		});
-		expect(headerForWeekday(0)).toEqual({
-			header: "Sun",
-			subheader: "Sundays",
-		});
+	it("names each weekday in the runtime locale", () => {
+		const weekday = (n: number) =>
+			new Intl.DateTimeFormat(undefined, {
+				timeZone: "UTC",
+				weekday: "short",
+			}).format(new Date(Date.UTC(2000, 0, 2 + n)));
+		expect(headerForWeekday(1)).toBe(weekday(1));
+		expect(headerForWeekday(0)).toBe(weekday(0));
+		expect(headerForWeekday(7)).toBe("Day 7");
 	});
 });
 
