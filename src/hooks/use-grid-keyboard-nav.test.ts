@@ -61,4 +61,33 @@ describe("useGridKeyboardNav boundaries", () => {
 		act(() => hook.result.current.onGridKeyDown(key("ArrowDown")));
 		expect(hook.result.current.roving).toBe("b1");
 	});
+
+	it("jumps to row edges with Home and End", () => {
+		const { hook } = setup();
+		act(() => hook.result.current.onGridKeyDown(key("ArrowRight")));
+		act(() => hook.result.current.onGridKeyDown(key("ArrowDown")));
+		expect(hook.result.current.roving).toBe("b1");
+		act(() => hook.result.current.onGridKeyDown(key("Home")));
+		expect(hook.result.current.roving).toBe("a1");
+		act(() => hook.result.current.onGridKeyDown(key("End")));
+		expect(hook.result.current.roving).toBe("b1");
+	});
+
+	it("falls back to the first id when the focused cell is gone", () => {
+		const focus = vi.fn();
+		const tableRef = {
+			current: {
+				querySelector: () => ({ focus }),
+			} as unknown as HTMLTableElement,
+		};
+		const hook = renderHook(
+			({ cols }: { cols: typeof columns }) =>
+				useGridKeyboardNav(cols, buildGridPos(cols), tableRef),
+			{ initialProps: { cols: columns } },
+		);
+		act(() => hook.result.current.onGridKeyDown(key("ArrowRight")));
+		expect(hook.result.current.roving).toBe("b0");
+		hook.rerender({ cols: [columns[0] as (typeof columns)[number]] });
+		expect(hook.result.current.roving).toBe("a0");
+	});
 });

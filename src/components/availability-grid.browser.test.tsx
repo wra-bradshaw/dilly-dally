@@ -72,6 +72,26 @@ test("clicking a free slot paints it available and commits", async () => {
 	expect(onCommit.mock.calls[0]?.[0].has("2026-09-28T09:00")).toBe(true);
 });
 
+test("keyboard activation toggles the focused slot", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	const node = cell.element() as HTMLButtonElement;
+	node.focus();
+	await expect.element(cell).toHaveFocus();
+	node.click();
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	expect(onCommit.mock.calls[0]?.[0].has("2026-09-28T09:00")).toBe(true);
+});
+
 test("arrow keys move focus between slots for keyboard painters", async () => {
 	const screen = await render(
 		<AvailabilityGrid
