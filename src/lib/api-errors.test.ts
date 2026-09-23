@@ -93,6 +93,27 @@ describe("readCappedJson", () => {
 			reason: "too_large",
 		});
 	});
+
+	it("caps null bodies via content-length", async () => {
+		const req = new Request("https://x.test/", {
+			headers: { "content-length": String(300_000) },
+			method: "POST",
+		});
+		expect(req.body).toBeNull();
+		expect(await readCappedJson(req)).toEqual({
+			ok: false,
+			reason: "too_large",
+		});
+	});
+
+	it("treats null body without length as invalid JSON", async () => {
+		const req = new Request("https://x.test/", { method: "POST" });
+		expect(req.body).toBeNull();
+		expect(await readCappedJson(req)).toEqual({
+			ok: false,
+			reason: "invalid",
+		});
+	});
 });
 
 describe("zodFields", () => {

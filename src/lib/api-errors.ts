@@ -86,6 +86,13 @@ export async function readCappedJson(
 	{ ok: true; value: unknown } | { ok: false; reason: "too_large" | "invalid" }
 > {
 	if (!request.body) {
+		const raw = request.headers.get("content-length");
+		if (raw !== null) {
+			const n = Number(raw);
+			if (Number.isFinite(n) && n > maxBytes) {
+				return { ok: false, reason: "too_large" };
+			}
+		}
 		try {
 			return { ok: true, value: await request.json() };
 		} catch {
