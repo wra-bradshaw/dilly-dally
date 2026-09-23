@@ -99,7 +99,7 @@ function EventPage() {
 		detail.error instanceof HttpError &&
 		(detail.error.status === 404 || detail.error.status === 410);
 	const queryClient = useQueryClient();
-	const { copied, copy } = useCopyToClipboard();
+	const { copied, copy, copyError } = useCopyToClipboard();
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
 	const [name, setName] = useState(storedName);
 	const [password, setPassword] = useState("");
@@ -385,7 +385,11 @@ function EventPage() {
 								type="button"
 								variant="secondary"
 							>
-								{copied ? "Copied!" : "Copy link"}
+								{copyError
+									? "Copy failed — select the link manually"
+									: copied
+										? "Copied!"
+										: "Copy link"}
 							</Button>
 							<Button asChild variant="outline">
 								<a
