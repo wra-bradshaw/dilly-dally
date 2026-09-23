@@ -17,6 +17,18 @@ type EventDetailServerResult =
 			status: number;
 	  };
 
+export function readLimitContext(
+	allowed: boolean,
+	resetMs: number,
+	now: number,
+): { limited: boolean; retryAfter?: number } {
+	if (allowed) return { limited: false };
+	return {
+		limited: true,
+		retryAfter: Math.max(1, Math.ceil((resetMs - now) / 1000)),
+	};
+}
+
 const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {
 		const key = await rateLimitKey(clientIp(request), "read");
@@ -27,10 +39,11 @@ const readRateLimit = createMiddleware({ type: "request" }).server(
 			RATE_LIMITS.read.windowMs,
 			RATE_LIMITS.read.limit,
 		);
+		const decision = readLimitContext(rl.allowed, rl.resetMs, now);
 		return next({
 			context: {
-				readRateLimited: !rl.allowed,
-				readRetryAfter: Math.max(1, Math.ceil((rl.resetMs - now) / 1000)),
+				readRateLimited: decision.limited,
+				readRetryAfter: decision.retryAfter,
 			},
 		});
 	},
