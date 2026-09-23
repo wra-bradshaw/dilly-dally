@@ -2,16 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
-import {
-	buildColumns,
-	buildWeeklyColumns,
-	formatViewerSlot,
-	summarizeDates,
-	summarizeWeekdays,
-} from "#/components/grid-model";
+import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
 import { ThemeToggle } from "#/components/theme-toggle";
-import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -204,9 +197,6 @@ function EventPage() {
 		() => detail.data?.participants.map((p) => p.name) ?? [],
 		[detail.data],
 	);
-	const bestTimes = useMemo(() => {
-		return [...(detail.data?.bestTimes ?? [])].slice(0, 10);
-	}, [detail.data]);
 
 	const signIn = async () => {
 		setSignError("");
@@ -564,69 +554,22 @@ function EventPage() {
 				</CardContent>
 			</Card>
 
-			<Card className="mt-4">
-				<CardHeader>
-					<CardTitle>
-						Group&apos;s availability{" "}
-						<Badge variant="secondary">
-							{total} {total === 1 ? "person" : "people"}
-						</Badge>
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<GroupHeatmap
-						allNames={allNames}
-						announce={heatmapAnnounce(signedIn)}
-						columns={columns}
-						counts={counts}
-						eventTimezone={event?.timezone}
-						total={total}
-						viewTimezone={viewTimezone}
-					/>
-					<div className="mt-4">
-						<div className="text-sm font-semibold">Best times</div>
-						<ol className="mt-1 grid gap-1 text-sm">
-							{bestTimes.map((b) => (
-								<li
-									className="flex items-center justify-between gap-2"
-									key={b.slot}
-									title={
-										event
-											? formatViewerSlot(b.slot, event.timezone, viewTimezone)
-											: b.slot
-									}
-								>
-									<span>
-										{event
-											? formatViewerSlot(b.slot, event.timezone, viewTimezone)
-											: b.slot}
-									</span>
-									<Badge
-										variant={
-											b.count === total && total > 0 ? "default" : "secondary"
-										}
-									>
-										{b.count}/{total} free
-									</Badge>
-								</li>
-							))}
-						</ol>
-					</div>
-					<div className="mt-4">
-						<div className="text-sm font-semibold">Who responded</div>
-						<ul className="mt-1 grid gap-1 text-sm text-muted-foreground">
-							{(detail.data?.participants ?? []).map((p) => (
-								<li className="flex justify-between gap-2" key={p.name}>
-									<span>{p.name}</span>
-									<span>
-										{p.count} slots · {new Date(p.updatedAt).toLocaleString()}
-									</span>
-								</li>
-							))}
-						</ul>
-					</div>
-				</CardContent>
-			</Card>
+				<Card className="mt-4">
+					<CardHeader>
+						<CardTitle>Group&apos;s availability</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<GroupHeatmap
+							allNames={allNames}
+							announce={heatmapAnnounce(signedIn)}
+							columns={columns}
+							counts={counts}
+							eventTimezone={event?.timezone}
+							total={total}
+							viewTimezone={viewTimezone}
+						/>
+					</CardContent>
+				</Card>
 
 			<footer className="mt-8 text-center text-xs text-muted-foreground">
 				The link is the event, keep it. Data auto-deletes after the event
