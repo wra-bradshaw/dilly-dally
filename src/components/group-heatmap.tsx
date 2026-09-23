@@ -112,6 +112,11 @@ export function GroupHeatmap({
 							onMouseEnter={() => {
 								setHovered(cell.id);
 							}}
+							onPointerDown={(e) => {
+								(e.currentTarget as HTMLButtonElement).focus?.({
+									preventScroll: true,
+								});
+							}}
 							onMouseLeave={(e) => {
 								const leaving = e.currentTarget.dataset.cell;
 								if (leaving !== hovered) return;

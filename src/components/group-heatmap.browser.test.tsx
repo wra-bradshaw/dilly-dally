@@ -155,6 +155,39 @@ test("leaving a hovered cell clears the panel when nothing is tapped", async () 
 		.toBeVisible();
 });
 
+test("pointerdown focuses the heatmap cell without scrolling the page", async () => {
+	const cols = singleColumn();
+	const counts = new Map(
+		cols.flatMap((c) =>
+			c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+		),
+	);
+	const screen = await render(
+		<GroupHeatmap
+			allNames={["Ada"]}
+			columns={cols}
+			counts={counts}
+			eventTimezone="UTC"
+			total={1}
+			viewTimezone="UTC"
+		/>,
+	);
+	const first = screen.getByRole("button", { name: /9:00 AM/ });
+	await expect.element(first).toBeVisible();
+	(first.element() as HTMLButtonElement).dispatchEvent(
+		new PointerEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			cancelable: true,
+			pointerType: "touch",
+		}),
+	);
+	await expect.element(first).toHaveFocus();
+	press(first, "ArrowDown");
+	const second = screen.getByRole("button", { name: /9:15 AM/ });
+	await expect.element(second).toHaveFocus();
+});
+
 test("heatmap arrows move Up Left Right with roving tabindex", async () => {
 	const cols = twoColumns();
 	const counts = new Map(
