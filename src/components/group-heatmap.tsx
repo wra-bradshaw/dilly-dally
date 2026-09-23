@@ -113,6 +113,7 @@ export function GroupHeatmap({
 								setHovered(cell.id);
 							}}
 							onPointerDown={(e) => {
+								if (e.button !== 0 && e.pointerType === "mouse") return;
 								(e.currentTarget as HTMLButtonElement).focus?.({
 									preventScroll: true,
 								});

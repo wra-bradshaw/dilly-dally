@@ -257,6 +257,15 @@ describe("GroupHeatmap hover focus", () => {
 		expect(screen.getByText(/Hover or tap a time slot/)).toBeVisible();
 	});
 
+	it("ignores right-click pointerdown so it does not steal focus", () => {
+		render(ui());
+		const [first] = screen.getAllByRole("button");
+		(first as HTMLElement).focus();
+		const other = screen.getAllByRole("button")[1] as HTMLElement;
+		fireEvent.pointerDown(other, { button: 2, pointerType: "mouse" });
+		expect(document.activeElement).toBe(first);
+	});
+
 	it("clears the panel on tab-out", () => {
 		render(ui());
 		const [first] = screen.getAllByRole("button");
