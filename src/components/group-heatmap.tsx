@@ -135,6 +135,7 @@ export function GroupHeatmap({
 									? undefined
 									: {
 											backgroundColor: `rgba(${HEATMAP_FILL_RGB[0]}, ${HEATMAP_FILL_RGB[1]}, ${HEATMAP_FILL_RGB[2]}, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
+											color: `rgb(${HEATMAP_TEXT_RGB[0]}, ${HEATMAP_TEXT_RGB[1]}, ${HEATMAP_TEXT_RGB[2]})`,
 										}
 							}
 							tabIndex={cell.id === roving ? 0 : -1}
