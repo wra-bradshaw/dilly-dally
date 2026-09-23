@@ -1,3 +1,4 @@
+import "#/styles.css";
 import { expect, test, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -404,4 +405,8 @@ test("paint surface presents touch-none at rest so touch drags paint", async () 
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
 	await expect.element(cell).toBeVisible();
 	expect(cell.element().closest("table")?.className).toContain("touch-none");
+	expect(
+		getComputedStyle(cell.element().closest("table") as HTMLElement)
+			.touchAction,
+	).toBe("none");
 });

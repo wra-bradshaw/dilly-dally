@@ -1,3 +1,4 @@
+import "#/styles.css";
 import { expect, test, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -246,6 +247,10 @@ test("calendar paint surface presents touch-none at rest", async () => {
 	expect(day.element().closest("div.grid")?.className ?? "").toContain(
 		"touch-none",
 	);
+	expect(
+		getComputedStyle(day.element().closest("div.grid") as HTMLElement)
+			.touchAction,
+	).toBe("none");
 });
 
 test("trusted key presses toggle exactly once per press", async () => {
