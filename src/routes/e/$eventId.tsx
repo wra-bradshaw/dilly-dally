@@ -24,7 +24,9 @@ import {
 	fetchOwnAvailability,
 	HttpError,
 	saveAvailability,
+	type EventDetailResponse,
 } from "#/lib/client";
+import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
 
 export const Route = createFileRoute("/e/$eventId")({
@@ -251,8 +253,17 @@ function EventPage() {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(value));
 			}
-			setSaveState(`Saved ${new Date().toLocaleTimeString()}`);
-			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+			const at = new Date();
+			setSaveState(`Saved ${at.toLocaleTimeString()}`);
+			if (activeName.trim() !== "") {
+				const stamp = at.toISOString();
+				const saverName = activeName;
+				queryClient.setQueryData(
+					["event", eventId],
+					(old: EventDetailResponse | undefined) =>
+						old ? patchDetailForSave(old, saverName, value, stamp) : old,
+				);
+			}
 		},
 		save: async (value) => {
 			await saveAvailability(eventId, {
