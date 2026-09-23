@@ -87,9 +87,55 @@ test("keyboard activation toggles the focused slot", async () => {
 	const node = cell.element() as HTMLButtonElement;
 	node.focus();
 	await expect.element(cell).toHaveFocus();
-	node.click();
+	const event = new KeyboardEvent("keydown", {
+		bubbles: true,
+		cancelable: true,
+		key: "Enter",
+	});
+	node.dispatchEvent(event);
+	expect(event.defaultPrevented).toBe(true);
 	expect(onCommit).toHaveBeenCalledTimes(1);
 	expect(onCommit.mock.calls[0]?.[0].has("2026-09-28T09:00")).toBe(true);
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: " ",
+		}),
+	);
+	expect(onCommit).toHaveBeenCalledTimes(2);
+});
+
+test("Home and End jump focus across dates", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={twoColumns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+
+	const first = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
+	await expect.element(first).toBeVisible();
+	(first.element() as HTMLButtonElement).focus();
+	await expect.element(first).toHaveFocus();
+	first.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "End",
+		}),
+	);
+	const last = screen.getByRole("button", { name: "Tue, 9/29 9:15 AM" });
+	await expect.element(last).toHaveFocus();
+	last.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Home",
+		}),
+	);
+	await expect.element(first).toHaveFocus();
 });
 
 test("arrow keys move focus between slots for keyboard painters", async () => {

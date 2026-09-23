@@ -36,8 +36,13 @@ function setup() {
 
 function key(keyName: string) {
 	return {
+		altKey: false,
+		ctrlKey: false,
 		key: keyName,
+		metaKey: false,
 		preventDefault: () => {},
+		shiftKey: false,
+		target: null,
 	} as unknown as React.KeyboardEvent;
 }
 
@@ -52,6 +57,28 @@ describe("useGridKeyboardNav boundaries", () => {
 		const { hook } = setup();
 		act(() => hook.result.current.onGridKeyDown(key("ArrowUp")));
 		expect(hook.result.current.roving).toBe("a0");
+	});
+
+	it("clamps ArrowRight at the last column", () => {
+		const { hook } = setup();
+		act(() =>
+			hook.result.current.onGridKeyDown({
+				...key("ArrowRight"),
+				target: { dataset: { cell: "b0" } },
+			} as unknown as React.KeyboardEvent),
+		);
+		expect(hook.result.current.roving).toBe("b0");
+	});
+
+	it("clamps ArrowDown at the last row", () => {
+		const { hook } = setup();
+		act(() =>
+			hook.result.current.onGridKeyDown({
+				...key("ArrowDown"),
+				target: { dataset: { cell: "a1" } },
+			} as unknown as React.KeyboardEvent),
+		);
+		expect(hook.result.current.roving).toBe("a1");
 	});
 
 	it("moves within bounds", () => {

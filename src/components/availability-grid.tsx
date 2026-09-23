@@ -48,6 +48,13 @@ export function AvailabilityGrid({
 	const onCellKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
 		onGridKeyDown(e);
+		if (e.key === " " || e.key === "Enter") {
+			const id = (e.target as HTMLElement | null)?.dataset?.cell;
+			if (id && !disabled) {
+				e.preventDefault();
+				surface.toggle(id, 0);
+			}
+		}
 	};
 
 	return (
