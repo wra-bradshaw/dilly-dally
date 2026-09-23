@@ -28,11 +28,10 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 	};
 
 	const toggleWeekday = (day: number, detail: number) => {
-		if (suppressClick.current) {
-			suppressClick.current = false;
+		if (detail !== 0) {
+			if (suppressClick.current) suppressClick.current = false;
 			return;
 		}
-		if (detail !== 0) return;
 		const next = new Set(selected);
 		if (next.has(day)) next.delete(day);
 		else next.add(day);

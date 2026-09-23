@@ -86,11 +86,10 @@ export function AvailabilityGrid({
 	};
 
 	const toggleCell = (id: string, detail: number) => {
-		if (suppressClick.current) {
-			suppressClick.current = false;
+		if (detail !== 0) {
+			if (suppressClick.current) suppressClick.current = false;
 			return;
 		}
-		if (detail !== 0) return;
 		const next = new Set(selected);
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
