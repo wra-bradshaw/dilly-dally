@@ -213,6 +213,26 @@ describe("detail GET errors", () => {
 		expect(own.status).toBe(429);
 		expect(own.headers.get("Cache-Control")).toBe("no-store");
 	});
+
+	it("rejects blank names before the rate limit so junk burns no budget", async () => {
+		stubRateLimiter({
+			getByName: (_key: string) => ({
+				check: async () => {
+					throw new Error("rate limiter must not run for blank names");
+				},
+			}),
+		});
+		for (const url of [
+			"https://x.test/api/events/x/availability",
+			"https://x.test/api/events/x/availability?name=%20%20",
+		]) {
+			const res = await getOwnAvailabilityResponse(
+				"AbC123_-XyZ9",
+				new Request(url),
+			);
+			expect(res.status).toBe(400);
+		}
+	});
 });
 
 describe("guard response headers", () => {
