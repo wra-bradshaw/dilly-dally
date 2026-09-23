@@ -21,6 +21,19 @@ describe("openapi spec", () => {
 		>;
 		expect(schemas.SlotId?.pattern).toContain("00|15|30|45");
 	});
+
+	it("documents weekly mode with weekday slots", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const schemas = spec.components?.schemas as Record<
+			string,
+			{ pattern?: string; properties?: Record<string, unknown> }
+		>;
+		expect(schemas.EventMode).toBeDefined();
+		expect(schemas.WeeklySlotId?.pattern).toContain("MON");
+		expect(schemas.SlotId?.pattern).toContain("MON");
+		expect(schemas.CreateEventRequest?.properties?.weekdays).toBeDefined();
+		expect(schemas.Event?.properties?.mode).toBeDefined();
+	});
 });
 
 describe("agent guide", () => {
@@ -29,5 +42,10 @@ describe("agent guide", () => {
 		expect(AGENT_GUIDE_MARKDOWN).toContain("/api/events");
 		expect(AGENT_GUIDE_MARKDOWN).toContain("availability");
 		expect(AGENT_GUIDE_MARKDOWN).toContain("/api/openapi.json");
+	});
+
+	it("documents the weekly curl flow", () => {
+		expect(AGENT_GUIDE_MARKDOWN).toContain('"mode": "weekly"');
+		expect(AGENT_GUIDE_MARKDOWN).toContain("MON-09:15");
 	});
 });

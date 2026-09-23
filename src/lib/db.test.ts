@@ -17,9 +17,11 @@ const base = {
 	endTime: "10:00",
 	expiresAt: 1_800_000_000_000,
 	id: "AbC123_-XyZ9",
+	mode: "dates" as const,
 	startTime: "09:00",
 	timezone: "UTC",
 	title: "Test",
+	weekdays: [] as number[],
 };
 
 describe("toPublicEvent", () => {
@@ -30,9 +32,11 @@ describe("toPublicEvent", () => {
 			endTime: "17:00",
 			expiresAt: 2000,
 			id: "AbC123_-XyZ9",
+			mode: "dates",
 			startTime: "09:00",
 			timezone: "UTC",
 			title: "Test",
+			weekdaysJson: JSON.stringify([]),
 		});
 		expect(event?.dates).toEqual(["2026-10-05"]);
 	});
@@ -45,9 +49,11 @@ describe("toPublicEvent", () => {
 				endTime: "17:00",
 				expiresAt: 2,
 				id: "x",
+				mode: "dates",
 				startTime: "09:00",
 				timezone: "UTC",
 				title: "t",
+				weekdaysJson: null,
 			}),
 		).toBeNull();
 	});
@@ -77,9 +83,11 @@ describe("event persistence", () => {
 			endTime: "10:00",
 			expiresAt: 2,
 			id: "other-id-001",
+			mode: "dates",
 			startTime: "09:00",
 			timezone: "UTC",
 			title: "Other",
+			weekdaysJson: JSON.stringify([]),
 		});
 		await deleteEvent(db, base.id);
 		expect(await fetchEvent(db, base.id)).toBeNull();

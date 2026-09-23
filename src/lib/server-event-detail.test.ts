@@ -11,9 +11,11 @@ const event = {
 	endTime: "10:00",
 	expiresAt: 1_800_000_000_000,
 	id: "AbC123_-XyZ9",
+	mode: "dates" as const,
 	startTime: "09:00",
 	timezone: "UTC",
 	title: "Standup",
+	weekdays: [] as number[],
 };
 
 describe("loadEventDetailFromDb", () => {
