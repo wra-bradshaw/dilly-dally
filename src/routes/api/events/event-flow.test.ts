@@ -88,6 +88,7 @@ describe("event flow", () => {
 		);
 		expect(created.status).toBe(201);
 		expect(created.headers.get("X-Content-Type-Options")).toBe("nosniff");
+		expect(created.headers.get("Referrer-Policy")).toBeTruthy();
 		const createdBody = (await created.json()) as {
 			id: string;
 			url: string;

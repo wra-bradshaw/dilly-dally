@@ -220,4 +220,56 @@ describe("detail GET errors", () => {
 		expect(res.status).toBe(404);
 		expect(res.headers.get("Cache-Control")).toBe("no-store");
 	});
+
+	it("marks GET throttles no-store", async () => {
+		stubRateLimiter(denyNamespace());
+		const detail = await handleGetDetail(
+			"!!!not-an-id!!!",
+			new Request("https://x.test/api/events/!!!not-an-id!!!"),
+		);
+		expect(detail.status).toBe(429);
+		expect(detail.headers.get("Cache-Control")).toBe("no-store");
+		const own = await getOwnAvailabilityResponse(
+			"AbC123_-XyZ9",
+			new Request("https://x.test/api/events/x/availability?name=Ada"),
+		);
+		expect(own.status).toBe(429);
+		expect(own.headers.get("Cache-Control")).toBe("no-store");
+	});
+});
+
+describe("guard response headers", () => {
+	it("sends nosniff and referrer on POST guard errors", async () => {
+		stubRateLimiter(allowNamespace());
+		const bad = [
+			await handleCreate(
+				new Request("https://x.test/api/events", {
+					body: "{}",
+					headers: {
+						"content-length": String(300_000),
+						"content-type": "application/json",
+					},
+					method: "POST",
+				}),
+			),
+			await handleCreate(postRequest("{}", "text/plain")),
+			await handleCreate(postRequest("{nope", "application/json")),
+		];
+		expect(bad.map((r) => r.status)).toEqual([413, 415, 400]);
+		for (const res of bad) {
+			expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+			expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+		}
+	});
+
+	it("sends nosniff and referrer on write guard errors", async () => {
+		stubRateLimiter(allowNamespace());
+		const res = await saveAvailability(
+			postRequest({ name: "Ada" }, "text/plain"),
+			"AbC123_-XyZ9",
+		);
+		expect(res.status).toBe(415);
+		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+		expect(res.headers.get("Referrer-Policy")).toBeTruthy();
+	});
 });

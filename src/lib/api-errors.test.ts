@@ -51,6 +51,15 @@ describe("rateLimited", () => {
 		const res = rateLimited(Date.now() + 61_000);
 		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
 	});
+
+	it("opts into no-store for GET throttle responses", () => {
+		const res = rateLimited(Date.now() + 61_000, { noStore: true });
+		expect(res.status).toBe(429);
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+		expect(
+			rateLimited(Date.now() + 61_000).headers.get("Cache-Control"),
+		).toBeNull();
+	});
 });
 
 describe("readCappedJson", () => {
@@ -88,6 +97,32 @@ describe("readCappedJson", () => {
 			headers: { "content-type": "application/json" },
 			method: "POST",
 		} as RequestInit);
+		expect(await readCappedJson(req)).toEqual({
+			ok: false,
+			reason: "too_large",
+		});
+	});
+
+	it("accepts bodies at exactly the byte budget", async () => {
+		const body = `{"data":"${"x".repeat(262_144 - 11)}"}`;
+		expect(new TextEncoder().encode(body).byteLength).toBe(262_144);
+		const req = new Request("https://x.test/", {
+			body,
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
+		const res = await readCappedJson(req);
+		expect(res.ok).toBe(true);
+	});
+
+	it("rejects bodies one byte over the budget", async () => {
+		const body = `{"data":"${"x".repeat(262_144 - 10)}"}`;
+		expect(new TextEncoder().encode(body).byteLength).toBe(262_145);
+		const req = new Request("https://x.test/", {
+			body,
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
 		expect(await readCappedJson(req)).toEqual({
 			ok: false,
 			reason: "too_large",
