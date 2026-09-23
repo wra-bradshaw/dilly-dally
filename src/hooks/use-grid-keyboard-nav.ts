@@ -1,7 +1,7 @@
 import { type RefObject, useCallback, useMemo, useState } from "react";
 import type { GridColumn, GridPos } from "#/components/grid-model";
 
-export function gridCellIds(columns: GridColumn[]): string[] {
+function gridCellIds(columns: GridColumn[]): string[] {
 	return columns.flatMap((c) => c.cells.map((cell) => cell.id));
 }
 

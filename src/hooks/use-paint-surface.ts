@@ -1,8 +1,8 @@
-import { useCallback, useRef } from "react";
+import { type RefObject, useCallback, useRef } from "react";
 import { paintTargetFromPoint } from "#/lib/paint-target";
 import { useDragPaint } from "./use-drag-paint";
 
-export interface PaintSurfaceOptions<T> {
+export interface PaintSurfaceOptions<T, E extends HTMLElement = HTMLElement> {
 	attr: string;
 	parse: (raw: string) => T | undefined;
 	values: T[];
@@ -10,6 +10,7 @@ export interface PaintSurfaceOptions<T> {
 	onCommit: (next: Set<T>) => void;
 	range?: (values: T[], from: T, to: T) => T[];
 	disabled?: boolean;
+	containerRef?: RefObject<E | null>;
 }
 
 export function identityParse(raw: string): string {
@@ -17,21 +18,34 @@ export function identityParse(raw: string): string {
 }
 
 export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
-	options: PaintSurfaceOptions<T>,
+	options: PaintSurfaceOptions<T, E>,
 ) {
-	const { attr, disabled, onCommit, parse, range, selected, values } = options;
-	const containerRef = useRef<E | null>(null);
+	const {
+		attr,
+		containerRef: externalRef,
+		disabled,
+		onCommit,
+		parse,
+		range,
+		selected,
+		values,
+	} = options;
+	const internalRef = useRef<E | null>(null);
+	const containerRef = externalRef ?? internalRef;
 	const suppressClick = useRef(false);
 	const clearTimer = useRef<number | undefined>(undefined);
 	const drag = useDragPaint({ onCommit, range, selected, values });
 
-	const capture = useCallback((e: React.PointerEvent) => {
-		try {
-			(
-				containerRef.current as unknown as HTMLElement | null
-			)?.setPointerCapture?.(e.pointerId);
-		} catch {}
-	}, []);
+	const capture = useCallback(
+		(e: React.PointerEvent) => {
+			try {
+				(
+					containerRef.current as unknown as HTMLElement | null
+				)?.setPointerCapture?.(e.pointerId);
+			} catch {}
+		},
+		[containerRef],
+	);
 
 	const start = useCallback(
 		(value: T, e: React.PointerEvent) => {
@@ -121,7 +135,6 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	);
 
 	return {
-		cancelPaint: drag.onPointerCancel,
 		containerRef,
 		hover,
 		onKeyDown,

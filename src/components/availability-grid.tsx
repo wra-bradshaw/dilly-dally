@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { gridCellIds, useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
+import { useMemo, useRef } from "react";
+import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import {
@@ -22,8 +22,13 @@ export function AvailabilityGrid({
 	onCommit,
 	selected,
 }: AvailabilityGridProps) {
-	const values = useMemo(() => gridCellIds(columns), [columns]);
+	const tableRef = useRef<HTMLTableElement>(null);
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
+	const { onGridKeyDown, roving, setFocusId, values } = useGridKeyboardNav(
+		columns,
+		pos,
+		tableRef,
+	);
 	const range = useMemo(
 		() => (_values: string[], from: string, to: string) =>
 			gridRectangleIdsFromPos(columns, pos, from, to),
@@ -31,6 +36,7 @@ export function AvailabilityGrid({
 	);
 	const surface = usePaintSurface<string, HTMLTableElement>({
 		attr: "data-cell",
+		containerRef: tableRef,
 		disabled,
 		onCommit,
 		parse: identityParse,
@@ -38,12 +44,6 @@ export function AvailabilityGrid({
 		selected,
 		values,
 	});
-
-	const { onGridKeyDown, roving, setFocusId } = useGridKeyboardNav(
-		columns,
-		pos,
-		surface.containerRef,
-	);
 
 	const onCellKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
