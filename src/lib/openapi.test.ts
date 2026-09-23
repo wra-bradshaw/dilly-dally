@@ -71,7 +71,12 @@ describe("openapi drift guard", () => {
 			join(process.cwd(), "src", "lib", "api-schema.d.ts"),
 			"utf8",
 		);
-		expect(COMMENT_HEADER + astToString(await openapiTS(spec))).toBe(dts);
+		expect(
+			COMMENT_HEADER +
+				astToString(
+					await openapiTS(spec as unknown as Parameters<typeof openapiTS>[0]),
+				),
+		).toBe(dts);
 	});
 
 	it("uses unique operationIds across the spec", () => {
