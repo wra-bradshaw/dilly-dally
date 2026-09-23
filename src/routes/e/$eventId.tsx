@@ -10,6 +10,7 @@ import {
 	summarizeWeekdays,
 } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
+import { ThemeToggle } from "#/components/theme-toggle";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -65,7 +66,7 @@ function EventError({ error }: { error: unknown }) {
 		limited && error instanceof HttpError ? error.retryAfter : undefined;
 	return (
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-			<h1 className="font-display text-3xl font-bold">
+			<h1 className="font-heading text-3xl font-bold">
 				{limited
 					? "Slow down — too many requests"
 					: gone
@@ -288,7 +289,7 @@ function EventPage() {
 		if (retryable && !gone) {
 			return (
 				<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-					<h1 className="font-display text-3xl font-bold">
+					<h1 className="font-heading text-3xl font-bold">
 						Could not load this event
 					</h1>
 					<p className="mt-2 text-muted-foreground">
@@ -306,7 +307,7 @@ function EventPage() {
 		}
 		return (
 			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-				<h1 className="font-display text-3xl font-bold">
+				<h1 className="font-heading text-3xl font-bold">
 					{gone ? "This event has expired" : "Event not found"}
 				</h1>
 				<p className="mt-2 text-muted-foreground">
@@ -330,36 +331,35 @@ function EventPage() {
 			{stale && (
 				<output className="mt-4 block rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					Couldn&apos;t refresh — showing the last update.{" "}
-					<button
-						className="relative text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+					<Button
+						className="h-auto p-0 text-sm"
 						onClick={() => void detail.refetch()}
 						type="button"
+						variant="link"
 					>
 						Retry
-					</button>
+					</Button>
 				</output>
 			)}
 			<header className="flex items-center justify-between py-5">
-				<a className="font-display text-2xl font-bold" href="/">
-					Dilly-Dally
+				<a className="font-heading text-2xl font-bold" href="/">
+					dilly dally
 				</a>
-				<nav className="flex gap-4 text-sm">
-					<a
-						className="relative inline-flex min-h-6 items-center py-0.5 text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
-						href="/api/agent-guide"
-					>
-						Agent guide
-					</a>
+				<nav className="flex items-center gap-1 text-sm">
+					<Button asChild size="sm" variant="ghost">
+						<a href="/api/agent-guide">Agent guide</a>
+					</Button>
+					<ThemeToggle />
 				</nav>
 			</header>
 
-			<h1 className="font-display mt-2 text-3xl font-bold">{event?.title}</h1>
+			<h1 className="font-heading mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
 				{event?.timezone} · {dateSummary} · {event?.startTime}–{event?.endTime}{" "}
 				· Expires {event ? new Date(event.expiresAt).toLocaleDateString() : ""}
 			</p>
 
-			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-6 rounded-2xl">
+			<Card className="mt-6">
 				<CardHeader>
 					<CardTitle>Invite people</CardTitle>
 				</CardHeader>
@@ -392,7 +392,7 @@ function EventPage() {
 			</Card>
 
 			{!signedIn ? (
-				<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
+				<Card className="mt-4">
 					<CardHeader>
 						<CardTitle>Sign in</CardTitle>
 					</CardHeader>
@@ -445,8 +445,8 @@ function EventPage() {
 					<span>
 						Signed in as <strong>{activeName}</strong>
 					</span>
-					<button
-						className="relative inline-flex min-h-6 items-center py-0.5 text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+					<Button
+						className="h-auto p-0 text-sm"
 						onClick={() => {
 							saver.cancel();
 							lastSubmittedRef.current = null;
@@ -460,9 +460,10 @@ function EventPage() {
 							setSignError("");
 						}}
 						type="button"
+						variant="link"
 					>
 						Switch user
-					</button>
+					</Button>
 				</div>
 			)}
 
@@ -471,25 +472,22 @@ function EventPage() {
 				<fieldset className="flex gap-1">
 					<legend className="sr-only">Timezone view</legend>
 					{(["event", "local"] as const).map((v) => (
-						<button
+						<Button
 							aria-pressed={view === v}
-							className={
-								view === v
-									? "rounded-md border border-emerald-700 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900"
-									: "rounded-md border border-input px-2 py-1 text-xs text-muted-foreground"
-							}
 							key={v}
 							onClick={() => setView(v)}
+							size="xs"
 							type="button"
+							variant={view === v ? "default" : "outline"}
 						>
 							{v === "event" ? `Event time` : "My time"}
-						</button>
+						</Button>
 					))}
 				</fieldset>
 				<span className="text-xs text-muted-foreground">{viewTimezone}</span>
 			</div>
 
-			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
+			<Card className="mt-4">
 				<CardHeader>
 					<CardTitle>
 						Your availability{" "}
@@ -515,13 +513,14 @@ function EventPage() {
 						) : restoreStatus === "failed" ? (
 							<>
 								Could not restore your availability.{" "}
-								<button
-									className="relative text-sm text-[#416166] no-underline transition-colors duration-200 after:absolute after:bottom-[-8px] after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-[#4fb8b2] after:to-[#7ed3bf] after:transition-transform after:duration-200 hover:text-[#173a40] hover:after:scale-x-100 dark:text-[#afcdc8] dark:hover:text-[#d7ece8]"
+								<Button
+									className="h-auto p-0 text-sm"
 									onClick={retryRestore}
 									type="button"
+									variant="link"
 								>
 									Retry
-								</button>
+								</Button>
 							</>
 						) : (
 							""
@@ -554,7 +553,7 @@ function EventPage() {
 				</CardContent>
 			</Card>
 
-			<Card className="border-[#173a40]/15 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_44px_rgba(30,90,72,0.10),0_6px_18px_rgba(23,58,64,0.08)] backdrop-blur-sm transition-colors duration-200 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none mt-4 rounded-2xl">
+			<Card className="mt-4">
 				<CardHeader>
 					<CardTitle>
 						Group&apos;s availability{" "}
@@ -622,14 +621,14 @@ function EventPage() {
 				The link is the event, keep it. Data auto-deletes after the event
 				passes. Agents: see{" "}
 				<a
-					className="text-teal-800 underline decoration-teal-700/40 decoration-[1px] underline-offset-2 hover:text-teal-950 dark:text-teal-300 dark:hover:text-teal-100"
+					className="text-primary underline-offset-4 hover:underline"
 					href="/api/agent-guide"
 				>
 					/api/agent-guide
 				</a>{" "}
 				and{" "}
 				<a
-					className="text-teal-800 underline decoration-teal-700/40 decoration-[1px] underline-offset-2 hover:text-teal-950 dark:text-teal-300 dark:hover:text-teal-100"
+					className="text-primary underline-offset-4 hover:underline"
 					href="/api/openapi.json"
 				>
 					/api/openapi.json

@@ -6,6 +6,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ThemeProvider } from "next-themes";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
 
@@ -24,7 +25,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Dilly Dally",
+				title: "dilly dally",
 			},
 		],
 		links: [
@@ -39,12 +40,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
-			<body className="min-h-screen overflow-x-hidden bg-[#e7f3ec] font-sans text-[#173a40] antialiased dark:bg-[#0a1418] dark:text-[#d7ece8]">
-				{children}
+			<body className="min-h-screen bg-background font-sans text-foreground antialiased">
+				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+					{children}
+				</ThemeProvider>
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",
