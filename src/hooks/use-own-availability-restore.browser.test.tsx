@@ -150,3 +150,57 @@ test("switch user clears selection and the stored name", async () => {
 	await expect.element(cell).toHaveAttribute("aria-pressed", "false");
 	expect(localStorage.getItem(nameKey)).toBe("");
 });
+
+function RetryHarness({
+	fetchAvailability,
+}: {
+	fetchAvailability: FetchAvailability;
+}) {
+	const [storedName] = useLocalStorage(nameKey, "");
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const { retry, status } = useOwnAvailabilityRestore({
+		eventId,
+		fetchAvailability,
+		onCleared: () => setSelected(new Set()),
+		onRestored: (own) => setSelected(new Set(own.slots)),
+		storedName,
+	});
+	return (
+		<div>
+			{status === "failed" && (
+				<p>
+					Could not restore your availability.{" "}
+					<button onClick={retry} type="button">
+						Retry
+					</button>
+				</p>
+			)}
+			<AvailabilityGrid
+				columns={columns()}
+				disabled={status === "restoring" || status === "failed"}
+				onCommit={setSelected}
+				selected={selected}
+			/>
+		</div>
+	);
+}
+
+test("failed restore shows retry and recovers on retry", async () => {
+	localStorage.clear();
+	localStorage.setItem(nameKey, "Ada");
+	const fetchAvailability = vi
+		.fn()
+		.mockRejectedValueOnce(new TypeError("offline"))
+		.mockResolvedValueOnce({ name: "Ada", slots: ["2026-09-28T09:00"] });
+	const screen = await render(
+		<RetryHarness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByText(/Could not restore your availability/))
+		.toBeVisible();
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeDisabled();
+	await screen.getByRole("button", { name: "Retry" }).click();
+	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
+	expect(fetchAvailability).toHaveBeenCalledTimes(2);
+});
