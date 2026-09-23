@@ -106,6 +106,41 @@ test("keyboard activation toggles the focused slot", async () => {
 	expect(onCommit).toHaveBeenCalledTimes(2);
 });
 
+test("repeat keydown does not toggle the focused slot", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	const node = cell.element() as HTMLButtonElement;
+	node.focus();
+	await expect.element(cell).toHaveFocus();
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Enter",
+			repeat: true,
+		}),
+	);
+	expect(onCommit).not.toHaveBeenCalled();
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			ctrlKey: true,
+			key: "Enter",
+		}),
+	);
+	expect(onCommit).not.toHaveBeenCalled();
+});
+
 test("Home and End jump focus across dates", async () => {
 	const screen = await render(
 		<AvailabilityGrid

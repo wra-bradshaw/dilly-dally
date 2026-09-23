@@ -49,6 +49,8 @@ export function AvailabilityGrid({
 		surface.onKeyDown(e);
 		onGridKeyDown(e);
 		if (e.key === " " || e.key === "Enter") {
+			if (e.repeat) return;
+			if (e.ctrlKey || e.metaKey || e.altKey) return;
 			const id = (e.target as HTMLElement | null)?.dataset?.cell;
 			if (id && !disabled) {
 				e.preventDefault();
