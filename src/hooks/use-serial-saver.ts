@@ -20,27 +20,34 @@ export function useSerialSaver<T>(options: {
 	const run = useCallback(async (first: T) => {
 		stateRef.current.inFlight = true;
 		setInFlight(true);
-		let current: T | undefined = first;
-		let hasCurrent = true;
-		while (hasCurrent) {
-			const value = current as T;
-			hasCurrent = false;
-			current = undefined;
-			try {
-				await saveRef.current(value);
-				callbacksRef.current.onSuccess?.(value);
-			} catch (error) {
-				callbacksRef.current.onError?.(error, value);
+		try {
+			let current: T | undefined = first;
+			let hasCurrent = true;
+			while (hasCurrent) {
+				const value = current as T;
+				hasCurrent = false;
+				current = undefined;
+				let failed = false;
+				let caught: unknown;
+				try {
+					await saveRef.current(value);
+				} catch (error) {
+					failed = true;
+					caught = error;
+				}
+				if (stateRef.current.hasPending) {
+					current = stateRef.current.pending;
+					hasCurrent = true;
+					stateRef.current.pending = undefined;
+					stateRef.current.hasPending = false;
+				}
+				if (failed) callbacksRef.current.onError?.(caught, value);
+				else callbacksRef.current.onSuccess?.(value);
 			}
-			if (stateRef.current.hasPending) {
-				current = stateRef.current.pending;
-				hasCurrent = true;
-				stateRef.current.pending = undefined;
-				stateRef.current.hasPending = false;
-			}
+		} finally {
+			stateRef.current.inFlight = false;
+			setInFlight(false);
 		}
-		stateRef.current.inFlight = false;
-		setInFlight(false);
 	}, []);
 
 	const submit = useCallback(

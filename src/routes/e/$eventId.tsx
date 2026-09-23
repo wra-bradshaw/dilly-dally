@@ -90,6 +90,7 @@ function EventPage() {
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
 	const lastSavedRef = useRef<Set<string>>(new Set());
+	const lastSubmittedRef = useRef<Set<string> | null>(null);
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
@@ -205,8 +206,10 @@ function EventPage() {
 	};
 
 	const saver = useSerialSaver<Set<string>>({
-		onError: (err) => {
-			setSelected(new Set(lastSavedRef.current));
+		onError: (err, value) => {
+			if (value === lastSubmittedRef.current) {
+				setSelected(new Set(lastSavedRef.current));
+			}
 			if (err instanceof HttpError && err.code === "invalid_password") {
 				setSaveState("Wrong password for this name. Change reverted.");
 			} else if (err instanceof HttpError && err.code === "invalid_slot") {
@@ -226,6 +229,9 @@ function EventPage() {
 		},
 		onSuccess: (value) => {
 			lastSavedRef.current = new Set(value);
+			if (value === lastSubmittedRef.current) {
+				setSelected(new Set(value));
+			}
 			setSaveState(`Saved ${new Date().toLocaleTimeString()}`);
 			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		},
@@ -242,6 +248,7 @@ function EventPage() {
 		setSelected(next);
 		if (!signedIn || activeName === "") return;
 		setSaveState("Saving…");
+		lastSubmittedRef.current = next;
 		saver.submit(next);
 	};
 
