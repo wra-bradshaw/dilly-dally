@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
@@ -13,7 +13,9 @@ import {
 	SelectValue,
 } from "#/components/ui/select";
 import { WeekdayPicker } from "#/components/weekday-picker";
+import { useHydrated } from "#/hooks/use-hydrated";
 import { createEvent } from "#/lib/client";
+import { DAY_MS } from "#/lib/expiry";
 import { HttpError } from "#/lib/http-error";
 import {
 	allTimezones,
@@ -24,12 +26,7 @@ import {
 export const Route = createFileRoute("/")({ component: Home });
 
 function todayPlus(days: number): string {
-	const d = new Date();
-	d.setDate(d.getDate() + days);
-	const y = d.getFullYear();
-	const m = String(d.getMonth() + 1).padStart(2, "0");
-	const day = String(d.getDate()).padStart(2, "0");
-	return `${y}-${m}-${day}`;
+	return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 function hourOptions(): string[] {
@@ -41,6 +38,7 @@ function hourOptions(): string[] {
 
 function Home() {
 	const navigate = useNavigate();
+	const hydrated = useHydrated();
 	const [title, setTitle] = useState("");
 	const [mode, setMode] = useState<"dates" | "weekly">("dates");
 	const [dates, setDates] = useState<Set<string>>(new Set());
@@ -49,11 +47,16 @@ function Home() {
 	);
 	const [startTime, setStartTime] = useState("09:00");
 	const [endTime, setEndTime] = useState("17:00");
-	const [timezone, setTimezone] = useState(browserTimezone);
+	const [timezoneOverride, setTimezoneOverride] = useState("");
+	const timezone =
+		timezoneOverride !== ""
+			? timezoneOverride
+			: hydrated
+				? browserTimezone()
+				: "UTC";
 	const [error, setError] = useState("");
 	const [saving, setSaving] = useState(false);
-	const minDate = todayPlus(0);
-	const maxDate = todayPlus(90);
+	const [minDate, maxDate] = useMemo(() => [todayPlus(0), todayPlus(90)], []);
 
 	const submit = async () => {
 		setError("");
@@ -172,12 +175,18 @@ function Home() {
 								<p className="text-xs text-muted-foreground">
 									Click and drag dates to choose possibilities.
 								</p>
-								<DateCalendar
-									maxDate={maxDate}
-									minDate={minDate}
-									onCommit={setDates}
-									selected={dates}
-								/>
+								{hydrated ? (
+									<DateCalendar
+										maxDate={maxDate}
+										minDate={minDate}
+										onCommit={setDates}
+										selected={dates}
+									/>
+								) : (
+									<output className="block h-[400px] animate-pulse rounded-md border border-input bg-muted/50">
+										<span className="sr-only">Loading calendar</span>
+									</output>
+								)}
 							</div>
 						) : (
 							<div className="grid gap-2">
@@ -237,14 +246,16 @@ function Home() {
 							<Input
 								id="tz"
 								list="tz-list"
-								onChange={(e) => setTimezone(e.target.value)}
+								onChange={(e) => setTimezoneOverride(e.target.value)}
 								value={timezone}
 							/>
-							<datalist id="tz-list">
-								{allTimezones().map((tz) => (
-									<option key={tz} value={tz} />
-								))}
-							</datalist>
+							{hydrated ? (
+								<datalist id="tz-list">
+									{allTimezones().map((tz) => (
+										<option key={tz} value={tz} />
+									))}
+								</datalist>
+							) : null}
 						</div>
 						{error !== "" && (
 							<p className="text-sm text-destructive" role="alert">
