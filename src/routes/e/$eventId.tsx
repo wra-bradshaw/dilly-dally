@@ -370,7 +370,7 @@ function EventPage() {
 				<Tooltip open={copied ? true : undefined}>
 					<TooltipTrigger asChild>
 						<a
-							className="text-primary underline underline-offset-4 hover:text-accent-foreground"
+							className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 							href={url}
 							onClick={(e) => {
 								e.preventDefault();
@@ -568,14 +568,14 @@ function EventPage() {
 				The link is the event, keep it. Data auto-deletes after the event
 				passes. Agents: see{" "}
 				<a
-					className="text-primary underline-offset-4 hover:underline"
+					className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href="/api/agent-guide"
 				>
 					/api/agent-guide
 				</a>{" "}
 				and{" "}
 				<a
-					className="text-primary underline-offset-4 hover:underline"
+					className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href="/api/openapi.json"
 				>
 					/api/openapi.json
