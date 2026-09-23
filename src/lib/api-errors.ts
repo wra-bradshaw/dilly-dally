@@ -1,4 +1,6 @@
-import type { ZodError } from "zod";
+import type { ZodError, ZodType } from "zod";
+
+const MAX_JSON_BYTES = 262_144;
 
 export function jsonError(
 	code: string,
@@ -53,6 +55,53 @@ export function zodFields(error: ZodError): Record<string, string[]> {
 	return out;
 }
 
+export type GuardedJson<T> =
+	| { data: T; ok: true }
+	| { ok: false; response: Response };
+
+export async function readGuardedJson<T>(
+	request: Request,
+	schema: ZodType<T>,
+	maxBytes: number = MAX_JSON_BYTES,
+): Promise<GuardedJson<T>> {
+	if (contentLengthTooLarge(request))
+		return {
+			ok: false,
+			response: jsonError("bad_request", "Payload too large", 413),
+		};
+	if (!isJsonContentType(request))
+		return {
+			ok: false,
+			response: jsonError(
+				"bad_request",
+				"Content-Type must be application/json",
+				415,
+			),
+		};
+	const body = await readCappedJson(request, maxBytes);
+	if (!body.ok) {
+		return body.reason === "too_large"
+			? {
+					ok: false,
+					response: jsonError("bad_request", "Payload too large", 413),
+				}
+			: { ok: false, response: jsonError("bad_request", "Invalid JSON", 400) };
+	}
+	const parsed = schema.safeParse(body.value);
+	if (!parsed.success) {
+		return {
+			ok: false,
+			response: jsonError(
+				"bad_request",
+				"Validation failed",
+				400,
+				zodFields(parsed.error),
+			),
+		};
+	}
+	return { data: parsed.data, ok: true };
+}
+
 export function clientIp(request: Request): string {
 	const cf = request.headers.get("cf-connecting-ip");
 	if (cf) return cf;
@@ -64,8 +113,6 @@ export function clientIp(request: Request): string {
 export function originOf(request: Request): string {
 	return new URL(request.url).origin;
 }
-
-const MAX_JSON_BYTES = 262_144;
 
 export function contentLengthTooLarge(request: Request): boolean {
 	const raw = request.headers.get("content-length");

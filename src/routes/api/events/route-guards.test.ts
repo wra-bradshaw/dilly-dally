@@ -1,5 +1,7 @@
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, it } from "vitest";
+import { readGuardedJson } from "#/lib/api-errors";
+import { availabilitySchema } from "#/lib/validation";
 import {
 	getOwnAvailabilityResponse,
 	saveAvailability,
@@ -131,6 +133,57 @@ describe("availability write guards", () => {
 			eventId,
 		);
 		expect(res.status).toBe(415);
+	});
+});
+
+describe("guarded JSON adapter", () => {
+	it("prefers 413 over 415 when both apply", async () => {
+		const res = await readGuardedJson(
+			new Request("https://x.test/api/events/x/availability", {
+				body: "{}",
+				headers: {
+					"content-length": String(300_000),
+					"content-type": "text/plain",
+				},
+				method: "PUT",
+			}),
+			availabilitySchema,
+		);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(413);
+	});
+
+	it("maps non-JSON content to 415", async () => {
+		const res = await readGuardedJson(
+			postRequest("{}", "text/plain"),
+			availabilitySchema,
+		);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(415);
+	});
+
+	it("maps invalid JSON to 400", async () => {
+		const res = await readGuardedJson(
+			postRequest("{nope", "application/json"),
+			availabilitySchema,
+		);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(400);
+	});
+
+	it("maps validation failure to 400 with fields", async () => {
+		const res = await readGuardedJson(
+			postRequest({ name: "" }, "application/json"),
+			availabilitySchema,
+		);
+		expect(res.ok).toBe(false);
+		if (!res.ok) {
+			expect(res.response.status).toBe(400);
+			const body = (await res.response.json()) as {
+				error: { fields?: Record<string, string[]> };
+			};
+			expect(body.error.fields).toBeDefined();
+		}
 	});
 });
 

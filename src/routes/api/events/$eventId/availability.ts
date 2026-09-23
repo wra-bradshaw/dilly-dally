@@ -1,13 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	clientIp,
-	contentLengthTooLarge,
-	isJsonContentType,
 	jsonError,
 	rateLimited,
-	readCappedJson,
+	readGuardedJson,
 	securityHeaders,
-	zodFields,
 } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
@@ -34,30 +31,9 @@ export async function saveAvailability(
 		RATE_LIMITS.availabilityWrite.limit,
 	);
 	if (!rl.allowed) return rateLimited(rl.resetMs);
-	if (contentLengthTooLarge(request))
-		return jsonError("bad_request", "Payload too large", 413);
-	if (!isJsonContentType(request))
-		return jsonError(
-			"bad_request",
-			"Content-Type must be application/json",
-			415,
-		);
-	const body = await readCappedJson(request);
-	if (!body.ok) {
-		return body.reason === "too_large"
-			? jsonError("bad_request", "Payload too large", 413)
-			: jsonError("bad_request", "Invalid JSON", 400);
-	}
-	const parsed = availabilitySchema.safeParse(body.value);
-	if (!parsed.success) {
-		return jsonError(
-			"bad_request",
-			"Validation failed",
-			400,
-			zodFields(parsed.error),
-		);
-	}
-	const input: AvailabilityInput = parsed.data;
+	const guarded = await readGuardedJson(request, availabilitySchema);
+	if (!guarded.ok) return guarded.response;
+	const input: AvailabilityInput = guarded.data;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
 		return jsonError(
