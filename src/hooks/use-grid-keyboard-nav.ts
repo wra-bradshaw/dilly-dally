@@ -58,5 +58,5 @@ export function useGridKeyboardNav(
 		[moveFocus, roving],
 	);
 
-	return { focusCell, moveFocus, onGridKeyDown, roving, setFocusId };
+	return { onGridKeyDown, roving, setFocusId };
 }
