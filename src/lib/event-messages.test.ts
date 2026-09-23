@@ -40,7 +40,8 @@ describe("decideSignInError", () => {
 			),
 		).toEqual({ kind: "fresh" });
 		expect(decideSignInError(new HttpError(404, "other", "x"), false)).toEqual({
-			kind: "fresh",
+			kind: "message",
+			text: "This event is gone. Check the link and try again.",
 		});
 	});
 
