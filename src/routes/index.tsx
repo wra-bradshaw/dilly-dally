@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
+import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -110,17 +111,7 @@ function Home() {
 
 	return (
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
-			<header className="flex items-center justify-between py-5">
-				<div className="font-heading text-2xl font-bold">dilly dally</div>
-				<nav className="flex items-center gap-1 text-sm">
-					<Button asChild size="sm" variant="link">
-						<a href="/api/agent-guide">Agent guide</a>
-					</Button>
-					<Button asChild size="sm" variant="link">
-						<a href="/api/openapi.json">OpenAPI</a>
-					</Button>
-				</nav>
-			</header>
+			<SiteHeader />
 
 			<Card className="mx-auto max-w-lg">
 				<CardHeader>

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
+import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -353,16 +354,7 @@ function EventPage() {
 					</Button>
 				</output>
 			)}
-			<header className="flex items-center justify-between py-5">
-				<a className="font-heading text-2xl font-bold" href="/">
-					dilly dally
-				</a>
-				<nav className="flex items-center gap-1 text-sm">
-					<Button asChild size="sm" variant="link">
-						<a href="/api/agent-guide">Agent guide</a>
-					</Button>
-				</nav>
-			</header>
+			<SiteHeader />
 
 			<h1 className="font-heading mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
