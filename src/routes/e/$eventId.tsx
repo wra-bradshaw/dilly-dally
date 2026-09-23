@@ -33,6 +33,9 @@ import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
 	errorComponent: EventError,
+	headers: () => ({
+		"Cache-Control": "no-store",
+	}),
 	loader: async ({ context, params }) => {
 		await context.queryClient.ensureQueryData({
 			queryFn: async () => {
@@ -40,7 +43,13 @@ export const Route = createFileRoute("/e/$eventId")({
 					data: params.eventId,
 				});
 				if (!result.ok) {
-					throw new HttpError(result.status, result.code, result.message);
+					throw new HttpError(
+						result.status,
+						result.code,
+						result.message,
+						undefined,
+						result.retryAfter,
+					);
 				}
 				return result.detail;
 			},
@@ -52,6 +61,8 @@ export const Route = createFileRoute("/e/$eventId")({
 function EventError({ error }: { error: unknown }) {
 	const gone = error instanceof HttpError && error.code === "gone";
 	const limited = !gone && error instanceof HttpError && error.status === 429;
+	const retryAfter =
+		limited && error instanceof HttpError ? error.retryAfter : undefined;
 	return (
 		<div className="page-wrap py-16 text-center">
 			<h1 className="display-title text-3xl font-bold">
@@ -63,7 +74,9 @@ function EventError({ error }: { error: unknown }) {
 			</h1>
 			<p className="mt-2 text-muted-foreground">
 				{limited
-					? "Wait a moment, then try again."
+					? retryAfter
+						? `Wait about ${retryAfter} seconds, then try again.`
+						: "Wait a moment, then try again."
 					: gone
 						? "Events are deleted after they pass to free up space."
 						: "Check the link and try again."}

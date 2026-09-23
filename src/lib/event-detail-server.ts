@@ -8,19 +8,25 @@ import { checkRateLimitDb } from "./server-rate-limit";
 
 type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
-	| { code: string; message: string; ok: false; status: number };
+	| { code: string; message: string; ok: false; retryAfter?: number; status: number };
 
 const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {
 		const key = await rateLimitKey(clientIp(request), "read");
+		const now = Date.now();
 		const rl = await checkRateLimitDb(
 			getDb(),
 			key,
-			Date.now(),
+			now,
 			RATE_LIMITS.read.windowMs,
 			RATE_LIMITS.read.limit,
 		);
-		return next({ context: { readRateLimited: !rl.allowed } });
+		return next({
+			context: {
+				readRateLimited: !rl.allowed,
+				readRetryAfter: Math.max(1, Math.ceil((rl.resetMs - now) / 1000)),
+			},
+		});
 	},
 );
 
@@ -36,7 +42,13 @@ export const fetchEventDetailServerFn = createServerFn({ method: "GET" })
 		async ({ context, data: eventId }): Promise<EventDetailServerResult> => {
 			try {
 				if (context.readRateLimited) {
-					throw new HttpError(429, "rate_limited", "Too many requests");
+					return {
+						code: "rate_limited",
+						message: "Too many requests",
+						ok: false,
+						retryAfter: context.readRetryAfter,
+						status: 429,
+					};
 				}
 				const detail = await loadEventDetailFromDb(
 					getDb(),
