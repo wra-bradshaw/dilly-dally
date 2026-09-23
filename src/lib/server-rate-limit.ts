@@ -2,8 +2,6 @@ import { env } from "cloudflare:workers";
 import type { RateLimitResult } from "./rate-limit";
 import type { RateLimiter } from "./rate-limiter-do";
 
-export type { RateLimitResult };
-
 export async function checkRateLimit(
 	key: string,
 	nowMs: number,
