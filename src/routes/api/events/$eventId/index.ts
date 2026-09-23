@@ -5,7 +5,7 @@ import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
 import { getEventDetail } from "#/lib/server-availability";
 import { loadLiveEvent } from "#/lib/server-event-detail";
-import { checkRateLimitDb } from "#/lib/server-rate-limit";
+import { checkRateLimit } from "#/lib/server-rate-limit";
 
 export const Route = createFileRoute("/api/events/$eventId/")({
 	server: {
@@ -14,8 +14,7 @@ export const Route = createFileRoute("/api/events/$eventId/")({
 				const db = getDb();
 				const now = Date.now();
 				const key = await rateLimitKey(clientIp(request), "read");
-				const rl = await checkRateLimitDb(
-					db,
+				const rl = await checkRateLimit(
 					key,
 					now,
 					RATE_LIMITS.read.windowMs,

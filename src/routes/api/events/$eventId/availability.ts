@@ -15,15 +15,14 @@ import {
 	upsertAvailability,
 } from "#/lib/server-availability";
 import { loadLiveEvent } from "#/lib/server-event-detail";
-import { checkRateLimitDb } from "#/lib/server-rate-limit";
+import { checkRateLimit } from "#/lib/server-rate-limit";
 import { type AvailabilityInput, availabilitySchema } from "#/lib/validation";
 
 async function saveAvailability(request: Request, eventId: string) {
 	const db = getDb();
 	const now = Date.now();
 	const key = await rateLimitKey(clientIp(request), "availability_write");
-	const rl = await checkRateLimitDb(
-		db,
+	const rl = await checkRateLimit(
 		key,
 		now,
 		RATE_LIMITS.availabilityWrite.windowMs,
@@ -103,8 +102,7 @@ export const Route = createFileRoute("/api/events/$eventId/availability")({
 				const db = getDb();
 				const now = Date.now();
 				const key = await rateLimitKey(clientIp(request), "read");
-				const rl = await checkRateLimitDb(
-					db,
+				const rl = await checkRateLimit(
 					key,
 					now,
 					RATE_LIMITS.read.windowMs,

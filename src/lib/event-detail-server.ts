@@ -4,7 +4,7 @@ import { type EventDetailResponse, HttpError } from "./client";
 import { getDb } from "./db-env";
 import { RATE_LIMITS, rateLimitKey } from "./rate-limit";
 import { loadEventDetailFromDb } from "./server-event-detail";
-import { checkRateLimitDb } from "./server-rate-limit";
+import { checkRateLimit } from "./server-rate-limit";
 
 type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
@@ -20,8 +20,7 @@ const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {
 		const key = await rateLimitKey(clientIp(request), "read");
 		const now = Date.now();
-		const rl = await checkRateLimitDb(
-			getDb(),
+		const rl = await checkRateLimit(
 			key,
 			now,
 			RATE_LIMITS.read.windowMs,

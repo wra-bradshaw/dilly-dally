@@ -6,6 +6,7 @@ import {
 } from "./rate-limit";
 
 interface RateLimiterRow {
+	[key: string]: ArrayBuffer | string | number | null;
 	count: number;
 	window_start: number;
 }

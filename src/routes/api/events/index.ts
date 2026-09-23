@@ -14,7 +14,7 @@ import { getDb } from "#/lib/db-env";
 import { generateEventId, isValidEventId } from "#/lib/event-ids";
 import { computeExpiry } from "#/lib/expiry";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
-import { checkRateLimitDb } from "#/lib/server-rate-limit";
+import { checkRateLimit } from "#/lib/server-rate-limit";
 import { type CreateEventInput, createEventSchema } from "#/lib/validation";
 
 function isIdCollision(err: unknown): boolean {
@@ -34,8 +34,7 @@ export const Route = createFileRoute("/api/events/")({
 				const db = getDb();
 				const now = Date.now();
 				const key = await rateLimitKey(clientIp(request), "create_event");
-				const rl = await checkRateLimitDb(
-					db,
+				const rl = await checkRateLimit(
 					key,
 					now,
 					RATE_LIMITS.createEvent.windowMs,
