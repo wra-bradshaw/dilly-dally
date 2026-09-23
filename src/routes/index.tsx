@@ -123,7 +123,7 @@ function Home() {
 				</nav>
 			</header>
 
-			<Card className="mx-auto mt-8 max-w-2xl">
+			<Card className="mx-auto max-w-lg">
 				<CardHeader>
 					<h1 className="font-heading text-sm font-medium">Plan a new event</h1>
 				</CardHeader>
@@ -159,7 +159,7 @@ function Home() {
 										aria-pressed={mode === m.value}
 										key={m.value}
 										onClick={() => setMode(m.value)}
-										size="xs"
+										size="sm"
 										type="button"
 										variant={mode === m.value ? "default" : "outline"}
 									>
@@ -193,14 +193,14 @@ function Home() {
 						)}
 						<div className="grid gap-2">
 							<Label>What times might work?</Label>
-							<div className="flex flex-wrap items-center gap-2">
-								<span className="text-sm text-muted-foreground">
+							<div className="flex flex-wrap items-center gap-x-1.5 gap-y-2">
+								<span className="text-xs text-muted-foreground">
 									No earlier than
 								</span>
 								<Select onValueChange={setStartTime} value={startTime}>
 									<SelectTrigger
 										aria-label="No earlier than"
-										className="w-32"
+										className="w-28"
 										type="button"
 									>
 										<SelectValue />
@@ -213,13 +213,13 @@ function Home() {
 										))}
 									</SelectContent>
 								</Select>
-								<span className="text-sm text-muted-foreground">
+								<span className="text-xs text-muted-foreground">
 									No later than
 								</span>
 								<Select onValueChange={setEndTime} value={endTime}>
 									<SelectTrigger
 										aria-label="No later than"
-										className="w-32"
+										className="w-28"
 										type="button"
 									>
 										<SelectValue />
