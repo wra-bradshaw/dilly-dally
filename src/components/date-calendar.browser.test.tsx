@@ -27,7 +27,7 @@ test("dates outside the event window cannot be picked", async () => {
 	const screen = await render(
 		<DateCalendar
 			maxDate="2026-09-28"
-			minDate="2026-09-28"
+			minDate="2026-09-23"
 			onCommit={onCommit}
 			selected={new Set()}
 		/>,
@@ -145,33 +145,165 @@ test("arrow keys never scroll even with nowhere to move", async () => {
 	await expect.element(day).toHaveFocus();
 });
 
-test("month buttons clamp to the in-range window", async () => {
+test("renders every in-range month stacked with no month buttons", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(
 		<DateCalendar
-			maxDate="2026-09-28"
-			minDate="2026-09-28"
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
 			onCommit={onCommit}
 			selected={new Set()}
 		/>,
 	);
 
-	const prev = screen.getByRole("button", { name: "Previous month" });
-	const next = screen.getByRole("button", { name: "Next month" });
-	await expect.element(prev).toBeVisible();
-	await expect.element(prev).toHaveAttribute("disabled", "");
-	await expect.element(next).toHaveAttribute("disabled", "");
-	expect(prev.element().className).toContain("min-w-6");
-	expect(next.element().className).toContain("min-w-6");
-	expect(prev.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
-		24,
-	);
-	expect(next.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
-		24,
-	);
+	await expect.element(screen.getByText("September 2026")).toBeVisible();
+	await expect.element(screen.getByText("October 2026")).toBeVisible();
 	expect(
-		screen.container.querySelectorAll('button[data-day][tabindex="0"]'),
-	).toHaveLength(1);
+		screen.container.querySelector('[aria-label="Previous month"]'),
+	).toBeNull();
+	expect(
+		screen.container.querySelector('[aria-label="Next month"]'),
+	).toBeNull();
+	expect(
+		screen.container.querySelector('[data-day="2026-09-30"]'),
+	).not.toBeNull();
+	expect(
+		screen.container.querySelector('[data-day="2026-10-01"]'),
+	).not.toBeNull();
+});
+
+test("leading out-of-range weeks are trimmed, not blank space", async () => {
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-09-30"
+			minDate="2026-09-22"
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+
+	await expect.element(screen.getByText("September 2026")).toBeVisible();
+	expect(screen.container.querySelector('[data-day="2026-09-01"]')).toBeNull();
+	expect(
+		screen.container.querySelector('[data-day="2026-09-22"]'),
+	).not.toBeNull();
+});
+
+test("dragging near the bottom edge scrolls the month list", async () => {
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-12-31"
+			minDate="2026-09-22"
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+
+	const scroller = screen.container.querySelector<HTMLElement>(
+		'[data-slot="date-calendar-months"]',
+	);
+	expect(scroller).not.toBeNull();
+	const el = scroller as HTMLElement;
+	expect(el.scrollHeight).toBeGreaterThan(el.clientHeight);
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	(day.element() as HTMLButtonElement).dispatchEvent(
+		new PointerEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			cancelable: true,
+			pointerType: "mouse",
+		}),
+	);
+	await new Promise((resolve) => setTimeout(resolve, 10));
+	const rect = el.getBoundingClientRect();
+	el.dispatchEvent(
+		new PointerEvent("pointermove", {
+			bubbles: true,
+			button: 0,
+			buttons: 1,
+			cancelable: true,
+			clientX: rect.left + rect.width / 2,
+			clientY: rect.bottom - 4,
+		}),
+	);
+	expect(el.scrollTop).toBeGreaterThan(0);
+});
+
+test("deeper edge penetration scrolls faster than shallow", async () => {
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-12-31"
+			minDate="2026-09-22"
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+
+	const scroller = screen.container.querySelector<HTMLElement>(
+		'[data-slot="date-calendar-months"]',
+	);
+	expect(scroller).not.toBeNull();
+	const el = scroller as HTMLElement;
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	(day.element() as HTMLButtonElement).dispatchEvent(
+		new PointerEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			cancelable: true,
+			pointerType: "mouse",
+		}),
+	);
+	await new Promise((resolve) => setTimeout(resolve, 10));
+	const rect = el.getBoundingClientRect();
+	const centerY = rect.top + rect.height / 2;
+	const moveTo = (clientY: number) => {
+		el.dispatchEvent(
+			new PointerEvent("pointermove", {
+				bubbles: true,
+				button: 0,
+				buttons: 1,
+				cancelable: true,
+				clientX: rect.left + rect.width / 2,
+				clientY,
+			}),
+		);
+	};
+	el.scrollTop = 0;
+	moveTo(rect.bottom - 35);
+	const shallow = el.scrollTop;
+	moveTo(centerY);
+	el.scrollTop = 0;
+	moveTo(rect.bottom - 4);
+	const deep = el.scrollTop;
+	expect(shallow).toBeGreaterThan(0);
+	expect(deep).toBeGreaterThan(shallow);
+	el.dispatchEvent(
+		new PointerEvent("pointerup", {
+			bubbles: true,
+			cancelable: true,
+			clientX: rect.left + rect.width / 2,
+			clientY: rect.bottom - 4,
+		}),
+	);
+});
+
+test("weekday header sticks to the top while scrolling", async () => {
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	const header = screen.container.querySelector<HTMLElement>(
+		'[data-slot="date-calendar-weekdays"]',
+	);
+	expect(header).not.toBeNull();
+	expect(header?.className ?? "").toContain("sticky");
+	expect(getComputedStyle(header as HTMLElement).position).toBe("sticky");
 });
 
 test("dragging across days selects every date in between", async () => {
@@ -197,6 +329,26 @@ test("dragging across days selects every date in between", async () => {
 		"2026-09-26",
 		"2026-09-27",
 	]);
+});
+
+test("dragging across months selects every date in between", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const first = screen.getByRole("button", { name: "Wed, 9/30" });
+	const last = screen.getByRole("button", { name: "Fri, 10/2" });
+	await expect.element(first).toBeVisible();
+	await first.dropTo(last);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	const next = onCommit.mock.calls[0]?.[0] as Set<string>;
+	expect([...next].sort()).toEqual(["2026-09-30", "2026-10-01", "2026-10-02"]);
 });
 
 test("Home and End jump to row edges", async () => {
@@ -252,13 +404,10 @@ test("calendar paint surface presents touch-none at rest", async () => {
 	);
 	const day = screen.getByRole("button", { name: "Mon, 9/28" });
 	await expect.element(day).toBeVisible();
-	expect(day.element().closest("div.grid")?.className ?? "").toContain(
-		"touch-none",
-	);
-	expect(
-		getComputedStyle(day.element().closest("div.grid") as HTMLElement)
-			.touchAction,
-	).toBe("none");
+	const surface = day.element().closest(".touch-none");
+	expect(surface).not.toBeNull();
+	expect(surface?.className ?? "").toContain("touch-none");
+	expect(getComputedStyle(surface as HTMLElement).touchAction).toBe("none");
 });
 
 test("trusted key presses toggle exactly once per press", async () => {
