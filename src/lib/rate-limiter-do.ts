@@ -36,7 +36,10 @@ export class RateLimiter extends DurableObject<Env> {
 				)
 				.toArray();
 			const row = rows[0];
-			stored = row === undefined ? null : { count: row.count, windowStart: row.window_start };
+			stored =
+				row === undefined
+					? null
+					: { count: row.count, windowStart: row.window_start };
 			this.cached = stored;
 		}
 		const { next, result } = decideRateLimit(stored, nowMs, windowMs, limit);

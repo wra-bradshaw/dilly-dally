@@ -63,8 +63,7 @@ function createFakeStorage() {
 		},
 	};
 	const ctx = {
-		blockConcurrencyWhile: async <T,>(callback: () => Promise<T>) =>
-			callback(),
+		blockConcurrencyWhile: async <T>(callback: () => Promise<T>) => callback(),
 		storage: { sql },
 	};
 	return { ctx, peek: () => row };
