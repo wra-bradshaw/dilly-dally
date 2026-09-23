@@ -17,7 +17,6 @@ export interface OwnAvailabilityRestoreResult {
 export function useOwnAvailabilityRestore(options: {
 	eventId: string;
 	storedName: string;
-	eventMissing?: boolean;
 	eventSettled?: boolean;
 	fetchAvailability?: typeof fetchOwnAvailability;
 	onRestored: (own: OwnAvailabilityRestoreResult) => void;

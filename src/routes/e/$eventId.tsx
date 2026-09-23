@@ -114,7 +114,6 @@ function EventPage() {
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
-			eventMissing,
 			eventSettled: !detail.isPending,
 			fetchAvailability: fetchOwnAvailability,
 			onCleared: () => {

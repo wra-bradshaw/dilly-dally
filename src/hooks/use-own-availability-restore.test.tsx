@@ -7,7 +7,6 @@ const eventId = "AbC123_-XyZ9";
 
 function setup(options: {
 	storedName: string;
-	eventMissing?: boolean;
 	eventSettled?: boolean;
 	fetchAvailability: (
 		eventId: string,
@@ -25,7 +24,6 @@ function setup(options: {
 		({ storedName }) =>
 			useOwnAvailabilityRestore({
 				eventId,
-				eventMissing: options.eventMissing,
 				eventSettled: options.eventSettled,
 				fetchAvailability: options.fetchAvailability as never,
 				onCleared: () => onCleared(),
@@ -89,19 +87,6 @@ describe("useOwnAvailabilityRestore", () => {
 		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
 		expect(onRestored).not.toHaveBeenCalled();
 		expect(onCleared).toHaveBeenCalledTimes(1);
-	});
-
-	it("treats a missing event as failed instead of clearing", async () => {
-		const fetchAvailability = vi
-			.fn()
-			.mockRejectedValue(new HttpError(404, "not_found", "Event not found"));
-		const { hook, onCleared } = setup({
-			eventMissing: true,
-			fetchAvailability,
-			storedName: "Ada",
-		});
-		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
-		expect(onCleared).not.toHaveBeenCalled();
 	});
 
 	it("fails instead of clearing on a bare 404 without a not-found code", async () => {
