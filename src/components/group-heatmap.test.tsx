@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 import { GroupHeatmap, heatmapAlpha } from "./group-heatmap";
 
@@ -69,6 +70,42 @@ describe("GroupHeatmap contrast", () => {
 		const [first, second] = screen.getAllByRole("button");
 		expect((first as HTMLElement).style.backgroundColor).toBe("");
 		expect((second as HTMLElement).style.backgroundColor).not.toBe("");
+	});
+});
+
+describe("TimeGrid announcements", () => {
+	it("announces by default for single-grid usages", () => {
+		const { container } = render(ui());
+		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
+	});
+
+	it("emits one live region when the event page silences the heatmap", () => {
+		const columns = cols();
+		const { container } = render(
+			<>
+				<AvailabilityGrid
+					columns={columns}
+					onCommit={() => {}}
+					selected={new Set()}
+				/>
+				<GroupHeatmap
+					allNames={["Ada"]}
+					announce={false}
+					columns={columns}
+					counts={
+						new Map(
+							columns.flatMap((c) =>
+								c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+							),
+						)
+					}
+					eventTimezone="UTC"
+					total={1}
+					viewTimezone="UTC"
+				/>
+			</>,
+		);
+		expect(container.querySelectorAll("output.sr-only")).toHaveLength(1);
 	});
 });
 

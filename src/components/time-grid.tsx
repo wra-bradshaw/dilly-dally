@@ -25,6 +25,7 @@ interface TimeGridProps {
 	renderCell: (cell: GridCell, ctx: TimeGridCellContext) => ReactNode;
 	tableRef?: Ref<HTMLTableElement>;
 	tableClassName?: string;
+	announce?: boolean;
 	onKeyDown?: (e: React.KeyboardEvent) => void;
 	onPointerCancel?: (e: React.PointerEvent) => void;
 	onPointerMove?: (e: React.PointerEvent) => void;
@@ -48,6 +49,7 @@ function useTimeGrid(columns: GridColumn[]) {
 }
 
 export function TimeGrid({
+	announce = true,
 	columns,
 	onKeyDown,
 	onPointerCancel,
@@ -67,9 +69,11 @@ export function TimeGrid({
 
 	return (
 		<>
-			<output aria-live="polite" className="sr-only">
-				{summary}
-			</output>
+			{announce ? (
+				<output aria-live="polite" className="sr-only">
+					{summary}
+				</output>
+			) : null}
 			<table
 				aria-label={fullLabel}
 				className={cn("w-full border-collapse select-none", tableClassName)}

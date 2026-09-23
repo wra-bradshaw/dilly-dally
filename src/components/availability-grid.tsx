@@ -14,9 +14,11 @@ interface AvailabilityGridProps {
 	selected: Set<string>;
 	onCommit: (next: Set<string>) => void;
 	disabled?: boolean;
+	announce?: boolean;
 }
 
 export function AvailabilityGrid({
+	announce = true,
 	columns,
 	disabled,
 	onCommit,
@@ -63,6 +65,7 @@ export function AvailabilityGrid({
 		<div>
 			<div className={cn("overflow-x-auto pb-2", disabled && "opacity-60")}>
 				<TimeGrid
+					announce={announce}
 					columns={columns}
 					onKeyDown={onCellKeyDown}
 					onPointerCancel={surface.onPointerCancel}

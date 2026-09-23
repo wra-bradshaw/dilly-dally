@@ -563,6 +563,7 @@ function EventPage() {
 				<CardContent>
 					<GroupHeatmap
 						allNames={allNames}
+						announce={false}
 						columns={columns}
 						counts={counts}
 						eventTimezone={event?.timezone}

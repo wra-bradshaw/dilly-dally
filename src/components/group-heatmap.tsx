@@ -22,10 +22,12 @@ interface GroupHeatmapProps {
 	allNames: string[];
 	eventTimezone?: string;
 	viewTimezone?: string;
+	announce?: boolean;
 }
 
 export function GroupHeatmap({
 	allNames,
+	announce = true,
 	columns,
 	counts,
 	eventTimezone,
@@ -70,6 +72,7 @@ export function GroupHeatmap({
 		<div className="flex flex-col gap-3 lg:flex-row">
 			<div className="overflow-x-auto pb-2">
 				<TimeGrid
+					announce={announce}
 					columns={columns}
 					onKeyDown={onHeatmapKeyDown}
 					renderCell={(cell, ctx) => (
