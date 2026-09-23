@@ -54,7 +54,6 @@
     "@cloudflare/vite-plugin": "^1.26.0",
     "@cloudflare/workers-types": "^5.20260922.1",
     "@rolldown/plugin-babel": "^0.2.3",
-    "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",
     "@testing-library/jest-dom": "^7.0.1",
