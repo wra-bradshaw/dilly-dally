@@ -1,4 +1,4 @@
-import { originOf, securityHeaders } from "./api-errors";
+import { docsResponse, originOf } from "./api-errors";
 
 interface OpenApiSchema {
 	$ref?: string;
@@ -34,12 +34,10 @@ export function serializeSpec(spec: OpenApiSpec): string {
 }
 
 export function openApiResponse(request: Request): Response {
-	return Response.json(getOpenApiSpec(originOf(request)), {
-		headers: {
-			...securityHeaders(),
-			"Cache-Control": "public, max-age=3600",
-		},
-	});
+	return docsResponse(
+		JSON.stringify(getOpenApiSpec(originOf(request))),
+		"application/json",
+	);
 }
 
 export function getOpenApiSpec(origin: string): OpenApiSpec {

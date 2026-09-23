@@ -32,6 +32,16 @@ export function documentSecurityHeaders(): Record<string, string> {
 	return { ...securityHeaders(), "X-Frame-Options": "DENY" };
 }
 
+export function docsResponse(body: string, contentType: string): Response {
+	return new Response(body, {
+		headers: {
+			...securityHeaders(),
+			"Cache-Control": "public, max-age=3600",
+			"Content-Type": contentType,
+		},
+	});
+}
+
 export function rateLimited(
 	resetMs: number,
 	opts?: { noStore?: boolean },

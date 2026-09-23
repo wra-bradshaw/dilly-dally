@@ -1,24 +1,12 @@
-import { originOf, securityHeaders } from "./api-errors";
+import { docsResponse, originOf } from "./api-errors";
 
 export function agentGuideResponse(request: Request): Response {
 	const guide = AGENT_GUIDE_MARKDOWN.replaceAll("HOST", originOf(request));
-	return new Response(guide, {
-		headers: {
-			...securityHeaders(),
-			"Cache-Control": "public, max-age=3600",
-			"Content-Type": "text/markdown; charset=utf-8",
-		},
-	});
+	return docsResponse(guide, "text/markdown; charset=utf-8");
 }
 
 export function llmsResponse(): Response {
-	return new Response(LLMS_TEXT, {
-		headers: {
-			...securityHeaders(),
-			"Cache-Control": "public, max-age=3600",
-			"Content-Type": "text/plain; charset=utf-8",
-		},
-	});
+	return docsResponse(LLMS_TEXT, "text/plain; charset=utf-8");
 }
 
 export const LLMS_TEXT = `Dilly-Dally: agent-friendly when2meet replacement. No login.
