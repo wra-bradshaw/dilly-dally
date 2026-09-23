@@ -189,6 +189,48 @@ test("dragging across days selects every date in between", async () => {
 	]);
 });
 
+test("Home and End jump to row edges", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const mid = screen.getByRole("button", { name: "Thu, 9/24" });
+	await expect.element(mid).toBeVisible();
+	(mid.element() as HTMLButtonElement).focus();
+	await expect.element(mid).toHaveFocus();
+	mid.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Home",
+		}),
+	);
+	await expect
+		.element(screen.getByRole("button", { name: "Tue, 9/22" }))
+		.toHaveFocus();
+	const edge = screen.getByRole("button", { name: "Tue, 9/22" });
+	edge.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "End",
+		}),
+	);
+	await expect
+		.element(screen.getByRole("button", { name: "Sat, 9/26" }))
+		.toHaveFocus();
+	expect(onCommit).not.toHaveBeenCalled();
+	expect(
+		screen.container.querySelectorAll('button[data-day][tabindex="0"]'),
+	).toHaveLength(1);
+});
+
 test("calendar paint surface presents touch-none at rest", async () => {
 	const screen = await render(
 		<DateCalendar

@@ -101,14 +101,16 @@ export function DateCalendar({
 	const onDayKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
 		if (e.key === " " || e.key === "Enter") {
-			if (suppressToggleKey(e)) return;
+			suppressToggleKey(e);
 			return;
 		}
 		if (
 			e.key !== "ArrowLeft" &&
 			e.key !== "ArrowRight" &&
 			e.key !== "ArrowUp" &&
-			e.key !== "ArrowDown"
+			e.key !== "ArrowDown" &&
+			e.key !== "Home" &&
+			e.key !== "End"
 		) {
 			return;
 		}
@@ -123,6 +125,17 @@ export function DateCalendar({
 		if (idx === -1) {
 			e.preventDefault();
 			if (firstEnabled) focusDayCell(firstEnabled);
+			return;
+		}
+		if (e.key === "Home" || e.key === "End") {
+			const rowStart = Math.floor(idx / 7) * 7;
+			const week = days.slice(rowStart, rowStart + 7);
+			const edge =
+				e.key === "Home"
+					? week.find((d) => d !== undefined && enabled(d))
+					: [...week].reverse().find((d) => d !== undefined && enabled(d));
+			e.preventDefault();
+			if (edge) focusDayCell(edge);
 			return;
 		}
 		const col = idx % 7;
