@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { headerForWeekday } from "./grid-model";
 import { WeekdayPicker } from "./weekday-picker";
@@ -41,4 +42,42 @@ test("weekday paint surface presents touch-none at rest", async () => {
 	expect(monday.element().closest("fieldset")?.className ?? "").toContain(
 		"touch-none",
 	);
+});
+
+test("trusted key presses toggle exactly once per press", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<WeekdayPicker onCommit={onCommit} selected={new Set()} />,
+	);
+
+	const monday = screen.getByRole("button", { name: headerForWeekday(1) });
+	await expect.element(monday).toBeVisible();
+	(monday.element() as HTMLButtonElement).focus();
+	await expect.element(monday).toHaveFocus();
+	await userEvent.keyboard("{Enter}");
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	await userEvent.keyboard(" ");
+	expect(onCommit).toHaveBeenCalledTimes(2);
+});
+
+test("repeat keydown does not toggle the weekday", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<WeekdayPicker onCommit={onCommit} selected={new Set()} />,
+	);
+
+	const monday = screen.getByRole("button", { name: headerForWeekday(1) });
+	await expect.element(monday).toBeVisible();
+	const node = monday.element() as HTMLButtonElement;
+	node.focus();
+	await expect.element(monday).toHaveFocus();
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Enter",
+			repeat: true,
+		}),
+	);
+	expect(onCommit).not.toHaveBeenCalled();
 });

@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { DateCalendar } from "./date-calendar";
 
@@ -245,4 +246,52 @@ test("calendar paint surface presents touch-none at rest", async () => {
 	expect(day.element().closest("div.grid")?.className ?? "").toContain(
 		"touch-none",
 	);
+});
+
+test("trusted key presses toggle exactly once per press", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	(day.element() as HTMLButtonElement).focus();
+	await expect.element(day).toHaveFocus();
+	await userEvent.keyboard("{Enter}");
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	await userEvent.keyboard(" ");
+	expect(onCommit).toHaveBeenCalledTimes(2);
+});
+
+test("repeat keydown does not toggle the day", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	const node = day.element() as HTMLButtonElement;
+	node.focus();
+	await expect.element(day).toHaveFocus();
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Enter",
+			repeat: true,
+		}),
+	);
+	expect(onCommit).not.toHaveBeenCalled();
 });
