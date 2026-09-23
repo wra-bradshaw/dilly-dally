@@ -16,6 +16,45 @@ function columns() {
 	);
 }
 
+function twoColumns() {
+	return buildColumns(
+		[
+			"2026-09-28T09:00",
+			"2026-09-28T09:15",
+			"2026-09-29T09:00",
+			"2026-09-29T09:15",
+		],
+		"UTC",
+		"UTC",
+	);
+}
+
+function gapColumns() {
+	return buildColumns(
+		[
+			"2026-09-28T09:00",
+			"2026-09-28T09:15",
+			"2026-10-01T09:00",
+			"2026-10-01T09:15",
+		],
+		"UTC",
+		"UTC",
+	);
+}
+
+function shiftedColumns() {
+	return buildColumns(
+		[
+			"2026-10-05T09:00",
+			"2026-10-05T09:15",
+			"2026-10-06T09:00",
+			"2026-10-06T09:15",
+		],
+		"America/New_York",
+		"Australia/Melbourne",
+	);
+}
+
 test("clicking a free slot paints it available and commits", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(
@@ -53,4 +92,85 @@ test("arrow keys move focus between slots for keyboard painters", async () => {
 	);
 	const second = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
 	await expect.element(second).toHaveFocus();
+});
+
+test("dragging across times paints every slot in between", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const first = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	const last = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
+	await expect.element(first).toBeVisible();
+	await first.dropTo(last);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	const next = onCommit.mock.calls[0]?.[0] as Set<string>;
+	expect([...next].sort()).toEqual([
+		"2026-09-28T09:00",
+		"2026-09-28T09:15",
+		"2026-09-28T09:30",
+	]);
+});
+
+test("dragging across dates paints the rectangle in between", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={twoColumns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const first = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	const last = screen.getByRole("button", { name: "Tue, 9/29 9:15 AM" });
+	await expect.element(first).toBeVisible();
+	await first.dropTo(last);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	const next = onCommit.mock.calls[0]?.[0] as Set<string>;
+	expect([...next].sort()).toEqual([
+		"2026-09-28T09:00",
+		"2026-09-28T09:15",
+		"2026-09-29T09:00",
+		"2026-09-29T09:15",
+	]);
+});
+
+test("non-contiguous days show a visible gap with screen-reader text", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={gapColumns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	await expect.element(screen.getByText("+2")).toBeVisible();
+	await expect
+		.element(
+			screen.getByText("Skipped 2 days between 2026-09-28 and 2026-10-01"),
+		)
+		.toBeVisible();
+	await expect
+		.element(screen.getByText("Showing 2 days in 2 groups, 2 days skipped."))
+		.toBeVisible();
+	const gapCell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(gapCell).toBeVisible();
+});
+
+test("viewer-time shift keeps every slot rendered and aligned", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={shiftedColumns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	const buttons = screen.getByRole("button", { name: /AM|PM/ });
+	await expect.element(buttons.first()).toBeVisible();
+	expect(buttons.all()).toHaveLength(4);
 });

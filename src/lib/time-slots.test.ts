@@ -3,6 +3,7 @@ import {
 	buildSlotUniverse,
 	computeCounts,
 	findBestTimes,
+	formatSlotWithDate,
 	isValidSlotId,
 	normalizeSlots,
 } from "./time-slots";
@@ -95,5 +96,12 @@ describe("findBestTimes", () => {
 			10,
 		);
 		expect(best[0]?.slot).toBe("2026-10-05T09:00");
+	});
+});
+
+describe("formatSlotWithDate", () => {
+	it("includes month, day, and time", () => {
+		expect(formatSlotWithDate("2026-10-06T00:00")).toBe("Oct 6, 12:00 AM");
+		expect(formatSlotWithDate("2026-09-28T09:15")).toBe("Sep 28, 9:15 AM");
 	});
 });

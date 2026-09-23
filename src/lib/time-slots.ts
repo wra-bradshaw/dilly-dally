@@ -64,6 +64,18 @@ export function formatSlotLabel(slot: string): string {
 	return `${h}:${mm} ${suffix}`;
 }
 
+export function formatSlotWithDate(slot: string): string {
+	const [date] = slot.split("T");
+	const [y, m, d] = date.split("-").map(Number);
+	const dt = new Date(Date.UTC(y, m - 1, d));
+	const monthDay = dt.toLocaleDateString("en-US", {
+		day: "numeric",
+		month: "short",
+		timeZone: "UTC",
+	});
+	return `${monthDay}, ${formatSlotLabel(slot)}`;
+}
+
 export interface SlotUniverseInput {
 	dates: string[];
 	startTime: string;

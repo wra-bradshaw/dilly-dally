@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useDragPaint } from "#/hooks/use-drag-paint";
+import { paintTargetFromPoint } from "#/lib/paint-target";
 import { cn } from "#/lib/utils";
 
 export function buildMonthMatrix(
@@ -38,7 +39,8 @@ export function DateCalendar({
 	}));
 	const matrix = buildMonthMatrix(ym.y, ym.m);
 	const ref = useRef<HTMLDivElement>(null);
-	const moved = useRef(false);
+	const suppressClick = useRef(false);
+	const clearTimer = useRef<number | undefined>(undefined);
 
 	const enabled = (day: string | null): day is string =>
 		day !== null && day >= minDate && day <= maxDate;
@@ -86,16 +88,36 @@ export function DateCalendar({
 
 	let blanks = 0;
 
-	const toggleDay = (day: string) => {
-		if (moved.current) {
-			moved.current = false;
+	const toggleDay = (day: string, detail: number) => {
+		if (suppressClick.current) {
+			suppressClick.current = false;
 			return;
 		}
+		if (detail !== 0) return;
 		const next = new Set(selected);
 		if (next.has(day)) next.delete(day);
 		else next.add(day);
-		drag.onPointerUp();
 		onCommit(next);
+	};
+
+	const moveToPoint = (clientX: number, clientY: number) => {
+		if (!drag.painting) return;
+		const day = paintTargetFromPoint(clientX, clientY, "data-day");
+		if (day) drag.onPointerEnter(day);
+	};
+
+	const finishAtPoint = (clientX: number, clientY: number) => {
+		const day = paintTargetFromPoint(clientX, clientY, "data-day");
+		if (day) {
+			suppressClick.current = true;
+			if (clearTimer.current !== undefined)
+				window.clearTimeout(clearTimer.current);
+			clearTimer.current = window.setTimeout(() => {
+				suppressClick.current = false;
+				clearTimer.current = undefined;
+			}, 300);
+		}
+		drag.onPointerUp(day ?? undefined);
 	};
 
 	return (
@@ -123,7 +145,9 @@ export function DateCalendar({
 			</div>
 			<div
 				className="grid touch-none grid-cols-7 gap-1 select-none"
-				onPointerUp={drag.onPointerUp}
+				onPointerCancel={drag.onPointerCancel}
+				onPointerMove={(e) => moveToPoint(e.clientX, e.clientY)}
+				onPointerUp={(e) => finishAtPoint(e.clientX, e.clientY)}
 				ref={ref}
 			>
 				{["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
@@ -156,15 +180,22 @@ export function DateCalendar({
 									"border-emerald-700 bg-emerald-400 font-semibold text-emerald-950",
 							)}
 							disabled={off}
+							data-day={day}
 							key={day}
-							onClick={() => toggleDay(day)}
+							onClick={(e) => toggleDay(day, e.detail)}
 							onPointerDown={(e) => {
-								moved.current = false;
+								if (off) return;
+								if (e.button !== 0 && e.pointerType === "mouse") return;
+								if (clearTimer.current !== undefined) {
+									window.clearTimeout(clearTimer.current);
+									clearTimer.current = undefined;
+								}
+								suppressClick.current = false;
 								capture(e);
 								drag.onPointerDown(day);
 							}}
 							onPointerEnter={() => {
-								if (drag.painting) moved.current = true;
+								if (off) return;
 								drag.onPointerEnter(day);
 							}}
 							type="button"

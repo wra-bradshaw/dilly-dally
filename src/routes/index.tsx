@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
+import { summarizeDates } from "#/components/grid-model";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -143,9 +144,11 @@ function Home() {
 						<div className="grid gap-2">
 							<Label>
 								What dates might work?{" "}
-								<span className="text-muted-foreground">
-									({dates.size} selected)
-								</span>
+								<output aria-live="polite" className="text-muted-foreground">
+									{dates.size === 0
+										? "(No dates selected)"
+										: `(${summarizeDates([...dates])})`}
+								</output>
 							</Label>
 							<p className="text-xs text-muted-foreground">
 								Click and drag dates to choose possibilities.

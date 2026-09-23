@@ -2,7 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
-import { buildColumns } from "#/components/grid-model";
+import {
+	buildColumns,
+	formatViewerSlot,
+	summarizeDates,
+} from "#/components/grid-model";
 import { GroupHeatmap } from "#/components/group-heatmap";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -19,7 +23,7 @@ import {
 	saveAvailability,
 } from "#/lib/client";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
-import { convertSlotZone, formatSlotLabel } from "#/lib/time-slots";
+import { slotToInstant } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
@@ -126,6 +130,17 @@ function EventPage() {
 		() => detail.data?.participants.map((p) => p.name) ?? [],
 		[detail.data],
 	);
+	const bestTimes = useMemo(() => {
+		const tz = detail.data?.event.timezone ?? "UTC";
+		return [...(detail.data?.bestTimes ?? [])]
+			.sort(
+				(a, b) =>
+					b.count - a.count ||
+					slotToInstant(a.slot, tz) - slotToInstant(b.slot, tz),
+			)
+			.slice(0, 10);
+	}, [detail.data]);
+	const dateSummary = event ? summarizeDates(event.dates) : "";
 
 	const signIn = async () => {
 		setSignError("");
@@ -231,9 +246,8 @@ function EventPage() {
 
 			<h1 className="display-title mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
-				{event?.timezone} · {event?.dates.length} days · {event?.startTime}–
-				{event?.endTime} · Expires{" "}
-				{event ? new Date(event.expiresAt).toLocaleDateString() : ""}
+				{event?.timezone} · {dateSummary} · {event?.startTime}–{event?.endTime}{" "}
+				· Expires {event ? new Date(event.expiresAt).toLocaleDateString() : ""}
 			</p>
 
 			<Card className="island-shell mt-6 rounded-2xl">
@@ -397,21 +411,26 @@ function EventPage() {
 						allNames={allNames}
 						columns={columns}
 						counts={counts}
+						eventTimezone={event?.timezone}
 						total={total}
+						viewTimezone={viewTimezone}
 					/>
 					<div className="mt-4">
 						<div className="text-sm font-semibold">Best times</div>
 						<ol className="mt-1 grid gap-1 text-sm">
-							{(detail.data?.bestTimes ?? []).slice(0, 10).map((b) => (
+							{bestTimes.map((b) => (
 								<li
 									className="flex items-center justify-between gap-2"
 									key={b.slot}
+									title={
+										event
+											? formatViewerSlot(b.slot, event.timezone, viewTimezone)
+											: b.slot
+									}
 								>
 									<span>
 										{event
-											? formatSlotLabel(
-													convertSlotZone(b.slot, event.timezone, viewTimezone),
-												)
+											? formatViewerSlot(b.slot, event.timezone, viewTimezone)
 											: b.slot}
 									</span>
 									<Badge

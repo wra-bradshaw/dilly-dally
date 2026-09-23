@@ -43,4 +43,39 @@ describe("useDragPaint", () => {
 		act(() => remove.hook.result.current.onPointerEnter("a"));
 		expect([...remove.hook.result.current.preview]).toEqual(["b"]);
 	});
+
+	it("uses a custom range function when provided", () => {
+		const onCommit = vi.fn();
+		const hook = renderHook(() =>
+			useDragPaint({
+				mode: "auto",
+				onCommit,
+				range: (_values, from, to) => [from, to],
+				selected: new Set<string>(),
+				values,
+			}),
+		);
+		act(() => hook.result.current.onPointerDown("a"));
+		act(() => hook.result.current.onPointerEnter("d"));
+		expect([...hook.result.current.preview].sort()).toEqual(["a", "d"]);
+		act(() => hook.result.current.onPointerUp());
+		expect([...onCommit.mock.calls[0][0]].sort()).toEqual(["a", "d"]);
+	});
+
+	it("commits the final value passed to pointer up", () => {
+		const { hook, onCommit } = setup([]);
+		act(() => hook.result.current.onPointerDown("a"));
+		act(() => hook.result.current.onPointerUp("d"));
+		expect([...onCommit.mock.calls[0][0]].sort()).toEqual(["a", "b", "c", "d"]);
+	});
+
+	it("discards the drag on cancel without committing", () => {
+		const { hook, onCommit } = setup([]);
+		act(() => hook.result.current.onPointerDown("a"));
+		act(() => hook.result.current.onPointerEnter("c"));
+		act(() => hook.result.current.onPointerCancel());
+		expect(onCommit).not.toHaveBeenCalled();
+		expect(hook.result.current.painting).toBe(false);
+		expect([...hook.result.current.preview]).toEqual([]);
+	});
 });
