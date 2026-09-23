@@ -1,5 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+	astToString,
+	COMMENT_HEADER,
+	default as openapiTS,
+} from "openapi-typescript";
 import { describe, expect, it } from "vitest";
 import { getOpenApiSpec } from "./openapi";
 
@@ -60,24 +65,26 @@ describe("openapi drift guard", () => {
 		expect(`${JSON.stringify(spec, null, 2)}\n`).toBe(committed);
 	});
 
-	it("keeps api-schema.d.ts fresh with spec operations and schemas", () => {
+	it("keeps api-schema.d.ts byte-identical to the generated output", async () => {
 		const spec = getOpenApiSpec("https://example.com");
 		const dts = readFileSync(
 			join(process.cwd(), "src", "lib", "api-schema.d.ts"),
 			"utf8",
 		);
-		const ops = new Set<string>();
+		expect(COMMENT_HEADER + astToString(await openapiTS(spec))).toBe(dts);
+	});
+
+	it("uses unique operationIds across the spec", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const ops: string[] = [];
 		for (const path of Object.values(spec.paths)) {
 			for (const method of Object.values(
 				path as Record<string, { operationId?: string }>,
 			)) {
-				if (method?.operationId) ops.add(method.operationId);
+				if (method?.operationId) ops.push(method.operationId);
 			}
 		}
-		expect(ops.size).toBeGreaterThan(0);
-		for (const op of ops) expect(dts).toContain(op);
-		for (const name of Object.keys(spec.components.schemas)) {
-			expect(dts).toContain(name);
-		}
+		expect(ops.length).toBeGreaterThan(0);
+		expect(new Set(ops).size).toBe(ops.length);
 	});
 });
