@@ -173,6 +173,34 @@ test("trusted key presses toggle exactly once per press", async () => {
 	expect(onCommit).toHaveBeenCalledTimes(2);
 });
 
+test("autorepeat following a trusted press does not double-toggle", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	const node = cell.element() as HTMLButtonElement;
+	node.focus();
+	await expect.element(cell).toHaveFocus();
+	await userEvent.keyboard("{Enter}");
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	node.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Enter",
+			repeat: true,
+		}),
+	);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+});
+
 test("Home and End jump focus across dates", async () => {
 	const screen = await render(
 		<AvailabilityGrid
