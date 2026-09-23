@@ -92,6 +92,34 @@ describe("GroupHeatmap hover focus", () => {
 		expect(screen.queryByText("1/1 available")).toBeNull();
 	});
 
+	it("keeps the keyboard-focused panel through a hover round-trip", () => {
+		const columns = cols();
+		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
+		const mixed = new Map(
+			ids.map((id, i) => [
+				id,
+				{ count: i === 0 ? 1 : 2, names: i === 0 ? ["Ada"] : ["Ada", "Bo"] },
+			]),
+		);
+		render(
+			<GroupHeatmap
+				allNames={["Ada", "Bo"]}
+				columns={columns}
+				counts={mixed}
+				eventTimezone="UTC"
+				total={2}
+				viewTimezone="UTC"
+			/>,
+		);
+		const [first, second] = screen.getAllByRole("button");
+		fireEvent.focus(first as HTMLElement);
+		expect(screen.getByText("Unavailable")).toBeVisible();
+		fireEvent.mouseEnter(second as HTMLElement);
+		expect(screen.getByText("Unavailable")).toBeVisible();
+		fireEvent.mouseLeave(second as HTMLElement);
+		expect(screen.getByText("Unavailable")).toBeVisible();
+	});
+
 	it("clears the panel on tab-out", () => {
 		render(ui());
 		const [first] = screen.getAllByRole("button");

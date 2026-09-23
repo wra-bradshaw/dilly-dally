@@ -101,11 +101,17 @@ export function GroupHeatmap({
 								setFocusedId(cell.id);
 								setHovered(cell.id);
 							}}
-							onMouseEnter={() => setHovered(cell.id)}
+							onMouseEnter={() => {
+								if (focusedId !== null && tapped.current === null) return;
+								setHovered(cell.id);
+							}}
 							onMouseLeave={(e) => {
 								const leaving = e.currentTarget.dataset.cell;
 								if (leaving !== hovered) return;
-								if (leaving === focusedId) return;
+								if (focusedId !== null) {
+									setHovered(focusedId);
+									return;
+								}
 								if (tapped.current !== null) {
 									setHovered(tapped.current);
 									return;
