@@ -48,9 +48,11 @@ export async function seedDemo(
 		endTime: "17:00",
 		expiresAt: computeExpiry({ createdAt: now, dates: dates1 }),
 		id: DEMO_EVENT_IDS[0],
+		mode: "dates",
 		startTime: "09:00",
 		timezone: "America/New_York",
 		title: "Demo: Team offsite",
+		weekdaysJson: JSON.stringify([]),
 	};
 	const universe1 = buildSlotUniverse({
 		dates: dates1,
@@ -128,9 +130,11 @@ export async function seedDemo(
 		endTime: "14:00",
 		expiresAt: computeExpiry({ createdAt: now, dates: dates2 }),
 		id: DEMO_EVENT_IDS[1],
+		mode: "dates",
 		startTime: "11:00",
 		timezone: "America/New_York",
 		title: "Demo: Lunch poll",
+		weekdaysJson: JSON.stringify([]),
 	};
 	const universe2 = buildSlotUniverse({
 		dates: dates2,

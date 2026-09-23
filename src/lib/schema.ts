@@ -15,9 +15,11 @@ export const events = sqliteTable(
 		endTime: text("end_time").notNull(),
 		expiresAt: integer("expires_at").notNull(),
 		id: text("id").primaryKey(),
+		mode: text("mode").notNull().default("dates"),
 		startTime: text("start_time").notNull(),
 		timezone: text("timezone").notNull(),
 		title: text("title").notNull(),
+		weekdaysJson: text("weekdays_json"),
 	},
 	(t) => [index("idx_events_expires").on(t.expiresAt)],
 );

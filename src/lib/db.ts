@@ -4,10 +4,14 @@ import * as schema from "./schema";
 
 export type DrizzleDb = DrizzleD1Database<typeof schema>;
 
+export type DillyEventMode = "dates" | "weekly";
+
 export interface DillyEvent {
 	id: string;
 	title: string;
+	mode: DillyEventMode;
 	dates: string[];
+	weekdays: number[];
 	startTime: string;
 	endTime: string;
 	timezone: string;
@@ -32,22 +36,51 @@ export function parseSlotsJson(json: string): string[] {
 	}
 }
 
+function parseWeekdaysJson(json: string | null | undefined): number[] | null {
+	if (json === null || json === undefined) return [];
+	try {
+		const v = JSON.parse(json) as unknown;
+		if (!Array.isArray(v)) return null;
+		const days = v.filter(
+			(d): d is number =>
+				typeof d === "number" && Number.isInteger(d) && d >= 0 && d <= 6,
+		);
+		if (days.length !== v.length) return null;
+		return [...new Set(days)].sort((a, b) => a - b);
+	} catch {
+		return null;
+	}
+}
+
+type EventRow = typeof schema.events.$inferSelect;
+
+export function toPublicEvent(row: EventRow): DillyEvent | null;
 export function toPublicEvent(
-	row: typeof schema.events.$inferSelect,
+	row: Omit<EventRow, "mode" | "weekdaysJson"> &
+		Partial<Pick<EventRow, "mode" | "weekdaysJson">>,
+): DillyEvent | null;
+export function toPublicEvent(
+	row: Omit<EventRow, "mode" | "weekdaysJson"> &
+		Partial<Pick<EventRow, "mode" | "weekdaysJson">>,
 ): DillyEvent | null {
 	try {
 		const dates = JSON.parse(row.datesJson) as unknown;
 		if (!Array.isArray(dates) || !dates.every((d) => typeof d === "string"))
 			return null;
+		const mode: DillyEventMode = row.mode === "weekly" ? "weekly" : "dates";
+		const weekdays = parseWeekdaysJson(row.weekdaysJson ?? null);
+		if (weekdays === null) return null;
 		return {
 			createdAt: row.createdAt,
 			dates,
 			endTime: row.endTime,
 			expiresAt: row.expiresAt,
 			id: row.id,
+			mode,
 			startTime: row.startTime,
 			timezone: row.timezone,
 			title: row.title,
+			weekdays,
 		};
 	} catch {
 		return null;
@@ -77,9 +110,11 @@ export async function insertEvent(
 		endTime: event.endTime,
 		expiresAt: event.expiresAt,
 		id: event.id,
+		mode: event.mode ?? "dates",
 		startTime: event.startTime,
 		timezone: event.timezone,
 		title: event.title,
+		weekdaysJson: JSON.stringify(event.weekdays ?? []),
 	});
 }
 
