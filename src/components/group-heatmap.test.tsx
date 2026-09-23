@@ -2,12 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
-import {
-	GroupHeatmap,
-	HEATMAP_FILL_RGB,
-	heatmapAlpha,
-	heatmapAnnounce,
-} from "./group-heatmap";
+import { GroupHeatmap, heatmapAnnounce, heatmapFill } from "./group-heatmap";
 
 function cols() {
 	return buildColumns(
@@ -43,30 +38,73 @@ function ui() {
 	);
 }
 
-describe("GroupHeatmap contrast", () => {
-	it("caps cell alpha at 0.6 so dark count text keeps contrast", () => {
-		expect(heatmapAlpha(1, 1)).toBeCloseTo(0.6, 5);
-		expect(heatmapAlpha(99, 1)).toBeCloseTo(0.6, 5);
-		expect(heatmapAlpha(1, 2)).toBeCloseTo(0.525, 5);
-		expect(heatmapAlpha(0, 4)).toBeCloseTo(0.15, 5);
+describe("GroupHeatmap colors", () => {
+	it("matches the paint grid exactly when everyone is available", () => {
+		expect(heatmapFill(2, 2)).toContain("bg-emerald-400");
+		expect(heatmapFill(2, 2)).toContain("border-emerald-800");
+		expect(heatmapFill(2, 2)).toContain("dark:bg-emerald-700");
+		expect(heatmapFill(2, 2)).toContain("dark:border-emerald-300");
 	});
 
-	it("keeps count text readable in light and dark mode", () => {
+	it("dims as availability decreases from full", () => {
+		const full = heatmapFill(4, 4);
+		const partial = heatmapFill(2, 4);
+		const low = heatmapFill(1, 4);
+		expect(partial).not.toBe(full);
+		expect(low).not.toBe(full);
+		expect(low).not.toBe(partial);
+		expect(partial).toContain("bg-emerald-");
+		expect(low).toContain("bg-emerald-");
+	});
+
+	it("uses the same emerald fill as the paint grid for filled cells", () => {
 		render(ui());
 		const filled = screen
 			.getAllByRole("button")
 			.map((b) => b as HTMLElement)
-			.find((b) => b.style.backgroundColor !== "");
-		expect(filled?.style.backgroundColor ?? "").not.toBe("");
-		const bg = filled?.style.backgroundColor ?? "";
-		const rgba = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(bg);
-		expect(rgba?.slice(1, 4).map(Number)).toEqual([...HEATMAP_FILL_RGB]);
-		expect(Number(rgba?.[4])).toBeCloseTo(heatmapAlpha(1, 1), 5);
-		expect(filled?.className ?? "").toContain("text-emerald-950");
-		expect(filled?.className ?? "").toContain("dark:text-emerald-100");
+			.find((b) => b.textContent === "1");
+		expect(filled?.style.backgroundColor ?? "").toBe("");
+		expect(filled?.className ?? "").toContain("bg-emerald-400");
+		expect(filled?.className ?? "").toContain("border-emerald-800");
+		expect(filled?.className ?? "").toContain("dark:bg-emerald-700");
+		expect(filled?.className ?? "").toContain("dark:border-emerald-300");
 	});
 
-	it("leaves zero-count cells unfilled", () => {
+	it("dims partial availability instead of reusing the full fill", () => {
+		const columns = cols();
+		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
+		const mixed = new Map(
+			ids.map((id, i) => [
+				id,
+				i === 0
+					? { count: 1, names: ["Ada"] as string[] }
+					: { count: 2, names: ["Ada", "Bo"] },
+			]),
+		);
+		render(
+			<GroupHeatmap
+				allNames={["Ada", "Bo"]}
+				columns={columns}
+				counts={mixed}
+				eventTimezone="UTC"
+				total={2}
+				viewTimezone="UTC"
+			/>,
+		);
+		const [first, second] = screen.getAllByRole("button");
+		expect((first as HTMLElement).className).not.toContain("bg-emerald-400");
+		expect((first as HTMLElement).className).toContain("bg-emerald-");
+		expect((second as HTMLElement).className).toContain("bg-emerald-400");
+	});
+
+	it("never underlines the counts", () => {
+		render(ui());
+		for (const b of screen.getAllByRole("button")) {
+			expect((b as HTMLElement).className).not.toContain("underline");
+		}
+	});
+
+	it("uses the same rose fill as the paint grid for empty cells", () => {
 		const columns = cols();
 		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
 		const mixed = new Map(
@@ -89,7 +127,18 @@ describe("GroupHeatmap contrast", () => {
 		);
 		const [first, second] = screen.getAllByRole("button");
 		expect((first as HTMLElement).style.backgroundColor).toBe("");
-		expect((second as HTMLElement).style.backgroundColor).not.toBe("");
+		expect((first as HTMLElement).className).toContain("bg-rose-100");
+		expect((first as HTMLElement).className).toContain("border-rose-600");
+		expect((second as HTMLElement).style.backgroundColor).toBe("");
+		expect((second as HTMLElement).className).toContain("bg-emerald-400");
+	});
+
+	it("renders date markers smaller than the old text-xs size", () => {
+		const { container } = render(ui());
+		const marker = container.querySelector("thead, tbody")?.parentElement;
+		expect(marker).toBeTruthy();
+		const label = container.querySelector("div.text-\\[11px\\]");
+		expect(label?.textContent).toMatch(/Mon|Tue/);
 	});
 });
 

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
@@ -22,7 +22,9 @@ import {
 	TooltipTrigger,
 } from "#/components/ui/tooltip";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
+import { useErrorFocus } from "#/hooks/use-error-focus";
 import { useEventDetail } from "#/hooks/use-event-detail";
+import { useFocusOnChange } from "#/hooks/use-focus-on-change";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
@@ -122,6 +124,7 @@ function EventPage() {
 	const [signedIn, setSignedIn] = useState(storedName.trim() !== "");
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [saveState, setSaveState] = useState("");
+	const [saveFailed, setSaveFailed] = useState(false);
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
 	const lastSavedRef = useRef<Set<string>>(new Set());
@@ -130,6 +133,13 @@ function EventPage() {
 		identity: string;
 		slots: Set<string>;
 	} | null>(null);
+	const signErrorId = useId();
+	const inviteHintId = useId();
+	const copyStatusId = useId();
+	const restoreStatusId = useId();
+	const tzLabelId = useId();
+	const signErrorRef = useErrorFocus<HTMLParagraphElement>(signError);
+	const signedInRef = useFocusOnChange<HTMLHeadingElement>(signedIn);
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
@@ -199,6 +209,7 @@ function EventPage() {
 	);
 
 	const signIn = async () => {
+		if (signing) return;
 		setSignError("");
 		if (!name.trim()) {
 			setSignError("Enter your name to continue.");
@@ -244,6 +255,7 @@ function EventPage() {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(lastSavedRef.current));
 			}
+			setSaveFailed(true);
 			setSaveState(saveErrorMessage(err));
 		},
 		onSuccess: (value) => {
@@ -251,10 +263,10 @@ function EventPage() {
 			if (value === lastSubmittedRef.current) {
 				setSelected(new Set(value.slots));
 			}
-			const at = new Date();
-			setSaveState(`Saved ${at.toLocaleTimeString()}`);
+			setSaveFailed(false);
+			setSaveState("Saved");
 			if (value.identity.trim() !== "") {
-				const stamp = at.toISOString();
+				const stamp = new Date().toISOString();
 				queryClient.setQueryData(
 					["event", eventId],
 					(old: EventDetailResponse | undefined) =>
@@ -276,6 +288,7 @@ function EventPage() {
 	const commit = (next: Set<string>) => {
 		setSelected(next);
 		if (!signedIn || activeName === "") return;
+		setSaveFailed(false);
 		setSaveState("Saving…");
 		const tagged = {
 			identity: activeName,
@@ -289,7 +302,9 @@ function EventPage() {
 	if (detail.isPending) {
 		return (
 			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16">
-				<p className="text-muted-foreground">Loading event…</p>
+				<p aria-live="polite" className="text-muted-foreground">
+					Loading event…
+				</p>
 			</div>
 		);
 	}
@@ -338,62 +353,87 @@ function EventPage() {
 	const total = allNames.length;
 	const url = inviteUrl(eventId);
 	const stale = detail.isError && detail.data !== undefined;
+	const gridDisabled =
+		restoreStatus === "restoring" ||
+		restoreStatus === "failed" ||
+		restoreStatus === "gone";
 
 	return (
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
 			{stale && (
-				<output className="mt-4 block rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground">
-					Couldn&apos;t refresh — showing the last update.{" "}
+				<div className="mt-4 block rounded-xl border border-muted-foreground bg-card px-3 py-2 text-center text-sm text-muted-foreground">
+					<span aria-live="polite">
+						Couldn&apos;t refresh — showing the last update.{" "}
+					</span>
 					<Button
-						className="h-auto p-0 text-sm"
+						className="h-auto min-h-6 p-0 text-sm"
 						onClick={() => void detail.refetch()}
 						type="button"
 						variant="link"
 					>
 						Retry
 					</Button>
-				</output>
+				</div>
 			)}
 			<SiteHeader />
 
 			<h1 className="font-heading mt-2 text-3xl font-bold">{event?.title}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
 				{event?.timezone} ·{" "}
-				<Tooltip open={copied ? true : undefined}>
+				<a
+					aria-describedby={`${inviteHintId} ${copyStatusId}`}
+					aria-label="Invite link — open this event"
+					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
+					href={url}
+					suppressHydrationWarning
+				>
+					{url}
+				</a>{" "}
+				<Tooltip open={copied || copyError ? true : undefined}>
 					<TooltipTrigger asChild>
-						<a
-							className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
-							href={url}
-							onClick={(e) => {
-								e.preventDefault();
-								copy(url);
-							}}
-							suppressHydrationWarning
+						<Button
+							aria-describedby={inviteHintId}
+							aria-label="Copy invite link"
+							className="min-h-6"
+							onClick={() => void copy(url)}
+							size="xs"
+							type="button"
+							variant="outline"
 						>
-							{url}
-						</a>
+							Copy
+						</Button>
 					</TooltipTrigger>
 					<TooltipContent>
 						{copyError
-							? "Copy failed — long-press the link to copy it manually"
+							? "Copy failed — select the link and copy it manually"
 							: copied
 								? "Copied!"
-								: "Click to copy invite link"}
+								: "Copy invite link"}
 					</TooltipContent>
 				</Tooltip>
-				<span aria-live="polite" className="sr-only">
-					{copied ? "Invite link copied to clipboard" : ""}
+				<span className="sr-only" id={inviteHintId}>
+					Copies the invite link to your clipboard
+				</span>
+				<span aria-live="polite" className="sr-only" id={copyStatusId}>
+					{copied
+						? "Invite link copied to clipboard"
+						: copyError
+							? "Copy failed. Select the link and copy it manually."
+							: ""}
 				</span>
 			</p>
 
 			<div className="contents" suppressHydrationWarning>
 				{signedIn ? (
-					<div className="mt-4 flex items-center gap-3 text-sm">
+					<div className="mt-4 flex min-h-6 flex-wrap items-center gap-3 text-sm">
 						<span>
 							Signed in as <strong>{activeName}</strong>
 						</span>
+						<span aria-live="polite" className="sr-only">
+							Signed in as {activeName}
+						</span>
 						<Button
-							className="h-auto p-0 text-sm"
+							className="h-auto min-h-6 p-0 text-sm"
 							onClick={() => {
 								saver.cancel();
 								lastSubmittedRef.current = null;
@@ -404,6 +444,7 @@ function EventPage() {
 								setStoredName("");
 								setName("");
 								setSaveState("");
+								setSaveFailed(false);
 								setSignError("");
 							}}
 							type="button"
@@ -415,9 +456,16 @@ function EventPage() {
 				) : null}
 
 				<div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-					<Label htmlFor="tz-view">Show times in</Label>
+					<Label htmlFor="tz-view" id={tzLabelId}>
+						Show times in
+					</Label>
 					<Select onValueChange={setView} value={viewTimezone}>
-						<SelectTrigger className="w-80" id="tz-view" type="button">
+						<SelectTrigger
+							aria-labelledby={tzLabelId}
+							className="w-80"
+							id="tz-view"
+							type="button"
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -450,6 +498,10 @@ function EventPage() {
 								<div className="grid gap-2">
 									<Label htmlFor="who-name">Your name</Label>
 									<Input
+										aria-describedby={
+											signError !== "" ? signErrorId : undefined
+										}
+										aria-invalid={signError !== "" ? true : undefined}
 										autoComplete="username"
 										id="who-name"
 										maxLength={40}
@@ -461,6 +513,10 @@ function EventPage() {
 								<div className="grid gap-2">
 									<Label htmlFor="who-pass">Password (optional)</Label>
 									<Input
+										aria-describedby={
+											signError !== "" ? signErrorId : undefined
+										}
+										aria-invalid={signError !== "" ? true : undefined}
 										autoComplete="current-password"
 										id="who-pass"
 										onChange={(e) => setPassword(e.target.value)}
@@ -468,12 +524,25 @@ function EventPage() {
 										value={password}
 									/>
 								</div>
-								<Button disabled={signing} type="submit">
+								<Button
+									aria-busy={signing}
+									aria-disabled={signing}
+									onClick={(e) => {
+										if (signing) e.preventDefault();
+									}}
+									type="submit"
+								>
 									{signing ? "Signing in…" : "Continue"}
 								</Button>
 							</form>
 							{signError !== "" && (
-								<p className="mt-2 text-sm text-destructive" role="alert">
+								<p
+									className="mt-2 text-sm text-destructive"
+									id={signErrorId}
+									ref={signErrorRef}
+									role="alert"
+									tabIndex={-1}
+								>
 									{signError}
 								</p>
 							)}
@@ -482,43 +551,37 @@ function EventPage() {
 				) : (
 					<Card className="mt-4">
 						<CardHeader>
-							<CardTitle>
+							<CardTitle ref={signedInRef} tabIndex={-1}>
 								Your availability{" "}
 								<span
-									aria-live="polite"
 									className="text-xs font-normal text-muted-foreground"
+									aria-live={saveFailed ? undefined : "polite"}
+									role={saveFailed ? "alert" : undefined}
 								>
 									{saveState}
 								</span>
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p
-								aria-live="polite"
-								className={
-									restoreStatus === "restoring" || restoreStatus === "failed"
-										? "mb-2 text-sm text-muted-foreground"
-										: "sr-only"
-								}
-							>
-								{restoreStatus === "restoring" ? (
-									"Restoring…"
-								) : restoreStatus === "failed" ? (
-									<>
-										Could not restore your availability.{" "}
-										<Button
-											className="h-auto p-0 text-sm"
-											onClick={retryRestore}
-											type="button"
-											variant="link"
-										>
-											Retry
-										</Button>
-									</>
-								) : (
-									""
-								)}
-							</p>
+							<div className="mb-2 text-sm text-muted-foreground">
+								<span aria-live="polite" id={restoreStatusId}>
+									{restoreStatus === "restoring"
+										? "Restoring…"
+										: restoreStatus === "failed"
+											? "Could not restore your availability."
+											: ""}
+								</span>{" "}
+								{restoreStatus === "failed" ? (
+									<Button
+										className="h-auto min-h-6 p-0 text-sm"
+										onClick={retryRestore}
+										type="button"
+										variant="link"
+									>
+										Retry
+									</Button>
+								) : null}
+							</div>
 							{restoreStatus === "gone" && (
 								<p className="mb-2 text-sm text-muted-foreground" role="alert">
 									This event has expired. Reload the page.
@@ -526,11 +589,8 @@ function EventPage() {
 							)}
 							<AvailabilityGrid
 								columns={columns}
-								disabled={
-									restoreStatus === "restoring" ||
-									restoreStatus === "failed" ||
-									restoreStatus === "gone"
-								}
+								disabled={gridDisabled}
+								disabledReasonId={restoreStatusId}
 								onCommit={commit}
 								selected={selected}
 							/>
@@ -560,14 +620,14 @@ function EventPage() {
 				The link is the event, keep it. Data auto-deletes after the event
 				passes. Agents: see{" "}
 				<a
-					className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
+					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href="/api/agent-guide"
 				>
 					/api/agent-guide
 				</a>{" "}
 				and{" "}
 				<a
-					className="text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
+					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href="/api/openapi.json"
 				>
 					/api/openapi.json
