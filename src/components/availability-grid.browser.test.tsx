@@ -224,6 +224,9 @@ test("arrow keys move focus between slots for keyboard painters", async () => {
 	);
 	const second = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
 	await expect.element(second).toHaveFocus();
+	await userEvent.keyboard("{ArrowDown}");
+	const third = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
+	await expect.element(third).toHaveFocus();
 });
 
 test("pointerdown focuses the cell without scrolling the page", async () => {

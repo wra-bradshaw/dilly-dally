@@ -24,14 +24,15 @@ const columns: GridColumn[] = [
 
 function setup() {
 	const focus = vi.fn();
+	const querySelector = vi.fn(() => ({ focus }));
 	const tableRef = {
 		current: {
-			querySelector: () => ({ focus }),
+			querySelector,
 		} as unknown as HTMLTableElement,
 	};
 	const pos = buildGridPos(columns);
 	const hook = renderHook(() => useGridKeyboardNav(columns, pos, tableRef));
-	return { focus, hook };
+	return { focus, hook, querySelector };
 }
 
 function key(keyName: string) {
@@ -153,7 +154,7 @@ describe("useGridKeyboardNav boundaries", () => {
 	});
 
 	it("reads the cell id from the event target", () => {
-		const { hook } = setup();
+		const { hook, querySelector } = setup();
 		act(() =>
 			hook.result.current.onGridKeyDown({
 				key: "ArrowDown",
@@ -162,5 +163,6 @@ describe("useGridKeyboardNav boundaries", () => {
 			} as unknown as React.KeyboardEvent),
 		);
 		expect(hook.result.current.roving).toBe("b1");
+		expect(querySelector).toHaveBeenCalledWith('[data-cell="b1"]');
 	});
 });
