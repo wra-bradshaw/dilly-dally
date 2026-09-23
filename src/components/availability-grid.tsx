@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
+import { gridCellIds, useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import {
@@ -22,10 +22,7 @@ export function AvailabilityGrid({
 	onCommit,
 	selected,
 }: AvailabilityGridProps) {
-	const values = useMemo(
-		() => columns.flatMap((c) => c.cells.map((cell) => cell.id)),
-		[columns],
-	);
+	const values = useMemo(() => gridCellIds(columns), [columns]);
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
 	const range = useMemo(
 		() => (_values: string[], from: string, to: string) =>
@@ -48,12 +45,17 @@ export function AvailabilityGrid({
 		surface.containerRef,
 	);
 
+	const onCellKeyDown = (e: React.KeyboardEvent) => {
+		surface.onKeyDown(e);
+		onGridKeyDown(e);
+	};
+
 	return (
 		<div>
 			<div className={cn("overflow-x-auto pb-2", disabled && "opacity-60")}>
 				<TimeGrid
 					columns={columns}
-					onKeyDown={onGridKeyDown}
+					onKeyDown={onCellKeyDown}
 					onPointerCancel={surface.onPointerCancel}
 					onPointerMove={surface.onPointerMove}
 					onPointerUp={surface.onPointerUp}

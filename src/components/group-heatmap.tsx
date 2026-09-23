@@ -69,13 +69,21 @@ export function GroupHeatmap({
 								hovered === cell.id && "ring-2 ring-primary",
 							)}
 							data-cell={cell.id}
+							onBlur={(e) => {
+								const next = (
+									e.relatedTarget as unknown as HTMLElement | null
+								)?.closest?.("[data-cell]");
+								if (!next) setHovered(null);
+							}}
 							onClick={() => setHovered(cell.id)}
 							onFocus={() => {
 								setFocusId(cell.id);
 								setHovered(cell.id);
 							}}
 							onMouseEnter={() => setHovered(cell.id)}
-							onMouseLeave={() => setHovered(null)}
+							onMouseLeave={(e) => {
+								if (e.currentTarget.dataset.cell === hovered) setHovered(null);
+							}}
 							style={
 								(counts.get(cell.id)?.count ?? 0) === 0
 									? undefined

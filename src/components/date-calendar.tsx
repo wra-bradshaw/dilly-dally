@@ -119,11 +119,13 @@ export function DateCalendar({
 					›
 				</button>
 			</div>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: Escape cancels drag-paint; cells stay native buttons */}
 			<div
 				className={cn(
 					"grid grid-cols-7 gap-1 select-none",
 					surface.painting && "touch-none",
 				)}
+				onKeyDown={surface.onKeyDown}
 				onPointerCancel={surface.onPointerCancel}
 				onPointerMove={surface.onPointerMove}
 				onPointerUp={surface.onPointerUp}

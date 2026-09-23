@@ -113,9 +113,18 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 		[finishAtPoint],
 	);
 
+	const onKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Escape") drag.onPointerCancel();
+		},
+		[drag],
+	);
+
 	return {
+		cancelPaint: drag.onPointerCancel,
 		containerRef,
 		hover,
+		onKeyDown,
 		onPointerCancel: drag.onPointerCancel,
 		onPointerMove,
 		onPointerUp,

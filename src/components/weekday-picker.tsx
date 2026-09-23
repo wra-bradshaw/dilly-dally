@@ -29,6 +29,7 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 				"flex flex-wrap gap-1 select-none",
 				surface.painting && "touch-none",
 			)}
+			onKeyDown={surface.onKeyDown}
 			onPointerCancel={surface.onPointerCancel}
 			onPointerMove={surface.onPointerMove}
 			onPointerUp={surface.onPointerUp}
