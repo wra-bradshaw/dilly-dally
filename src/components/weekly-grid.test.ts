@@ -16,7 +16,7 @@ describe("buildWeeklyColumns", () => {
 			weekdays: [5, 1, 3],
 		});
 		const cols = buildWeeklyColumns(universe);
-		expect(cols.map((c) => c.date)).toEqual(["MON", "WED", "FRI"]);
+		expect(cols.map((c) => c.key)).toEqual(["MON", "WED", "FRI"]);
 		for (const col of cols) expect(col.cells).toHaveLength(4);
 	});
 
@@ -47,7 +47,7 @@ describe("buildWeeklyColumns", () => {
 
 	it("leaves date columns untouched", () => {
 		const cols = buildColumns(["2026-10-05T09:00"], "UTC", "UTC");
-		expect(cols.map((c) => c.date)).toEqual(["2026-10-05"]);
+		expect(cols.map((c) => c.key)).toEqual(["2026-10-05"]);
 	});
 });
 

@@ -47,7 +47,7 @@ describe("buildColumns", () => {
 			"America/New_York",
 			"America/New_York",
 		);
-		expect(cols.map((c) => c.date)).toEqual(["2026-10-05", "2026-10-06"]);
+		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		expect(cols[0].cells.map((c) => c.id)).toEqual([
 			"2026-10-05T09:00",
 			"2026-10-05T09:15",
@@ -76,7 +76,7 @@ describe("buildColumns", () => {
 			"America/New_York",
 			"Australia/Sydney",
 		);
-		expect(cols[0].date).toBe("2026-10-05");
+		expect(cols[0].key).toBe("2026-10-05");
 		expect(cols[0].cells[0].label).toBe(expectedTime("00:00"));
 		expect(cols[0].cells[0].display).toBe("2026-10-06T00:00");
 	});
@@ -92,7 +92,7 @@ describe("buildColumns", () => {
 			"America/New_York",
 			"Australia/Melbourne",
 		);
-		expect(cols.map((c) => c.date)).toEqual(["2026-10-05", "2026-10-06"]);
+		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		const lengths = cols.map((c) => c.cells.length);
 		expect(lengths).toEqual([32, 32]);
 		const total = cols.reduce((n, c) => n + c.cells.length, 0);
@@ -114,7 +114,7 @@ describe("buildColumns", () => {
 			startTime: "09:00",
 		});
 		const cols = buildColumns(universe, "America/New_York", "Asia/Tokyo");
-		expect(cols.map((c) => c.date)).toEqual(["2026-10-05", "2026-10-06"]);
+		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		expect(cols.map((c) => c.cells.length)).toEqual([32, 32]);
 		expect(cols.flatMap((c) => c.cells.map((cell) => cell.id)).sort()).toEqual(
 			[...universe].sort(),

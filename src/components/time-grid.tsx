@@ -85,7 +85,7 @@ export function TimeGrid({
 							<span className="sr-only">Time</span>
 						</th>
 						{columns.map((col, i) => (
-							<Fragment key={col.date}>
+							<Fragment key={col.key}>
 								{i > 0 && gapByAfter.get(i - 1) ? (
 									<th
 										className="min-w-4 px-0.5 pb-1"
@@ -123,7 +123,7 @@ export function TimeGrid({
 										const gap = i > 0 ? gapByAfter.get(i - 1) : undefined;
 										const marker = row.markers[i] ?? null;
 										return (
-											<Fragment key={col.date}>
+											<Fragment key={col.key}>
 												{gap ? (
 													<td
 														aria-hidden="true"
@@ -173,7 +173,7 @@ export function TimeGrid({
 									const afterBreak =
 										segment !== null && segment.rowIndex === r && r !== 0;
 									return (
-										<Fragment key={col.date}>
+										<Fragment key={col.key}>
 											{gap ? (
 												<td
 													aria-hidden="true"

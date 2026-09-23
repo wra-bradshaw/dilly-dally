@@ -15,7 +15,7 @@ export interface GridCell {
 }
 
 export interface GridColumn {
-	date: string;
+	key: string;
 	header: string;
 	cells: GridCell[];
 }
@@ -83,7 +83,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function segmentDateFor(column: GridColumn, cell: GridCell): string {
 	const candidate = cell.display.slice(0, 10);
 	if (DATE_RE.test(candidate)) return candidate;
-	return column.date;
+	return column.key;
 }
 
 function markerLabelFor(column: GridColumn, viewerDate: string): string {
@@ -189,12 +189,12 @@ export function gridRectangleIdsFromPos(
 	return out;
 }
 
-export function getDayGaps(columns: { date: string }[]): DayGap[] {
-	const dates = [...new Set(columns.map((c) => c.date))].sort();
+export function getDayGaps(columns: { key: string }[]): DayGap[] {
+	const dates = [...new Set(columns.map((c) => c.key))].sort();
 	const gaps: DayGap[] = [];
 	const indexByDate = new Map<string, number>();
 	columns.forEach((c, i) => {
-		if (!indexByDate.has(c.date)) indexByDate.set(c.date, i);
+		if (!indexByDate.has(c.key)) indexByDate.set(c.key, i);
 	});
 	for (let i = 0; i < dates.length - 1; i++) {
 		const a = dates[i];
@@ -213,12 +213,12 @@ export function getDayGaps(columns: { date: string }[]): DayGap[] {
 }
 
 export function summarizeDates(
-	dates: string[] | Set<string> | { date: string }[],
+	dates: string[] | Set<string> | { key: string }[],
 ): string {
 	const list = Array.isArray(dates)
-		? dates.map((d) => (typeof d === "string" ? d : d.date))
+		? dates.map((d) => (typeof d === "string" ? d : d.key))
 		: [...dates].map((d) =>
-				typeof d === "string" ? d : (d as { date: string }).date,
+				typeof d === "string" ? d : (d as { key: string }).key,
 			);
 	if (list.length > 0 && list.every((d) => !DATE_RE.test(d))) {
 		return summarizeWeekdays(
@@ -227,7 +227,7 @@ export function summarizeDates(
 	}
 	const uniq = [...new Set(list)].sort();
 	if (uniq.length === 0) return "No dates selected.";
-	const gaps = getDayGaps(uniq.map((date) => ({ date })));
+	const gaps = getDayGaps(uniq.map((key) => ({ key })));
 	const groups = gaps.length + 1;
 	const skipped = gaps.reduce((n, g) => n + g.skipped, 0);
 	const dayWord = uniq.length === 1 ? "day" : "days";
@@ -271,7 +271,7 @@ export function buildWeeklyColumns(universe: string[]): GridColumn[] {
 			const code = cells[0]?.id.slice(0, cells[0].id.indexOf("-")) ?? "";
 			return {
 				cells,
-				date: code,
+				key: code,
 				header: headerForWeekday(weekday),
 			};
 		});
@@ -301,7 +301,7 @@ export function buildColumns(
 		.sort(([a], [b]) => (a < b ? -1 : 1))
 		.map(([date, cells]) => ({
 			cells,
-			date,
+			key: date,
 			header: formatMarkerDate(date),
 		}));
 }
