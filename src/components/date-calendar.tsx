@@ -198,7 +198,7 @@ export function DateCalendar({
 			<div className="mb-2 flex items-center justify-between">
 				<button
 					aria-label="Previous month"
-					className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
+					className="min-w-6 rounded-md border px-2 py-1 text-sm disabled:opacity-40"
 					disabled={!canPrev}
 					onClick={() => shift(-1)}
 					type="button"
@@ -208,7 +208,7 @@ export function DateCalendar({
 				<div className="text-sm font-semibold">{monthLabel}</div>
 				<button
 					aria-label="Next month"
-					className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
+					className="min-w-6 rounded-md border px-2 py-1 text-sm disabled:opacity-40"
 					disabled={!canNext}
 					onClick={() => shift(1)}
 					type="button"
