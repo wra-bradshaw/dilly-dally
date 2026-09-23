@@ -41,12 +41,19 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 	const moveToPoint = (clientX: number, clientY: number) => {
 		if (!drag.painting) return;
 		const day = paintTargetFromPoint(clientX, clientY, "data-weekday");
-		if (day) drag.onPointerEnter(Number(day));
+		if (day === null) return;
+		const n = Number(day);
+		if (Number.isInteger(n) && n >= 0 && n <= 6) drag.onPointerEnter(n);
 	};
 
 	const finishAtPoint = (clientX: number, clientY: number) => {
 		const day = paintTargetFromPoint(clientX, clientY, "data-weekday");
-		if (day) {
+		const n = day === null ? NaN : Number(day);
+		const target =
+			Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 6
+				? (n as number)
+				: undefined;
+		if (target !== undefined) {
 			suppressClick.current = true;
 			if (clearTimer.current !== undefined)
 				window.clearTimeout(clearTimer.current);
@@ -55,7 +62,7 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 				clearTimer.current = undefined;
 			}, 300);
 		}
-		drag.onPointerUp(day ? Number(day) : undefined);
+		drag.onPointerUp(target);
 	};
 
 	return (

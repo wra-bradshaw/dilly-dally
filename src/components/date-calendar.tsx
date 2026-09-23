@@ -33,10 +33,18 @@ export function DateCalendar({
 	onCommit,
 	selected,
 }: DateCalendarProps) {
-	const [ym, setYm] = useState(() => ({
-		m: Number(minDate.slice(5, 7)) - 1,
-		y: Number(minDate.slice(0, 4)),
-	}));
+	const [ym, setYm] = useState(() => {
+		const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(minDate);
+		if (match) {
+			const y = Number(match[1]);
+			const m = Number(match[2]);
+			if (Number.isInteger(y) && Number.isInteger(m) && m >= 1 && m <= 12) {
+				return { m: m - 1, y };
+			}
+		}
+		const now = new Date();
+		return { m: now.getUTCMonth(), y: now.getUTCFullYear() };
+	});
 	const matrix = buildMonthMatrix(ym.y, ym.m);
 	const ref = useRef<HTMLDivElement>(null);
 	const suppressClick = useRef(false);
@@ -159,6 +167,7 @@ export function DateCalendar({
 					}
 					const off = !enabled(day);
 					const on = drag.preview.has(day);
+					const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
 					return (
 						<button
 							aria-pressed={on}
@@ -193,7 +202,7 @@ export function DateCalendar({
 							}}
 							type="button"
 						>
-							{Number(day.slice(8, 10))}
+							{dayNum ? Number(dayNum[1]) : ""}
 						</button>
 					);
 				})}
