@@ -137,6 +137,31 @@ test("pointerdown focuses the cell without scrolling the page", async () => {
 	await expect.element(cell).toHaveFocus();
 });
 
+test("post-drag mouse clicks do not double-commit but keyboard clicks toggle", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const first = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	const last = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
+	await expect.element(first).toBeVisible();
+	await first.dropTo(last);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	(first.element() as HTMLButtonElement).dispatchEvent(
+		new MouseEvent("click", { bubbles: true, cancelable: true, detail: 1 }),
+	);
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	(first.element() as HTMLButtonElement).dispatchEvent(
+		new MouseEvent("click", { bubbles: true, cancelable: true, detail: 0 }),
+	);
+	expect(onCommit).toHaveBeenCalledTimes(2);
+});
+
 test("dragging across times paints every slot in between", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(

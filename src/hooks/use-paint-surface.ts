@@ -32,8 +32,6 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	} = options;
 	const internalRef = useRef<E | null>(null);
 	const containerRef = externalRef ?? internalRef;
-	const suppressClick = useRef(false);
-	const clearTimer = useRef<number | undefined>(undefined);
 	const drag = useDragPaint({ onCommit, range, selected, values });
 
 	const capture = useCallback(
@@ -50,11 +48,6 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	const start = useCallback(
 		(value: T, e: React.PointerEvent) => {
 			if (disabled) return;
-			if (clearTimer.current !== undefined) {
-				window.clearTimeout(clearTimer.current);
-				clearTimer.current = undefined;
-			}
-			suppressClick.current = false;
 			capture(e);
 			drag.onPointerDown(value);
 		},
@@ -72,10 +65,7 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	const toggle = useCallback(
 		(value: T, detail: number) => {
 			if (disabled) return;
-			if (detail !== 0) {
-				if (suppressClick.current) suppressClick.current = false;
-				return;
-			}
+			if (detail !== 0) return;
 			const next = new Set(selected);
 			if (next.has(value)) next.delete(value);
 			else next.add(value);
@@ -99,15 +89,6 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 		(clientX: number, clientY: number) => {
 			const raw = paintTargetFromPoint(clientX, clientY, attr);
 			const target = raw === null ? undefined : parse(raw);
-			if (target !== undefined) {
-				suppressClick.current = true;
-				if (clearTimer.current !== undefined)
-					window.clearTimeout(clearTimer.current);
-				clearTimer.current = window.setTimeout(() => {
-					suppressClick.current = false;
-					clearTimer.current = undefined;
-				}, 300);
-			}
 			drag.onPointerUp(target);
 		},
 		[attr, drag, parse],
