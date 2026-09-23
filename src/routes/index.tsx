@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
-import { ThemeToggle } from "#/components/theme-toggle";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -113,13 +112,12 @@ function Home() {
 			<header className="flex items-center justify-between py-5">
 				<div className="font-heading text-2xl font-bold">dilly dally</div>
 				<nav className="flex items-center gap-1 text-sm">
-					<Button asChild size="sm" variant="ghost">
+					<Button asChild size="sm" variant="link">
 						<a href="/api/agent-guide">Agent guide</a>
 					</Button>
-					<Button asChild size="sm" variant="ghost">
+					<Button asChild size="sm" variant="link">
 						<a href="/api/openapi.json">OpenAPI</a>
 					</Button>
-					<ThemeToggle />
 				</nav>
 			</header>
 

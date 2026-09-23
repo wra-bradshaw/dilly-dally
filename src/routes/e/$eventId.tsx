@@ -4,7 +4,6 @@ import { useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
-import { ThemeToggle } from "#/components/theme-toggle";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -359,10 +358,9 @@ function EventPage() {
 					dilly dally
 				</a>
 				<nav className="flex items-center gap-1 text-sm">
-					<Button asChild size="sm" variant="ghost">
+					<Button asChild size="sm" variant="link">
 						<a href="/api/agent-guide">Agent guide</a>
 					</Button>
-					<ThemeToggle />
 				</nav>
 			</header>
 
