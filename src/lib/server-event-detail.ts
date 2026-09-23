@@ -6,6 +6,7 @@ import {
 	fetchEvent,
 	listParticipants,
 } from "./db";
+import { liveEventDenial } from "./denials";
 import { isValidEventId } from "./event-ids";
 import { isExpired } from "./expiry";
 import { HttpError } from "./http-error";
@@ -39,13 +40,8 @@ export function liveEventErrorResponse(
 	loaded: Extract<LiveEventResult, { ok: false }>,
 	opts?: { noStore?: boolean },
 ): Response {
-	return jsonError(
-		loaded.code,
-		loaded.code === "gone" ? "Event has expired" : "Event not found",
-		loaded.status,
-		undefined,
-		opts,
-	);
+	const denial = liveEventDenial(loaded.code);
+	return jsonError(denial.code, denial.message, denial.status, undefined, opts);
 }
 
 export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
@@ -78,11 +74,8 @@ export async function loadEventDetailFromDb(
 ) {
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
-		throw new HttpError(
-			loaded.status,
-			loaded.code,
-			loaded.code === "gone" ? "Event has expired" : "Event not found",
-		);
+		const denial = liveEventDenial(loaded.code);
+		throw new HttpError(denial.status, denial.code, denial.message);
 	}
 	return getEventDetail(db, loaded.event);
 }
