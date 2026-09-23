@@ -27,6 +27,8 @@ export function GroupHeatmap({
 	viewTimezone,
 }: GroupHeatmapProps) {
 	const [hovered, setHovered] = useState<string | null>(null);
+	const [focusedId, setFocusedId] = useState<string | null>(null);
+	const tapped = useRef<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
 	const { onGridKeyDown, roving, setFocusId } = useGridKeyboardNav(
@@ -34,6 +36,13 @@ export function GroupHeatmap({
 		pos,
 		tableRef,
 	);
+	const onHeatmapKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Escape") {
+			tapped.current = null;
+			setHovered(null);
+		}
+		onGridKeyDown(e);
+	};
 	const max = useMemo(() => {
 		let top = 1;
 		for (const c of counts.values()) {
@@ -56,7 +65,7 @@ export function GroupHeatmap({
 			<div className="overflow-x-auto pb-2">
 				<TimeGrid
 					columns={columns}
-					onKeyDown={onGridKeyDown}
+					onKeyDown={onHeatmapKeyDown}
 					renderCell={(cell, ctx) => (
 						<button
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
@@ -70,19 +79,32 @@ export function GroupHeatmap({
 							)}
 							data-cell={cell.id}
 							onBlur={(e) => {
+								setFocusedId(null);
+								tapped.current = null;
 								const next = (
 									e.relatedTarget as unknown as HTMLElement | null
 								)?.closest?.("[data-cell]");
 								if (!next) setHovered(null);
 							}}
-							onClick={() => setHovered(cell.id)}
+							onClick={() => {
+								tapped.current = cell.id;
+								setHovered(cell.id);
+							}}
 							onFocus={() => {
 								setFocusId(cell.id);
+								setFocusedId(cell.id);
 								setHovered(cell.id);
 							}}
 							onMouseEnter={() => setHovered(cell.id)}
 							onMouseLeave={(e) => {
-								if (e.currentTarget.dataset.cell === hovered) setHovered(null);
+								const leaving = e.currentTarget.dataset.cell;
+								if (leaving !== hovered) return;
+								if (leaving === focusedId) return;
+								if (tapped.current !== null) {
+									setHovered(tapped.current);
+									return;
+								}
+								setHovered(null);
 							}}
 							style={
 								(counts.get(cell.id)?.count ?? 0) === 0

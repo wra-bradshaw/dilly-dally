@@ -101,6 +101,60 @@ function press(el: { element: () => Element }, key: string) {
 	);
 }
 
+test("Escape clears the hovered panel", async () => {
+	const cols = singleColumn();
+	const counts = new Map(
+		cols.flatMap((c) =>
+			c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+		),
+	);
+	const screen = await render(
+		<GroupHeatmap
+			allNames={["Ada"]}
+			columns={cols}
+			counts={counts}
+			eventTimezone="UTC"
+			total={1}
+			viewTimezone="UTC"
+		/>,
+	);
+	const first = screen.getByRole("button", { name: /9:00 AM/ });
+	await expect.element(first).toBeVisible();
+	await first.click();
+	await expect.element(screen.getByText("1/1 available")).toBeVisible();
+	press(first, "Escape");
+	await expect
+		.element(screen.getByText(/Hover or tap a time slot/))
+		.toBeVisible();
+});
+
+test("leaving a hovered cell clears the panel when nothing is tapped", async () => {
+	const cols = singleColumn();
+	const counts = new Map(
+		cols.flatMap((c) =>
+			c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+		),
+	);
+	const screen = await render(
+		<GroupHeatmap
+			allNames={["Ada"]}
+			columns={cols}
+			counts={counts}
+			eventTimezone="UTC"
+			total={1}
+			viewTimezone="UTC"
+		/>,
+	);
+	const first = screen.getByRole("button", { name: /9:00 AM/ });
+	await expect.element(first).toBeVisible();
+	await first.hover();
+	await expect.element(screen.getByText("1/1 available")).toBeVisible();
+	await screen.getByText("Available").hover();
+	await expect
+		.element(screen.getByText(/Hover or tap a time slot/))
+		.toBeVisible();
+});
+
 test("heatmap arrows move Up Left Right with roving tabindex", async () => {
 	const cols = twoColumns();
 	const counts = new Map(

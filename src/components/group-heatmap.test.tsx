@@ -65,4 +65,50 @@ describe("GroupHeatmap hover focus", () => {
 		fireEvent.blur(first as HTMLElement);
 		expect(screen.queryByText("1/1 available")).toBeNull();
 	});
+
+	it("keeps a tapped cell through a trailing emulated mouseleave", () => {
+		render(ui());
+		const [first] = screen.getAllByRole("button");
+		fireEvent.click(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		fireEvent.mouseLeave(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+	});
+
+	it("restores the tapped cell after hovering and leaving another cell", () => {
+		const columns = cols();
+		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
+		const mixed = new Map(
+			ids.map((id, i) => [
+				id,
+				{ count: i === 0 ? 1 : 2, names: i === 0 ? ["Ada"] : ["Ada", "Bo"] },
+			]),
+		);
+		render(
+			<GroupHeatmap
+				allNames={["Ada", "Bo"]}
+				columns={columns}
+				counts={mixed}
+				eventTimezone="UTC"
+				total={2}
+				viewTimezone="UTC"
+			/>,
+		);
+		const [first, second] = screen.getAllByRole("button");
+		fireEvent.click(first as HTMLElement);
+		expect(screen.getByText("Unavailable")).toBeVisible();
+		fireEvent.mouseEnter(second as HTMLElement);
+		expect(screen.queryByText("Unavailable")).toBeNull();
+		fireEvent.mouseLeave(second as HTMLElement);
+		expect(screen.getByText("Unavailable")).toBeVisible();
+	});
+
+	it("clears a tapped cell on Escape", () => {
+		render(ui());
+		const [first] = screen.getAllByRole("button");
+		fireEvent.click(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		fireEvent.keyDown(first as HTMLElement, { key: "Escape" });
+		expect(screen.queryByText("1/1 available")).toBeNull();
+	});
 });
