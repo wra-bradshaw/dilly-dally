@@ -437,4 +437,10 @@ test("paint surface presents touch-none at rest so touch drags paint", async () 
 		getComputedStyle(cell.element().closest("table") as HTMLElement)
 			.touchAction,
 	).toBe("none");
+	const scroller = cell.element().closest("table")?.parentElement;
+	expect(scroller?.className).toContain("touch-pan-x");
+	expect(scroller?.className).toContain("touch-pan-y");
+	expect(getComputedStyle(scroller as HTMLElement).touchAction).toContain(
+		"pan-x",
+	);
 });

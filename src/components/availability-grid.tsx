@@ -66,7 +66,12 @@ export function AvailabilityGrid({
 
 	return (
 		<div>
-			<div className={cn("overflow-x-auto pb-2", disabled && "opacity-60")}>
+			<div
+				className={cn(
+					"touch-pan-x touch-pan-y overflow-x-auto pb-2",
+					disabled && "opacity-60",
+				)}
+			>
 				<TimeGrid
 					announce={announce}
 					columns={columns}
