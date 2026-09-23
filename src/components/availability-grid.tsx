@@ -2,7 +2,11 @@ import { useMemo, useRef, useState } from "react";
 import { useDragPaint } from "#/hooks/use-drag-paint";
 import { paintTargetFromPoint } from "#/lib/paint-target";
 import { cn } from "#/lib/utils";
-import { type GridColumn, gridRectangleIds } from "./grid-model";
+import {
+	buildGridPos,
+	type GridColumn,
+	gridRectangleIdsFromPos,
+} from "./grid-model";
 import { TimeGrid } from "./time-grid";
 
 interface AvailabilityGridProps {
@@ -25,10 +29,11 @@ export function AvailabilityGrid({
 		() => columns.flatMap((c) => c.cells.map((cell) => cell.id)),
 		[columns],
 	);
+	const pos = useMemo(() => buildGridPos(columns), [columns]);
 	const range = useMemo(
 		() => (_values: string[], from: string, to: string) =>
-			gridRectangleIds(columns, from, to),
-		[columns],
+			gridRectangleIdsFromPos(columns, pos, from, to),
+		[columns, pos],
 	);
 	const drag = useDragPaint({
 		onCommit,
@@ -37,15 +42,6 @@ export function AvailabilityGrid({
 		values,
 	});
 
-	const pos = useMemo(() => {
-		const m = new Map<string, { c: number; r: number }>();
-		columns.forEach((col, c) => {
-			col.cells.forEach((cell, r) => {
-				m.set(cell.id, { c, r });
-			});
-		});
-		return m;
-	}, [columns]);
 	const [focusId, setFocusId] = useState<string | null>(null);
 	const roving = focusId ?? values[0] ?? null;
 

@@ -153,17 +153,24 @@ function dateToMs(date: string): number {
 	return Date.UTC(y, m - 1, d);
 }
 
-export function gridRectangleIds(
-	columns: GridColumn[],
-	from: string,
-	to: string,
-): string[] {
+export type GridPos = Map<string, { c: number; r: number }>;
+
+export function buildGridPos(columns: GridColumn[]): GridPos {
 	const pos = new Map<string, { c: number; r: number }>();
 	columns.forEach((col, c) => {
 		col.cells.forEach((cell, r) => {
 			pos.set(cell.id, { c, r });
 		});
 	});
+	return pos;
+}
+
+export function gridRectangleIdsFromPos(
+	columns: GridColumn[],
+	pos: GridPos,
+	from: string,
+	to: string,
+): string[] {
 	const a = pos.get(from);
 	const b = pos.get(to);
 	if (!a || !b) return [];
@@ -180,6 +187,14 @@ export function gridRectangleIds(
 		}
 	}
 	return out;
+}
+
+export function gridRectangleIds(
+	columns: GridColumn[],
+	from: string,
+	to: string,
+): string[] {
+	return gridRectangleIdsFromPos(columns, buildGridPos(columns), from, to);
 }
 
 export function getDayGaps(columns: { date: string }[]): DayGap[] {
