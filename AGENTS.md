@@ -13,6 +13,7 @@
 - Do not add code comments, except for those read by external tools.
 - useEffect is banned. Always extract into a **reusable** hook or **abstraction** that you are sure can be used by multiple (possibly unrelated!) other components, either now or in the future. Ultrathink about the name of the hook and its API, ensuring it is intuitive. 
 - Unless explicitly stated or required by something you are doing, always run your playwright headless.
+- DO NOT ADD TRADITIONAL CSS CLASSES TO STYLES.CSS. ALL STYLING IS TO BE DONE VIA TAILWIND. NO EXCEPTIONS.
 
 ## Development philosophy
 
