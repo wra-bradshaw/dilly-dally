@@ -22,16 +22,16 @@ function isRealDate(s: string): boolean {
 	);
 }
 
-function todayUtc(): string {
-	return new Date(Date.now()).toISOString().slice(0, 10);
-}
-
 function maxDateUtc(): string {
 	return new Date(Date.now() + 90 * DAY_MS).toISOString().slice(0, 10);
 }
 
+function minDateUtc(): string {
+	return new Date(Date.now() - DAY_MS).toISOString().slice(0, 10);
+}
+
 function isInDateWindow(s: string): boolean {
-	const min = todayUtc();
+	const min = minDateUtc();
 	const max = maxDateUtc();
 	return s >= min && s <= max;
 }

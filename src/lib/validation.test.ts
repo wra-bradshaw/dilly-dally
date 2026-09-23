@@ -66,7 +66,7 @@ describe("createEventSchema", () => {
 		).toBe(false);
 	});
 
-	it("enforces the today-to-today+90 UTC window", () => {
+	it("accepts any local today with room for UTC skew", () => {
 		const base = {
 			endTime: "17:00",
 			startTime: "09:00",
@@ -77,10 +77,13 @@ describe("createEventSchema", () => {
 			createEventSchema.safeParse({ ...base, dates: ["2026-09-22"] }).success,
 		).toBe(true);
 		expect(
+			createEventSchema.safeParse({ ...base, dates: ["2026-09-21"] }).success,
+		).toBe(true);
+		expect(
 			createEventSchema.safeParse({ ...base, dates: ["2026-12-21"] }).success,
 		).toBe(true);
 		expect(
-			createEventSchema.safeParse({ ...base, dates: ["2026-09-21"] }).success,
+			createEventSchema.safeParse({ ...base, dates: ["2026-09-20"] }).success,
 		).toBe(false);
 		expect(
 			createEventSchema.safeParse({ ...base, dates: ["2026-12-22"] }).success,
