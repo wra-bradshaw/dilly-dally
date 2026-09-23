@@ -65,6 +65,14 @@ export function DateCalendar({
 	const enabled = (day: string | null): day is string =>
 		day !== null && day >= minDate && day <= maxDate;
 
+	const days = matrix.flat();
+	const firstEnabled = days.find((d) => enabled(d));
+	const [focusDay, setFocusDay] = useState<string | null>(null);
+	const roving =
+		focusDay !== null && days.includes(focusDay) && enabled(focusDay)
+			? focusDay
+			: (firstEnabled ?? null);
+
 	const commitEnabled = (next: Set<string>) => {
 		onCommit(
 			filterCalendarCommit(next, selected, matrix.flat(), minDate, maxDate),
@@ -78,6 +86,69 @@ export function DateCalendar({
 		selected,
 		values: matrix.flat().filter((d): d is string => d !== null),
 	});
+
+	const focusDayCell = (day: string) => {
+		setFocusDay(day);
+		surface.containerRef.current
+			?.querySelector<HTMLButtonElement>(`[data-day="${day}"]`)
+			?.focus();
+	};
+
+	const onDayKeyDown = (e: React.KeyboardEvent) => {
+		surface.onKeyDown(e);
+		if (
+			e.key !== "ArrowLeft" &&
+			e.key !== "ArrowRight" &&
+			e.key !== "ArrowUp" &&
+			e.key !== "ArrowDown"
+		) {
+			return;
+		}
+		const target = e.target as HTMLElement | null;
+		const active = document.activeElement as HTMLElement | null;
+		const current = target?.dataset?.day ?? active?.dataset?.day ?? roving;
+		if (!current) return;
+		const idx = days.indexOf(current);
+		if (idx === -1) {
+			if (firstEnabled) focusDayCell(firstEnabled);
+			return;
+		}
+		const col = idx % 7;
+		const step =
+			e.key === "ArrowLeft"
+				? -1
+				: e.key === "ArrowRight"
+					? 1
+					: e.key === "ArrowUp"
+						? -7
+						: 7;
+		let found: string | null = null;
+		if (step === 1 || step === -1) {
+			for (let i = idx + step; i >= 0 && i < days.length; i += step) {
+				const d = days[i];
+				if (d !== undefined && enabled(d)) {
+					found = d;
+					break;
+				}
+			}
+		} else {
+			for (
+				let i = idx + step;
+				i >= 0 && i < days.length && i % 7 === col;
+				i += step
+			) {
+				const d = days[i];
+				if (d !== undefined && enabled(d)) {
+					found = d;
+					break;
+				}
+			}
+		}
+		if (found) {
+			e.preventDefault();
+			focusDayCell(found);
+		}
+	};
 
 	const monthLabel = new Intl.DateTimeFormat(undefined, {
 		month: "long",
@@ -125,7 +196,7 @@ export function DateCalendar({
 					"grid grid-cols-7 gap-1 select-none",
 					surface.painting && "touch-none",
 				)}
-				onKeyDown={surface.onKeyDown}
+				onKeyDown={onDayKeyDown}
 				onPointerCancel={surface.onPointerCancel}
 				onPointerMove={surface.onPointerMove}
 				onPointerUp={surface.onPointerUp}
@@ -176,6 +247,8 @@ export function DateCalendar({
 							data-day={day}
 							key={day}
 							onClick={(e) => surface.toggle(day, e.detail)}
+							onFocus={() => setFocusDay(day)}
+							tabIndex={off ? -1 : day === roving ? 0 : -1}
 							onPointerDown={(e) => {
 								if (off) return;
 								if (e.button !== 0 && e.pointerType === "mouse") return;

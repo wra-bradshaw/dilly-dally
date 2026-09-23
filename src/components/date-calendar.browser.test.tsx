@@ -65,6 +65,56 @@ test("pointerdown focuses the day without scrolling the page", async () => {
 	await expect.element(day).toHaveFocus();
 });
 
+test("calendar exposes a single tab stop and arrows move focus", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const tabbable = screen.container.querySelectorAll(
+		'button[data-day][tabindex="0"]',
+	);
+	expect(tabbable).toHaveLength(1);
+	expect(tabbable[0]?.getAttribute("data-day")).toBe("2026-09-22");
+
+	const first = screen.getByRole("button", { name: "Tue, 9/22" });
+	await expect.element(first).toBeVisible();
+	(first.element() as HTMLButtonElement).focus();
+	await expect.element(first).toHaveFocus();
+	first.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "ArrowRight",
+		}),
+	);
+	await expect
+		.element(screen.getByRole("button", { name: "Wed, 9/23" }))
+		.toHaveFocus();
+	screen
+		.getByRole("button", { name: "Wed, 9/23" })
+		.element()
+		.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				bubbles: true,
+				cancelable: true,
+				key: "ArrowDown",
+			}),
+		);
+	await expect
+		.element(screen.getByRole("button", { name: "Wed, 9/30" }))
+		.toHaveFocus();
+	expect(onCommit).not.toHaveBeenCalled();
+	expect(
+		screen.container.querySelectorAll('button[data-day][tabindex="0"]'),
+	).toHaveLength(1);
+});
+
 test("dragging across days selects every date in between", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(
