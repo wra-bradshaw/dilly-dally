@@ -26,7 +26,13 @@ export function GroupHeatmap({
 	viewTimezone,
 }: GroupHeatmapProps) {
 	const [hovered, setHovered] = useState<string | null>(null);
-	const max = Math.max(1, ...counts.values().map((c) => c.count));
+	const max = useMemo(() => {
+		let top = 1;
+		for (const c of counts.values()) {
+			if (c.count > top) top = c.count;
+		}
+		return top;
+	}, [counts]);
 	const info = hovered ? counts.get(hovered) : undefined;
 	const unavailable = useMemo(
 		() => (info ? allNames.filter((n) => !info.names.includes(n)) : []),
