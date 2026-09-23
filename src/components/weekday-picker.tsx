@@ -25,7 +25,7 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 
 	const onFieldKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
-		if (e.key === " " || e.key === "Enter") suppressToggleKey(e);
+		suppressToggleKey(e);
 	};
 
 	return (
