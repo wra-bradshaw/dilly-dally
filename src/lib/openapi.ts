@@ -1,3 +1,5 @@
+import { originOf, securityHeaders } from "./api-errors";
+
 interface OpenApiSchema {
 	$ref?: string;
 	additionalProperties?: OpenApiSchema | boolean;
@@ -29,6 +31,15 @@ export interface OpenApiSpec {
 
 export function serializeSpec(spec: OpenApiSpec): string {
 	return `${JSON.stringify(spec, null, 2)}\n`;
+}
+
+export function openApiResponse(request: Request): Response {
+	return Response.json(getOpenApiSpec(originOf(request)), {
+		headers: {
+			...securityHeaders(),
+			"Cache-Control": "public, max-age=3600",
+		},
+	});
 }
 
 export function getOpenApiSpec(origin: string): OpenApiSpec {

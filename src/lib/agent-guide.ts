@@ -11,6 +11,23 @@ export function agentGuideResponse(request: Request): Response {
 	});
 }
 
+export function llmsResponse(): Response {
+	return new Response(LLMS_TEXT, {
+		headers: {
+			...securityHeaders(),
+			"Cache-Control": "public, max-age=3600",
+			"Content-Type": "text/plain; charset=utf-8",
+		},
+	});
+}
+
+export const LLMS_TEXT = `Dilly-Dally: agent-friendly when2meet replacement. No login.
+- Create events: POST /api/events (see /api/agent-guide for curl)
+- Availability: PUT /api/events/:id/availability
+- OpenAPI 3.1: /api/openapi.json
+- Full agent guide: /api/agent-guide
+`;
+
 export const AGENT_GUIDE_MARKDOWN = `# Dilly-Dally Agent Guide
 
 Dilly-Dally is an agent-friendly when2meet replacement. No login. Two curl calls cover the full flow.
