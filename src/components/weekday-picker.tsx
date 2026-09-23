@@ -1,4 +1,4 @@
-import { usePaintSurface } from "#/hooks/use-paint-surface";
+import { suppressToggleKey, usePaintSurface } from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import { headerForWeekday } from "./grid-model";
 
@@ -23,13 +23,18 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 		values: WEEKDAYS,
 	});
 
+	const onFieldKeyDown = (e: React.KeyboardEvent) => {
+		surface.onKeyDown(e);
+		if (e.key === " " || e.key === "Enter") suppressToggleKey(e);
+	};
+
 	return (
 		<fieldset
 			className={cn(
 				"flex flex-wrap gap-1 select-none",
 				surface.painting && "touch-none",
 			)}
-			onKeyDown={surface.onKeyDown}
+			onKeyDown={onFieldKeyDown}
 			onPointerCancel={surface.onPointerCancel}
 			onPointerMove={surface.onPointerMove}
 			onPointerUp={surface.onPointerUp}

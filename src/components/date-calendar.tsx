@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
+import {
+	identityParse,
+	suppressToggleKey,
+	usePaintSurface,
+} from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import { formatMarkerDate } from "./grid-model";
 
@@ -96,6 +100,10 @@ export function DateCalendar({
 
 	const onDayKeyDown = (e: React.KeyboardEvent) => {
 		surface.onKeyDown(e);
+		if (e.key === " " || e.key === "Enter") {
+			if (suppressToggleKey(e)) return;
+			return;
+		}
 		if (
 			e.key !== "ArrowLeft" &&
 			e.key !== "ArrowRight" &&

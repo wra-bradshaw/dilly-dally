@@ -1,6 +1,10 @@
 import { useMemo, useRef } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
-import { identityParse, usePaintSurface } from "#/hooks/use-paint-surface";
+import {
+	identityParse,
+	suppressToggleKey,
+	usePaintSurface,
+} from "#/hooks/use-paint-surface";
 import { cn } from "#/lib/utils";
 import {
 	buildGridPos,
@@ -51,8 +55,7 @@ export function AvailabilityGrid({
 		surface.onKeyDown(e);
 		onGridKeyDown(e);
 		if (e.key === " " || e.key === "Enter") {
-			if (e.repeat) return;
-			if (e.ctrlKey || e.metaKey || e.altKey) return;
+			if (suppressToggleKey(e)) return;
 			const id = (e.target as HTMLElement | null)?.dataset?.cell;
 			if (id && !disabled) {
 				e.preventDefault();

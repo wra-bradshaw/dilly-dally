@@ -17,6 +17,27 @@ export function identityParse(raw: string): string {
 	return raw;
 }
 
+interface ToggleKey {
+	altKey: boolean;
+	ctrlKey: boolean;
+	key: string;
+	metaKey: boolean;
+	repeat: boolean;
+}
+
+export function shouldSuppressToggleKey(e: ToggleKey): boolean {
+	if (e.key !== " " && e.key !== "Enter") return false;
+	return Boolean(e.repeat || e.ctrlKey || e.metaKey || e.altKey);
+}
+
+export function suppressToggleKey<E extends { preventDefault(): void }>(
+	e: ToggleKey & E,
+): boolean {
+	if (!shouldSuppressToggleKey(e)) return false;
+	e.preventDefault();
+	return true;
+}
+
 export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 	options: PaintSurfaceOptions<T, E>,
 ) {

@@ -131,6 +131,16 @@ test("repeat keydown does not toggle the focused slot", async () => {
 		}),
 	);
 	expect(onCommit).not.toHaveBeenCalled();
+	expect(
+		node.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				bubbles: true,
+				cancelable: true,
+				key: "Enter",
+				repeat: true,
+			}),
+		),
+	).toBe(false);
 	node.dispatchEvent(
 		new KeyboardEvent("keydown", {
 			bubbles: true,
