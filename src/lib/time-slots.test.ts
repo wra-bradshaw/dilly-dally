@@ -82,6 +82,17 @@ describe("findBestTimes", () => {
 		);
 		expect(best[0]?.slot).toBe("2026-10-05T09:00");
 	});
+
+	it("breaks weekly ties in weekday order, not lexical order", () => {
+		const best = findBestTimes(
+			[
+				{ count: 1, names: ["A"], slot: "FRI-09:00" },
+				{ count: 1, names: ["A"], slot: "MON-09:00" },
+			],
+			10,
+		);
+		expect(best.map((b) => b.slot)).toEqual(["MON-09:00", "FRI-09:00"]);
+	});
 });
 
 describe("formatSlotWithDate", () => {

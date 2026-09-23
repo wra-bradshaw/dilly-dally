@@ -25,7 +25,6 @@ import {
 	saveAvailability,
 } from "#/lib/client";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
-import { slotToInstant, weeklySlotRank } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
@@ -133,17 +132,7 @@ function EventPage() {
 		[detail.data],
 	);
 	const bestTimes = useMemo(() => {
-		const tz = detail.data?.event.timezone ?? "UTC";
-		const weekly = (detail.data?.event.mode ?? "dates") === "weekly";
-		return [...(detail.data?.bestTimes ?? [])]
-			.sort((a, b) => {
-				if (b.count !== a.count) return b.count - a.count;
-				if (weekly) {
-					return (weeklySlotRank(a.slot) ?? 0) - (weeklySlotRank(b.slot) ?? 0);
-				}
-				return slotToInstant(a.slot, tz) - slotToInstant(b.slot, tz);
-			})
-			.slice(0, 10);
+		return [...(detail.data?.bestTimes ?? [])].slice(0, 10);
 	}, [detail.data]);
 	const dateSummary = event
 		? (event.mode ?? "dates") === "weekly"

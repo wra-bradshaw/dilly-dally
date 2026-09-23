@@ -254,6 +254,12 @@ export function computeCounts(
 
 export function findBestTimes(counts: SlotCount[], limit: number): SlotCount[] {
 	return [...counts]
-		.sort((a, b) => b.count - a.count || (a.slot < b.slot ? -1 : 1))
+		.sort((a, b) => {
+			if (b.count !== a.count) return b.count - a.count;
+			const ar = weeklySlotRank(a.slot);
+			const br = weeklySlotRank(b.slot);
+			if (ar !== null && br !== null) return ar - br;
+			return a.slot < b.slot ? -1 : 1;
+		})
 		.slice(0, limit);
 }
