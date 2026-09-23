@@ -23,7 +23,7 @@ function isRealDate(s: string): boolean {
 }
 
 function maxDateUtc(): string {
-	return new Date(Date.now() + 90 * DAY_MS).toISOString().slice(0, 10);
+	return new Date(Date.now() + 91 * DAY_MS).toISOString().slice(0, 10);
 }
 
 function minDateUtc(): string {

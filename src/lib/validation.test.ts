@@ -86,8 +86,19 @@ describe("createEventSchema", () => {
 			createEventSchema.safeParse({ ...base, dates: ["2026-09-20"] }).success,
 		).toBe(false);
 		expect(
-			createEventSchema.safeParse({ ...base, dates: ["2026-12-22"] }).success,
+			createEventSchema.safeParse({ ...base, dates: ["2026-12-23"] }).success,
 		).toBe(false);
+	});
+
+	it("accepts outermost date in far-eastern zones", () => {
+		const parsed = createEventSchema.safeParse({
+			dates: ["2026-12-22"],
+			endTime: "17:00",
+			startTime: "09:00",
+			timezone: "Pacific/Kiritimati",
+			title: "Window",
+		});
+		expect(parsed.success).toBe(true);
 	});
 });
 
