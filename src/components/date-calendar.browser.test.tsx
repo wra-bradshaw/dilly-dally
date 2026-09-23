@@ -188,3 +188,19 @@ test("dragging across days selects every date in between", async () => {
 		"2026-09-27",
 	]);
 });
+
+test("calendar paint surface presents touch-none at rest", async () => {
+	const screen = await render(
+		<DateCalendar
+			maxDate="2026-10-31"
+			minDate="2026-09-22"
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	expect(day.element().closest("div.grid")?.className ?? "").toContain(
+		"touch-none",
+	);
+});

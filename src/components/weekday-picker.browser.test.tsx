@@ -31,3 +31,14 @@ test("dragging across weekdays selects every day in between", async () => {
 		1, 2, 3, 4,
 	]);
 });
+
+test("weekday paint surface presents touch-none at rest", async () => {
+	const screen = await render(
+		<WeekdayPicker onCommit={() => {}} selected={new Set()} />,
+	);
+	const monday = screen.getByRole("button", { name: headerForWeekday(1) });
+	await expect.element(monday).toBeVisible();
+	expect(monday.element().closest("fieldset")?.className ?? "").toContain(
+		"touch-none",
+	);
+});

@@ -104,7 +104,7 @@ export function AvailabilityGrid({
 							type="button"
 						/>
 					)}
-					tableClassName={surface.painting ? "touch-none" : undefined}
+					tableClassName="touch-none"
 					tableLabel="Your availability. Click or drag to paint times you are free. Use arrow keys to move, space to toggle."
 					tableRef={surface.containerRef}
 				/>

@@ -30,10 +30,7 @@ export function WeekdayPicker({ onCommit, selected }: WeekdayPickerProps) {
 
 	return (
 		<fieldset
-			className={cn(
-				"flex flex-wrap gap-1 select-none",
-				surface.painting && "touch-none",
-			)}
+			className={cn("flex flex-wrap gap-1 touch-none select-none")}
 			onKeyDown={onFieldKeyDown}
 			onPointerCancel={surface.onPointerCancel}
 			onPointerMove={surface.onPointerMove}

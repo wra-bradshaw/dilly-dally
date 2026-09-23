@@ -392,3 +392,16 @@ test("marks the day crossing inline above the midnight cell", async () => {
 	expect(beforeRow?.nextElementSibling?.textContent).toContain("Tue, 10/6");
 	expect(after.element().className).toContain("border-t-2");
 });
+
+test("paint surface presents touch-none at rest so touch drags paint", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	expect(cell.element().closest("table")?.className).toContain("touch-none");
+});
