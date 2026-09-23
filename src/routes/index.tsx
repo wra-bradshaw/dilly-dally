@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
-import { summarizeDates, summarizeWeekdays } from "#/components/grid-model";
 import { ThemeToggle } from "#/components/theme-toggle";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
@@ -185,14 +184,7 @@ function Home() {
 						</div>
 						{mode === "dates" ? (
 							<div className="grid gap-2">
-								<Label>
-									What dates might work?{" "}
-									<output aria-live="polite" className="text-muted-foreground">
-										{dates.size === 0
-											? "(No dates selected)"
-											: `(${summarizeDates([...dates])})`}
-									</output>
-								</Label>
+								<Label>What dates might work?</Label>
 								<p className="text-xs text-muted-foreground">
 									Click and drag dates to choose possibilities.
 								</p>
@@ -205,14 +197,7 @@ function Home() {
 							</div>
 						) : (
 							<div className="grid gap-2">
-								<Label>
-									What weekdays might work?{" "}
-									<output aria-live="polite" className="text-muted-foreground">
-										{weekdays.size === 0
-											? "(No weekdays selected)"
-											: `(${summarizeWeekdays([...weekdays])})`}
-									</output>
-								</Label>
+								<Label>What weekdays might work?</Label>
 								<p className="text-xs text-muted-foreground">
 									Availability means that weekday generally, every week. Click
 									and drag weekdays to choose possibilities.
