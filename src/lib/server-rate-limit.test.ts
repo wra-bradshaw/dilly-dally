@@ -20,4 +20,20 @@ describe("checkRateLimitDb", () => {
 		const next = await checkRateLimitDb(db, "k", 61_000, 60_000, 1);
 		expect(next.allowed).toBe(true);
 	});
+
+	it("counts down remaining and holds at the limit when blocked", async () => {
+		const { db } = await createTestDb();
+		expect((await checkRateLimitDb(db, "k", 0, 60_000, 3)).remaining).toBe(2);
+		expect((await checkRateLimitDb(db, "k", 1000, 60_000, 3)).remaining).toBe(
+			1,
+		);
+		const last = await checkRateLimitDb(db, "k", 2000, 60_000, 3);
+		expect(last).toMatchObject({ allowed: true, remaining: 0 });
+		for (let i = 0; i < 3; i++) {
+			const blocked = await checkRateLimitDb(db, "k", 3000 + i, 60_000, 3);
+			expect(blocked).toMatchObject({ allowed: false, remaining: 0 });
+		}
+		const fresh = await checkRateLimitDb(db, "k", 61_000, 60_000, 3);
+		expect(fresh).toMatchObject({ allowed: true, remaining: 2 });
+	});
 });
