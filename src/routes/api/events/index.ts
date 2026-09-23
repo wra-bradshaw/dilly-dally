@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	clientIp,
+	contentLengthTooLarge,
+	isJsonContentType,
 	jsonError,
 	originOf,
 	rateLimited,
@@ -29,6 +31,21 @@ export const Route = createFileRoute("/api/events/")({
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
+				const db = getDb();
+				const now = Date.now();
+				const key = await rateLimitKey(clientIp(request), "create_event");
+				const rl = await checkRateLimitDb(
+					db,
+					key,
+					now,
+					RATE_LIMITS.createEvent.windowMs,
+					RATE_LIMITS.createEvent.limit,
+				);
+				if (!rl.allowed) return rateLimited(rl.resetMs);
+				if (contentLengthTooLarge(request))
+					return jsonError("bad_request", "Payload too large", 413);
+				if (!isJsonContentType(request))
+					return jsonError("bad_request", "Content-Type must be application/json", 415);
 				let raw: unknown;
 				try {
 					raw =
@@ -52,17 +69,6 @@ export const Route = createFileRoute("/api/events/")({
 					mode === "weekly"
 						? [...new Set(input.weekdays ?? [])].sort((a, b) => a - b)
 						: [];
-				const db = getDb();
-				const now = Date.now();
-				const key = await rateLimitKey(clientIp(request), "create_event");
-				const rl = await checkRateLimitDb(
-					db,
-					key,
-					now,
-					RATE_LIMITS.createEvent.windowMs,
-					RATE_LIMITS.createEvent.limit,
-				);
-				if (!rl.allowed) return rateLimited(rl.resetMs);
 				await purgeExpired(db, now);
 				let id = generateEventId();
 				let inserted = false;

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { clientIp, jsonError, rateLimited, zodFields } from "./api-errors";
+import {
+	clientIp,
+	contentLengthTooLarge,
+	isJsonContentType,
+	jsonError,
+	rateLimited,
+	zodFields,
+} from "./api-errors";
 import type { components } from "./api-schema";
 import { createEventSchema } from "./validation";
 
@@ -53,5 +60,33 @@ describe("clientIp", () => {
 
 	it("falls back to unknown", () => {
 		expect(clientIp(new Request("https://x.test/"))).toBe("unknown");
+	});
+});
+
+describe("write guards", () => {
+	it("rejects oversized content-length", () => {
+		const big = new Request("https://x.test/", {
+			headers: { "content-length": String(300_000) },
+			method: "POST",
+		});
+		expect(contentLengthTooLarge(big)).toBe(true);
+		const small = new Request("https://x.test/", {
+			headers: { "content-length": "100" },
+			method: "POST",
+		});
+		expect(contentLengthTooLarge(small)).toBe(false);
+	});
+
+	it("requires application/json content type", () => {
+		const json = new Request("https://x.test/", {
+			headers: { "content-type": "application/json; charset=utf-8" },
+			method: "POST",
+		});
+		expect(isJsonContentType(json)).toBe(true);
+		const form = new Request("https://x.test/", {
+			headers: { "content-type": "text/plain" },
+			method: "POST",
+		});
+		expect(isJsonContentType(form)).toBe(false);
 	});
 });

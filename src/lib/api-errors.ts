@@ -47,3 +47,17 @@ export function clientIp(request: Request): string {
 export function originOf(request: Request): string {
 	return new URL(request.url).origin;
 }
+
+export const MAX_JSON_BYTES = 262_144;
+
+export function contentLengthTooLarge(request: Request): boolean {
+	const raw = request.headers.get("content-length");
+	if (!raw) return false;
+	const n = Number(raw);
+	return Number.isFinite(n) && n > MAX_JSON_BYTES;
+}
+
+export function isJsonContentType(request: Request): boolean {
+	const ct = request.headers.get("content-type") ?? "";
+	return ct.split(";")[0]?.trim().toLowerCase() === "application/json";
+}

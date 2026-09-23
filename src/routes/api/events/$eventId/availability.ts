@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { clientIp, jsonError, rateLimited, zodFields } from "#/lib/api-errors";
+import { clientIp, contentLengthTooLarge, isJsonContentType, jsonError, rateLimited, zodFields } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
@@ -12,6 +12,21 @@ import { checkRateLimitDb } from "#/lib/server-rate-limit";
 import { type AvailabilityInput, availabilitySchema } from "#/lib/validation";
 
 async function saveAvailability(request: Request, eventId: string) {
+	const db = getDb();
+	const now = Date.now();
+	const key = await rateLimitKey(clientIp(request), "availability_write");
+	const rl = await checkRateLimitDb(
+		db,
+		key,
+		now,
+		RATE_LIMITS.availabilityWrite.windowMs,
+		RATE_LIMITS.availabilityWrite.limit,
+	);
+	if (!rl.allowed) return rateLimited(rl.resetMs);
+	if (contentLengthTooLarge(request))
+		return jsonError("bad_request", "Payload too large", 413);
+	if (!isJsonContentType(request))
+		return jsonError("bad_request", "Content-Type must be application/json", 415);
 	let raw: unknown;
 	try {
 		raw =
@@ -29,17 +44,6 @@ async function saveAvailability(request: Request, eventId: string) {
 		);
 	}
 	const input: AvailabilityInput = parsed.data;
-	const db = getDb();
-	const now = Date.now();
-	const key = await rateLimitKey(clientIp(request), "availability_write");
-	const rl = await checkRateLimitDb(
-		db,
-		key,
-		now,
-		RATE_LIMITS.availabilityWrite.windowMs,
-		RATE_LIMITS.availabilityWrite.limit,
-	);
-	if (!rl.allowed) return rateLimited(rl.resetMs);
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
 		return jsonError(
