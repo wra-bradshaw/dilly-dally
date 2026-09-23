@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import {
 	buildColumns,
+	buildWeeklyColumns,
 	formatViewerSlot,
 	summarizeDates,
+	summarizeWeekdays,
 } from "#/components/grid-model";
 import { GroupHeatmap } from "#/components/group-heatmap";
 import { Badge } from "#/components/ui/badge";
@@ -23,7 +25,7 @@ import {
 	saveAvailability,
 } from "#/lib/client";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
-import { slotToInstant } from "#/lib/time-slots";
+import { slotToInstant, weeklySlotRank } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
@@ -110,17 +112,21 @@ function EventPage() {
 			? Intl.DateTimeFormat().resolvedOptions().timeZone
 			: (event?.timezone ?? "UTC");
 
-	const columns = useMemo(
-		() =>
-			detail.data
-				? buildColumns(
-						detail.data.slotUniverse,
-						detail.data.event.timezone,
-						viewTimezone,
-					)
-				: [],
-		[detail.data, viewTimezone],
-	);
+	const columns = useMemo(() => {
+		if (!detail.data) return [];
+		if ((detail.data.event.mode ?? "dates") === "weekly") {
+			return buildWeeklyColumns(
+				detail.data.slotUniverse,
+				detail.data.event.timezone,
+				viewTimezone,
+			);
+		}
+		return buildColumns(
+			detail.data.slotUniverse,
+			detail.data.event.timezone,
+			viewTimezone,
+		);
+	}, [detail.data, viewTimezone]);
 	const counts = useMemo(() => {
 		const map = new Map<string, { count: number; names: string[] }>();
 		for (const c of detail.data?.counts ?? []) map.set(c.slot, c);
@@ -132,15 +138,22 @@ function EventPage() {
 	);
 	const bestTimes = useMemo(() => {
 		const tz = detail.data?.event.timezone ?? "UTC";
+		const weekly = (detail.data?.event.mode ?? "dates") === "weekly";
 		return [...(detail.data?.bestTimes ?? [])]
-			.sort(
-				(a, b) =>
-					b.count - a.count ||
-					slotToInstant(a.slot, tz) - slotToInstant(b.slot, tz),
-			)
+			.sort((a, b) => {
+				if (b.count !== a.count) return b.count - a.count;
+				if (weekly) {
+					return (weeklySlotRank(a.slot) ?? 0) - (weeklySlotRank(b.slot) ?? 0);
+				}
+				return slotToInstant(a.slot, tz) - slotToInstant(b.slot, tz);
+			})
 			.slice(0, 10);
 	}, [detail.data]);
-	const dateSummary = event ? summarizeDates(event.dates) : "";
+	const dateSummary = event
+		? (event.mode ?? "dates") === "weekly"
+			? summarizeWeekdays(event.weekdays ?? [])
+			: summarizeDates(event.dates)
+		: "";
 
 	const signIn = async () => {
 		setSignError("");

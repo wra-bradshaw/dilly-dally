@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
-import { summarizeDates } from "#/components/grid-model";
+import { summarizeDates, summarizeWeekdays } from "#/components/grid-model";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -51,10 +51,24 @@ function allTimezones(): string[] {
 	return [browserTimezone()];
 }
 
+const WEEKDAY_OPTIONS = [
+	{ label: "Sun", value: 0 },
+	{ label: "Mon", value: 1 },
+	{ label: "Tue", value: 2 },
+	{ label: "Wed", value: 3 },
+	{ label: "Thu", value: 4 },
+	{ label: "Fri", value: 5 },
+	{ label: "Sat", value: 6 },
+];
+
 function Home() {
 	const navigate = useNavigate();
 	const [title, setTitle] = useState("");
+	const [mode, setMode] = useState<"dates" | "weekly">("dates");
 	const [dates, setDates] = useState<Set<string>>(new Set());
+	const [weekdays, setWeekdays] = useState<Set<number>>(
+		new Set([1, 2, 3, 4, 5]),
+	);
 	const [startTime, setStartTime] = useState("09:00");
 	const [endTime, setEndTime] = useState("17:00");
 	const [timezone, setTimezone] = useState(browserTimezone);
@@ -63,14 +77,27 @@ function Home() {
 	const minDate = todayPlus(0);
 	const maxDate = todayPlus(90);
 
+	const toggleWeekday = (day: number) => {
+		setWeekdays((prev) => {
+			const next = new Set(prev);
+			if (next.has(day)) next.delete(day);
+			else next.add(day);
+			return next;
+		});
+	};
+
 	const submit = async () => {
 		setError("");
 		if (!title.trim()) {
 			setError("Give your event a name.");
 			return;
 		}
-		if (dates.size === 0) {
+		if (mode === "dates" && dates.size === 0) {
 			setError("Pick at least one date that might work.");
+			return;
+		}
+		if (mode === "weekly" && weekdays.size === 0) {
+			setError("Pick at least one weekday that might work.");
 			return;
 		}
 		if (startTime >= endTime) {
@@ -79,13 +106,24 @@ function Home() {
 		}
 		setSaving(true);
 		try {
-			const res = await createEvent({
-				dates: [...dates].sort(),
-				endTime,
-				startTime,
-				timezone,
-				title: title.trim(),
-			});
+			const res = await createEvent(
+				mode === "weekly"
+					? {
+							endTime,
+							mode: "weekly",
+							startTime,
+							timezone,
+							title: title.trim(),
+							weekdays: [...weekdays].sort((a, b) => a - b),
+						}
+					: {
+							dates: [...dates].sort(),
+							endTime,
+							startTime,
+							timezone,
+							title: title.trim(),
+						},
+			);
 			await navigate({ params: { eventId: res.id }, to: "/e/$eventId" });
 		} catch (err) {
 			if (err instanceof HttpError && err.code === "rate_limited") {
@@ -142,24 +180,84 @@ function Home() {
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label>
-								What dates might work?{" "}
-								<output aria-live="polite" className="text-muted-foreground">
-									{dates.size === 0
-										? "(No dates selected)"
-										: `(${summarizeDates([...dates])})`}
-								</output>
-							</Label>
-							<p className="text-xs text-muted-foreground">
-								Click and drag dates to choose possibilities.
-							</p>
-							<DateCalendar
-								maxDate={maxDate}
-								minDate={minDate}
-								onCommit={setDates}
-								selected={dates}
-							/>
+							<Label>Specific dates or a weekly repeat?</Label>
+							<fieldset className="flex gap-1">
+								<legend className="sr-only">Event mode</legend>
+								{(
+									[
+										{ label: "Specific dates", value: "dates" },
+										{ label: "Weekly", value: "weekly" },
+									] as const
+								).map((m) => (
+									<button
+										aria-pressed={mode === m.value}
+										className={
+											mode === m.value
+												? "rounded-md border border-emerald-700 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900"
+												: "rounded-md border border-input px-2 py-1 text-xs text-muted-foreground"
+										}
+										key={m.value}
+										onClick={() => setMode(m.value)}
+										type="button"
+									>
+										{m.label}
+									</button>
+								))}
+							</fieldset>
 						</div>
+						{mode === "dates" ? (
+							<div className="grid gap-2">
+								<Label>
+									What dates might work?{" "}
+									<output aria-live="polite" className="text-muted-foreground">
+										{dates.size === 0
+											? "(No dates selected)"
+											: `(${summarizeDates([...dates])})`}
+									</output>
+								</Label>
+								<p className="text-xs text-muted-foreground">
+									Click and drag dates to choose possibilities.
+								</p>
+								<DateCalendar
+									maxDate={maxDate}
+									minDate={minDate}
+									onCommit={setDates}
+									selected={dates}
+								/>
+							</div>
+						) : (
+							<div className="grid gap-2">
+								<Label>
+									What weekdays might work?{" "}
+									<output aria-live="polite" className="text-muted-foreground">
+										{weekdays.size === 0
+											? "(No weekdays selected)"
+											: `(${summarizeWeekdays([...weekdays])})`}
+									</output>
+								</Label>
+								<p className="text-xs text-muted-foreground">
+									Availability means that weekday generally, every week.
+								</p>
+								<fieldset className="flex flex-wrap gap-1">
+									<legend className="sr-only">Weekdays</legend>
+									{WEEKDAY_OPTIONS.map((d) => (
+										<button
+											aria-pressed={weekdays.has(d.value)}
+											className={
+												weekdays.has(d.value)
+													? "rounded-md border border-emerald-700 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900"
+													: "rounded-md border border-input px-2 py-1 text-xs text-muted-foreground"
+											}
+											key={d.value}
+											onClick={() => toggleWeekday(d.value)}
+											type="button"
+										>
+											{d.label}
+										</button>
+									))}
+								</fieldset>
+							</div>
+						)}
 						<div className="grid gap-2">
 							<Label>What times might work?</Label>
 							<div className="flex flex-wrap items-center gap-2">

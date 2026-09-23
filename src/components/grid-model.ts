@@ -2,6 +2,9 @@ import {
 	convertSlotZone,
 	formatSlotLabel,
 	formatSlotWithDate,
+	formatWeeklySlot,
+	isWeeklySlotId,
+	weekdayForCode,
 } from "#/lib/time-slots";
 
 interface GridCell {
@@ -26,6 +29,47 @@ export interface DayGap {
 	afterDate: string;
 	beforeDate: string;
 	skipped: number;
+}
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_LONG = [
+	"Sundays",
+	"Mondays",
+	"Tuesdays",
+	"Wednesdays",
+	"Thursdays",
+	"Fridays",
+	"Saturdays",
+];
+
+export function headerForWeekday(weekday: number): {
+	header: string;
+	subheader: string;
+} {
+	return {
+		header: WEEKDAY_SHORT[weekday] ?? `Day ${weekday}`,
+		subheader: WEEKDAY_LONG[weekday] ?? "",
+	};
+}
+
+export function summarizeWeekdays(weekdays: number[]): string {
+	const uniq = [...new Set(weekdays)]
+		.filter((w) => Number.isInteger(w) && w >= 0 && w <= 6)
+		.sort((a, b) => a - b);
+	if (uniq.length === 0) return "No weekdays selected.";
+	const first = uniq[0] as number;
+	const last = uniq[uniq.length - 1] as number;
+	let groups = 1;
+	for (let i = 1; i < uniq.length; i++) {
+		if ((uniq[i] as number) - (uniq[i - 1] as number) > 1) groups++;
+	}
+	const skipped = last - first + 1 - uniq.length;
+	const dayWord = uniq.length === 1 ? "weekday" : "weekdays";
+	if (groups === 1) {
+		return `Showing ${uniq.length} ${dayWord} in 1 group.`;
+	}
+	const skippedWord = skipped === 1 ? "day" : "days";
+	return `Showing ${uniq.length} ${dayWord} in ${groups} groups, ${skipped} ${skippedWord} skipped.`;
 }
 
 function headerFor(date: string): { header: string; subheader: string } {
@@ -115,6 +159,8 @@ export function getDayGaps(columns: { date: string }[]): DayGap[] {
 	return gaps;
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export function summarizeDates(
 	dates: string[] | Set<string> | { date: string }[],
 ): string {
@@ -123,6 +169,11 @@ export function summarizeDates(
 		: [...dates].map((d) =>
 				typeof d === "string" ? d : (d as { date: string }).date,
 			);
+	if (list.length > 0 && list.every((d) => !DATE_RE.test(d))) {
+		return summarizeWeekdays(
+			list.map((d) => weekdayForCode(d)).filter((w): w is number => w !== null),
+		);
+	}
 	const uniq = [...new Set(list)].sort();
 	if (uniq.length === 0) return "No dates selected.";
 	const gaps = getDayGaps(uniq.map((date) => ({ date })));
@@ -141,7 +192,49 @@ export function formatViewerSlot(
 	eventTimezone: string,
 	viewTimezone: string,
 ): string {
+	if (isWeeklySlotId(slot)) return formatWeeklySlot(slot);
 	return formatSlotWithDate(convertSlotZone(slot, eventTimezone, viewTimezone));
+}
+
+export function buildWeeklyColumns(
+	universe: string[],
+	eventTimezone?: string,
+	viewTimezone?: string,
+): GridColumn[] {
+	const byWeekday = new Map<number, GridCell[]>();
+	for (const id of universe) {
+		if (!isWeeklySlotId(id)) continue;
+		const dash = id.indexOf("-");
+		const weekday = weekdayForCode(id.slice(0, dash));
+		if (weekday === null) continue;
+		const time = id.slice(dash + 1);
+		const minutes = time.slice(3, 5);
+		const list = byWeekday.get(weekday) ?? [];
+		list.push({
+			dayShift: 0,
+			display: id,
+			hourStart: minutes === "00",
+			id,
+			label: formatSlotLabel(`2000-01-01T${time}`),
+		});
+		byWeekday.set(weekday, list);
+	}
+	const sameZone =
+		eventTimezone === undefined ||
+		viewTimezone === undefined ||
+		eventTimezone === viewTimezone;
+	return [...byWeekday.entries()]
+		.sort(([a], [b]) => a - b)
+		.map(([weekday, cells]) => {
+			const code = cells[0]?.id.slice(0, cells[0].id.indexOf("-")) ?? "";
+			return {
+				cells,
+				date: code,
+				viewerDates: [],
+				viewerNote: sameZone ? "" : "Same every week",
+				...headerForWeekday(weekday),
+			};
+		});
 }
 
 export function buildColumns(
