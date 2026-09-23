@@ -156,6 +156,10 @@ function EventPage() {
 			setSignError("Enter your name to continue.");
 			return;
 		}
+		if (password !== "" && password.length < 4) {
+			setSignError("Password must be at least 4 characters.");
+			return;
+		}
 		setSigning(true);
 		try {
 			const own = await fetchOwnAvailability(
