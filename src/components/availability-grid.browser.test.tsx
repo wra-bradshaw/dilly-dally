@@ -114,6 +114,29 @@ test("arrow keys move focus between slots for keyboard painters", async () => {
 	await expect.element(second).toHaveFocus();
 });
 
+test("pointerdown focuses the cell without scrolling the page", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={() => {}}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
+	await expect.element(cell).toBeVisible();
+	const node = cell.element() as HTMLButtonElement;
+	node.dispatchEvent(
+		new PointerEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			cancelable: true,
+			pointerType: "mouse",
+		}),
+	);
+	await expect.element(cell).toHaveFocus();
+});
+
 test("dragging across times paints every slot in between", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(

@@ -79,6 +79,7 @@ export function AvailabilityGrid({
 							onPointerDown={(e) => {
 								if (disabled) return;
 								if (e.button !== 0 && e.pointerType === "mouse") return;
+								e.currentTarget.focus({ preventScroll: true });
 								surface.start(cell.id, e);
 							}}
 							onPointerEnter={() => {
