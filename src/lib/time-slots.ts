@@ -139,7 +139,7 @@ export function formatSlotWithDate(slot: string): string {
 }
 
 interface SlotUniverseInput {
-	dates: string[];
+	dates?: string[];
 	startTime: string;
 	endTime: string;
 	mode?: EventMode;
@@ -170,7 +170,7 @@ export function buildSlotUniverse(input: SlotUniverseInput): string[] {
 	const end = hourToMinutes(input.endTime);
 	if (start === null || end === null) return [];
 	if (start >= end) return [];
-	const dates = [...new Set(input.dates)].sort();
+	const dates = [...new Set(input.dates ?? [])].sort();
 	const out: string[] = [];
 	for (const date of dates) {
 		for (let mins = start; mins < end; mins += 15) {
