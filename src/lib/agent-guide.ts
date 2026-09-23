@@ -73,7 +73,7 @@ curl -X PUT HOST/api/events/AbC123_-XyZ9/availability \\
 POST works as an alias for PUT. This is a full replace, not a merge. Send the complete set. Empty \`slots: []\` means unavailable everywhere.
 
 Passwords:
-- Optional, 4..72 chars. Only ever sent in the request body over HTTPS.
+- Optional, 4..72 chars. Send in the request body on writes and in the \`x-event-password\` header on reads, only over HTTPS.
 - Server stores only a PBKDF2-SHA-256 hash with random salt. It never returns hashes.
 - Returning user must send the same \`name\` and \`password\`. Wrong password returns \`401 {"error":{"code":"invalid_password"}}\`.
 - A name without a password can be claimed later by setting one on update.
