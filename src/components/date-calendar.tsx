@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useDragPaint } from "#/hooks/use-drag-paint";
 import { paintTargetFromPoint } from "#/lib/paint-target";
 import { cn } from "#/lib/utils";
+import { formatMarkerDate } from "./grid-model";
 
 export function buildMonthMatrix(
 	year: number,
@@ -151,13 +152,22 @@ export function DateCalendar({
 				onPointerUp={(e) => finishAtPoint(e.clientX, e.clientY)}
 				ref={ref}
 			>
-				{["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+				{[
+					{ full: "Sunday", short: "S" },
+					{ full: "Monday", short: "M" },
+					{ full: "Tuesday", short: "T" },
+					{ full: "Wednesday", short: "W" },
+					{ full: "Thursday", short: "T" },
+					{ full: "Friday", short: "F" },
+					{ full: "Saturday", short: "S" },
+				].map((d) => (
 					<div
 						className="pb-1 text-center text-xs text-muted-foreground"
-						// biome-ignore lint/suspicious/noArrayIndexKey: static weekday headers never reorder
-						key={`${d}-${i}`}
+						key={d.full}
+						title={d.full}
 					>
-						{d}
+						<span aria-hidden="true">{d.short}</span>
+						<span className="sr-only">{d.full}</span>
 					</div>
 				))}
 				{matrix.flat().map((day) => {
@@ -170,6 +180,8 @@ export function DateCalendar({
 					const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
 					return (
 						<button
+							aria-hidden={off || undefined}
+							aria-label={formatMarkerDate(day)}
 							aria-pressed={on}
 							className={cn(
 								"flex aspect-square items-center justify-center rounded-md border text-sm",
