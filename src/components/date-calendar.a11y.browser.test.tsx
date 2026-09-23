@@ -35,7 +35,7 @@ test("month titles are real headings", async () => {
 	);
 	const heading = screen.getByRole("heading", { name: "September 2026" });
 	await expect.element(heading).toBeVisible();
-	expect(heading.element().tagName.toLowerCase()).toBe("h3");
+	expect(heading.element().tagName.toLowerCase()).toBe("h2");
 });
 
 test("off-range days render as non-interactive filler", async () => {

@@ -387,9 +387,9 @@ export function DateCalendar({
 								className="mt-3 first:mt-1"
 								key={section.key}
 							>
-								<h3 className="mb-1 text-sm font-semibold" id={headingId}>
+								<h2 className="mb-1 text-sm font-semibold" id={headingId}>
 									{section.label}
-								</h3>
+								</h2>
 								<div className="grid grid-cols-7 gap-1">
 									{section.weeks.flatMap((week) => {
 										let offset = 0;
