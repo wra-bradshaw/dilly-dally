@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { clientIp, jsonError, rateLimited } from "#/lib/api-errors";
-import type { components } from "#/lib/api-schema";
+import { HttpError } from "#/lib/client";
 import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
-import { getEventDetail } from "#/lib/server-availability";
-import { loadLiveEvent } from "#/lib/server-event-detail";
+import { loadEventDetailFromDb } from "#/lib/server-event-detail";
 import { checkRateLimit } from "#/lib/server-rate-limit";
 
 export const Route = createFileRoute("/api/events/$eventId/")({
@@ -21,19 +20,21 @@ export const Route = createFileRoute("/api/events/$eventId/")({
 					RATE_LIMITS.read.limit,
 				);
 				if (!rl.allowed) return rateLimited(rl.resetMs);
-				const loaded = await loadLiveEvent(db, params.eventId, now);
-				if (!loaded.ok) {
-					return jsonError(
-						loaded.code,
-						loaded.code === "gone" ? "Event has expired" : "Event not found",
-						loaded.status,
+				try {
+					const detail = await loadEventDetailFromDb(
+						db,
+						params.eventId,
+						now,
 					);
+					return Response.json(detail, {
+						headers: { "Cache-Control": "no-store" },
+					});
+				} catch (err) {
+					if (err instanceof HttpError) {
+						return jsonError(err.code, err.message, err.status);
+					}
+					throw err;
 				}
-				const detail: components["schemas"]["EventDetailResponse"] =
-					await getEventDetail(db, loaded.event);
-				return Response.json(detail, {
-					headers: { "Cache-Control": "no-store" },
-				});
 			},
 		},
 	},
