@@ -133,7 +133,7 @@ export function formatSlotWithDate(slot: string): string {
 	return `${monthDay}, ${formatSlotLabel(slot)}`;
 }
 
-export interface SlotUniverseInput {
+interface SlotUniverseInput {
 	dates: string[];
 	startTime: string;
 	endTime: string;
@@ -141,7 +141,7 @@ export interface SlotUniverseInput {
 	weekdays?: number[];
 }
 
-export interface WeeklyUniverseInput {
+interface WeeklyUniverseInput {
 	weekdays: number[];
 	startTime: string;
 	endTime: string;
@@ -223,12 +223,12 @@ export function normalizeSlots(slots: string[]): string[] {
 	return [...new Set(slots)].sort();
 }
 
-export interface ParticipantSlots {
+interface ParticipantSlots {
 	name: string;
 	slots: string[];
 }
 
-export interface SlotCount {
+interface SlotCount {
 	slot: string;
 	count: number;
 	names: string[];

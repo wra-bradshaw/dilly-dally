@@ -12,8 +12,5 @@
 		"@testing-library/user-event",
 		"react-test-renderer"
 	],
-	"ignoreIssues": {
-		"src/components/ui/button.tsx": ["exports"],
-		"src/components/ui/badge.tsx": ["exports"]
-	}
+	"ignoreIssues": {}
 }

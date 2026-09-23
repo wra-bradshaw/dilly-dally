@@ -20,7 +20,7 @@ export interface GridColumn {
 	cells: GridCell[];
 }
 
-export interface DayGap {
+interface DayGap {
 	afterIndex: number;
 	afterDate: string;
 	beforeDate: string;
@@ -33,7 +33,7 @@ export interface DateMarker {
 	label: string;
 }
 
-export type TimeRow =
+type TimeRow =
 	| { kind: "cells"; rowIndex: number }
 	| { kind: "markers"; markers: (DateMarker | null)[] };
 
