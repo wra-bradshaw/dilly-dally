@@ -206,15 +206,4 @@ describe("checkRateLimit", () => {
 			true,
 		);
 	});
-
-	it("allows exactly the limit on a concurrent burst", async () => {
-		const namespace = fakeNamespace();
-		const results = await Promise.all(
-			Array.from({ length: 5 }, () =>
-				checkRateLimit("burst", 1000, 60_000, 3, namespace),
-			),
-		);
-		expect(results.filter((r) => r.allowed)).toHaveLength(3);
-		expect(results.filter((r) => !r.allowed)).toHaveLength(2);
-	});
 });

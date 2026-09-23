@@ -82,45 +82,43 @@ describe("createEventInDb", () => {
 		const { db } = await createTestDb();
 		let calls = 0;
 		const realInsert = db.insert.bind(db);
-		const flaky = Object.create(db, {
-			insert: {
-				value: (...args: unknown[]) => {
-					calls += 1;
-					if (calls === 1)
-						throw new Error("UNIQUE constraint failed: events.id");
-					return (realInsert as (...a: unknown[]) => unknown)(...args);
-				},
-			},
-		});
-		const created = await createEventInDb(
-			flaky as never,
-			datesInput([futureDate(5)]),
-			1_700_000_000_000,
-		);
-		expect(calls).toBeGreaterThan(1);
-		expect(created?.id).toBeTruthy();
-		expect(await fetchEvent(db, created?.id ?? "")).not.toBeNull();
+		const spy = vi.spyOn(db, "insert").mockImplementation(((
+			...args: unknown[]
+		) => {
+			calls += 1;
+			if (calls === 1) throw new Error("UNIQUE constraint failed: events.id");
+			return (realInsert as (...a: unknown[]) => unknown)(...args);
+		}) as never);
+		try {
+			const created = await createEventInDb(
+				db,
+				datesInput([futureDate(5)]),
+				1_700_000_000_000,
+			);
+			expect(calls).toBeGreaterThan(1);
+			expect(created?.id).toBeTruthy();
+			expect(await fetchEvent(db, created?.id ?? "")).not.toBeNull();
+		} finally {
+			spy.mockRestore();
+		}
 	});
 
 	it("returns null on non-collision errors", async () => {
 		const { db } = await createTestDb();
 		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const insertSpy = vi.spyOn(db, "insert").mockImplementation((() => {
+			throw new Error("disk I/O error");
+		}) as never);
 		try {
-			const broken = Object.create(db, {
-				insert: {
-					value: () => {
-						throw new Error("disk I/O error");
-					},
-				},
-			});
 			const created = await createEventInDb(
-				broken as never,
+				db,
 				datesInput([futureDate(5)]),
 				1_700_000_000_000,
 			);
 			expect(created).toBeNull();
 			expect(spy).toHaveBeenCalledOnce();
 		} finally {
+			insertSpy.mockRestore();
 			spy.mockRestore();
 		}
 	});
