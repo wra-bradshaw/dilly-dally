@@ -93,6 +93,60 @@ describe("upsertAvailability", () => {
 		expect(claimed.ok).toBe(true);
 		if (claimed.ok) expect(claimed.result.protected).toBe(true);
 	}, 20000);
+
+	it("survives concurrent creates for the same new name", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		const [first, second] = await Promise.all([
+			upsertAvailability(
+				db,
+				event,
+				{ name: "Race", slots: ["2026-10-05T09:00"] },
+				1000,
+			),
+			upsertAvailability(
+				db,
+				event,
+				{ name: "race", slots: ["2026-10-05T09:15"] },
+				1001,
+			),
+		]);
+		expect(first.ok).toBe(true);
+		expect(second.ok).toBe(true);
+		const stored = await getOwnAvailability(db, event, "race", null);
+		expect(stored.ok).toBe(true);
+		if (stored.ok) {
+			expect(stored.slots).toHaveLength(1);
+			expect(["2026-10-05T09:00", "2026-10-05T09:15"]).toContain(
+				stored.slots[0],
+			);
+		}
+	});
+
+	it("requires the winning password when concurrent creates race with passwords", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		const [first] = await Promise.all([
+			upsertAvailability(
+				db,
+				event,
+				{
+					name: "Racy",
+					password: "winner-secret-1",
+					slots: ["2026-10-05T09:00"],
+				},
+				1000,
+			),
+		]);
+		expect(first.ok).toBe(true);
+		const wrong = await upsertAvailability(
+			db,
+			event,
+			{ name: "racy", password: "loser-secret-2", slots: [] },
+			1001,
+		);
+		expect(wrong).toEqual({ code: "invalid_password", ok: false });
+	}, 20000);
 });
 
 describe("getOwnAvailability", () => {

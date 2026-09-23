@@ -29,48 +29,19 @@ export interface AvailabilityResult {
 	updatedAt: number;
 }
 
-export async function upsertAvailability(
+async function applyUpdate(
 	db: DrizzleDb,
 	event: DillyEvent,
+	existing: NonNullable<Awaited<ReturnType<typeof getParticipantRow>>>,
 	input: AvailabilityInput,
+	slots: string[],
 	now: number,
-	deps: {
-		hash: typeof hashPassword;
-		verify: typeof verifyPassword;
-	} = { hash: hashPassword, verify: verifyPassword },
+	deps: { hash: typeof hashPassword; verify: typeof verifyPassword },
 ): Promise<
 	| { ok: true; result: AvailabilityResult }
-	| { ok: false; code: "invalid_password" | "invalid_slot" }
+	| { ok: false; code: "invalid_password" }
 > {
-	const universe = new Set(buildEventUniverse(event));
-	for (const s of input.slots) {
-		if (!universe.has(s)) return { code: "invalid_slot", ok: false };
-	}
-	const slots = normalizeSlots(input.slots);
 	const key = nameKey(input.name);
-	const existing = await getParticipantRow(db, event.id, key);
-	if (!existing) {
-		const passwordHash = input.password
-			? await deps.hash(input.password)
-			: null;
-		await db.insert(schema.participants).values({
-			eventId: event.id,
-			nameDisplay: input.name.trim(),
-			nameKey: key,
-			passwordHash,
-			slotsJson: JSON.stringify(slots),
-			updatedAt: now,
-		});
-		return {
-			ok: true,
-			result: {
-				count: slots.length,
-				name: input.name.trim(),
-				protected: passwordHash !== null,
-				updatedAt: now,
-			},
-		};
-	}
 	if (existing.passwordHash !== null) {
 		if (!input.password) return { code: "invalid_password", ok: false };
 		const valid = await deps.verify(input.password, existing.passwordHash);
@@ -117,6 +88,66 @@ export async function upsertAvailability(
 			updatedAt: now,
 		},
 	};
+}
+
+export async function upsertAvailability(
+	db: DrizzleDb,
+	event: DillyEvent,
+	input: AvailabilityInput,
+	now: number,
+	deps: {
+		hash: typeof hashPassword;
+		verify: typeof verifyPassword;
+	} = { hash: hashPassword, verify: verifyPassword },
+): Promise<
+	| { ok: true; result: AvailabilityResult }
+	| { ok: false; code: "invalid_password" | "invalid_slot" }
+> {
+	const universe = new Set(buildEventUniverse(event));
+	for (const s of input.slots) {
+		if (!universe.has(s)) return { code: "invalid_slot", ok: false };
+	}
+	const slots = normalizeSlots(input.slots);
+	const key = nameKey(input.name);
+	const existing = await getParticipantRow(db, event.id, key);
+	if (existing) {
+		return applyUpdate(db, event, existing, input, slots, now, deps);
+	}
+	const passwordHash = input.password ? await deps.hash(input.password) : null;
+	const nameDisplay = input.name.trim();
+	await db
+		.insert(schema.participants)
+		.values({
+			eventId: event.id,
+			nameDisplay,
+			nameKey: key,
+			passwordHash,
+			slotsJson: JSON.stringify(slots),
+			updatedAt: now,
+		})
+		.onConflictDoNothing({
+			target: [schema.participants.eventId, schema.participants.nameKey],
+		});
+	const raced = await getParticipantRow(db, event.id, key);
+	if (!raced) {
+		throw new Error("Availability insert failed");
+	}
+	if (
+		raced.nameDisplay === nameDisplay &&
+		raced.slotsJson === JSON.stringify(slots) &&
+		raced.passwordHash === passwordHash
+	) {
+		return {
+			ok: true,
+			result: {
+				count: slots.length,
+				name: nameDisplay,
+				protected: passwordHash !== null,
+				updatedAt: now,
+			},
+		};
+	}
+	return applyUpdate(db, event, raced, input, slots, now, deps);
 }
 
 export async function getOwnAvailability(
