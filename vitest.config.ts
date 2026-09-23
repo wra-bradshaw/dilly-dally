@@ -1,11 +1,19 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
 	plugins: [tailwindcss(), react()],
-	resolve: { tsconfigPaths: true },
+	resolve: {
+		tsconfigPaths: true,
+		alias: {
+			"cloudflare:workers": fileURLToPath(
+				new URL("./vitest.cloudflare-stub.ts", import.meta.url),
+			),
+		},
+	},
 	test: {
 		setupFiles: ["./vitest.setup.ts"],
 		projects: [
