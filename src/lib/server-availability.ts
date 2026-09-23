@@ -14,13 +14,7 @@ import {
 	findBestTimes,
 	normalizeSlots,
 } from "./time-slots";
-import { nameKey } from "./validation";
-
-export interface AvailabilityInput {
-	name: string;
-	password?: string;
-	slots: string[];
-}
+import { type AvailabilityInput, nameKey } from "./validation";
 
 export interface AvailabilityResult {
 	name: string;
