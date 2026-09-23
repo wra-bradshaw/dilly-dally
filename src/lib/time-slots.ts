@@ -1,5 +1,33 @@
 const SLOT_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):(00|15|30|45)$/;
+const WEEKLY_SLOT_RE =
+	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|15|30|45)$/;
 const HOUR_RE = /^([01]\d|2[0-3]):00$/;
+
+export const WEEKDAY_CODES = [
+	"SUN",
+	"MON",
+	"TUE",
+	"WED",
+	"THU",
+	"FRI",
+	"SAT",
+] as const;
+
+export type EventMode = "dates" | "weekly";
+
+export function weekdayCode(weekday: number): string | null {
+	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return null;
+	return WEEKDAY_CODES[weekday] as string;
+}
+
+export function weekdayForCode(code: string): number | null {
+	const idx = (WEEKDAY_CODES as readonly string[]).indexOf(code);
+	return idx === -1 ? null : idx;
+}
+
+export function isWeeklySlotId(slot: string): boolean {
+	return WEEKLY_SLOT_RE.test(slot);
+}
 
 function wallInZone(ms: number, tz: string): number {
 	const fmt = new Intl.DateTimeFormat("en-CA", {
@@ -64,6 +92,31 @@ export function formatSlotLabel(slot: string): string {
 	return `${h}:${mm} ${suffix}`;
 }
 
+export function formatWeeklySlot(slot: string): string {
+	const dash = slot.indexOf("-");
+	if (dash === -1 || !isWeeklySlotId(slot)) return slot;
+	const code = slot.slice(0, dash);
+	const time = slot.slice(dash + 1);
+	const idx = weekdayForCode(code);
+	const day =
+		idx === null
+			? code
+			: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][idx];
+	return `${day}, ${formatSlotLabel(`2000-01-01T${time}`)}`;
+}
+
+export function weeklySlotRank(slot: string): number | null {
+	const dash = slot.indexOf("-");
+	if (dash === -1 || !isWeeklySlotId(slot)) return null;
+	const idx = weekdayForCode(slot.slice(0, dash));
+	if (idx === null) return null;
+	const [h, m] = slot
+		.slice(dash + 1)
+		.split(":")
+		.map(Number);
+	return idx * 24 * 60 + h * 60 + m;
+}
+
 export function formatSlotWithDate(slot: string): string {
 	const [date] = slot.split("T");
 	const [y, m, d] = date.split("-").map(Number);
@@ -78,6 +131,14 @@ export function formatSlotWithDate(slot: string): string {
 
 export interface SlotUniverseInput {
 	dates: string[];
+	startTime: string;
+	endTime: string;
+	mode?: EventMode;
+	weekdays?: number[];
+}
+
+export interface WeeklyUniverseInput {
+	weekdays: number[];
 	startTime: string;
 	endTime: string;
 }
@@ -105,6 +166,13 @@ function hourToMinutes(t: string): number | null {
 }
 
 export function buildSlotUniverse(input: SlotUniverseInput): string[] {
+	if (input.mode === "weekly") {
+		return buildWeeklyUniverse({
+			endTime: input.endTime,
+			startTime: input.startTime,
+			weekdays: input.weekdays ?? [],
+		});
+	}
 	const start = hourToMinutes(input.startTime);
 	const end = hourToMinutes(input.endTime);
 	if (start === null || end === null) return [];
@@ -119,6 +187,48 @@ export function buildSlotUniverse(input: SlotUniverseInput): string[] {
 		}
 	}
 	return out;
+}
+
+export function buildWeeklyUniverse(input: WeeklyUniverseInput): string[] {
+	const start = hourToMinutes(input.startTime);
+	const end = hourToMinutes(input.endTime);
+	if (start === null || end === null) return [];
+	if (start >= end) return [];
+	const weekdays = [...new Set(input.weekdays)]
+		.filter((w) => Number.isInteger(w) && w >= 0 && w <= 6)
+		.sort((a, b) => a - b);
+	const out: string[] = [];
+	for (const weekday of weekdays) {
+		const code = weekdayCode(weekday);
+		if (code === null) continue;
+		for (let mins = start; mins < end; mins += 15) {
+			const h = String(Math.floor(mins / 60)).padStart(2, "0");
+			const mm = String(mins % 60).padStart(2, "0");
+			out.push(`${code}-${h}:${mm}`);
+		}
+	}
+	return out;
+}
+
+export function buildEventUniverse(event: {
+	mode?: EventMode;
+	dates: string[];
+	weekdays?: number[];
+	startTime: string;
+	endTime: string;
+}): string[] {
+	if ((event.mode ?? "dates") === "weekly") {
+		return buildWeeklyUniverse({
+			endTime: event.endTime,
+			startTime: event.startTime,
+			weekdays: event.weekdays ?? [],
+		});
+	}
+	return buildSlotUniverse({
+		dates: event.dates,
+		endTime: event.endTime,
+		startTime: event.startTime,
+	});
 }
 
 export function normalizeSlots(slots: string[]): string[] {
