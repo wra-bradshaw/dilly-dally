@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "#/lib/utils";
-import { formatViewerSlot, type GridColumn } from "./grid-model";
+import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
 import { TimeGrid } from "./time-grid";
 
 interface CellCount {
@@ -26,6 +26,50 @@ export function GroupHeatmap({
 	viewTimezone,
 }: GroupHeatmapProps) {
 	const [hovered, setHovered] = useState<string | null>(null);
+	const tableRef = useRef<HTMLTableElement>(null);
+	const values = useMemo(
+		() => columns.flatMap((c) => c.cells.map((cell) => cell.id)),
+		[columns],
+	);
+	const pos = useMemo(() => buildGridPos(columns), [columns]);
+	const [focusId, setFocusId] = useState<string | null>(null);
+	const roving = focusId ?? values[0] ?? null;
+
+	const focusCell = (id: string) => {
+		setFocusId(id);
+		tableRef.current
+			?.querySelector<HTMLButtonElement>(`[data-cell="${id}"]`)
+			?.focus();
+	};
+
+	const moveFocus = (id: string, dc: number, dr: number) => {
+		const p = pos.get(id);
+		if (!p) return;
+		const nc = Math.min(columns.length - 1, Math.max(0, p.c + dc));
+		const rows = columns[nc]?.cells ?? [];
+		const nr = Math.min(rows.length - 1, Math.max(0, p.r + dr));
+		const target = rows[nr]?.id;
+		if (target) focusCell(target);
+	};
+
+	const onGridKeyDown = (e: React.KeyboardEvent) => {
+		const active = document.activeElement as HTMLElement | null;
+		const id = active?.dataset?.cell ?? roving;
+		if (!id) return;
+		if (e.key === "ArrowRight") {
+			e.preventDefault();
+			moveFocus(id, 1, 0);
+		} else if (e.key === "ArrowLeft") {
+			e.preventDefault();
+			moveFocus(id, -1, 0);
+		} else if (e.key === "ArrowDown") {
+			e.preventDefault();
+			moveFocus(id, 0, 1);
+		} else if (e.key === "ArrowUp") {
+			e.preventDefault();
+			moveFocus(id, 0, -1);
+		}
+	};
 	const max = useMemo(() => {
 		let top = 1;
 		for (const c of counts.values()) {
@@ -48,19 +92,24 @@ export function GroupHeatmap({
 			<div className="overflow-x-auto pb-2">
 				<TimeGrid
 					columns={columns}
+					onKeyDown={onGridKeyDown}
 					renderCell={(cell, ctx) => (
 						<button
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
-								"block h-6 w-full cursor-default border-r border-b border-l first:border-t",
+								"block h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold first:border-t",
 								(counts.get(cell.id)?.count ?? 0) === 0
-									? "border-rose-200 bg-rose-50"
-									: "border-emerald-800",
+									? "border-rose-200 bg-rose-50 text-rose-400"
+									: "border-emerald-800 text-emerald-950 underline decoration-emerald-900/40 underline-offset-2",
 								ctx.afterBreak && "border-t-2 border-t-foreground/50",
 								hovered === cell.id && "ring-2 ring-primary",
 							)}
+							data-cell={cell.id}
 							onClick={() => setHovered(cell.id)}
-							onFocus={() => setHovered(cell.id)}
+							onFocus={() => {
+								setFocusId(cell.id);
+								setHovered(cell.id);
+							}}
 							onMouseEnter={() => setHovered(cell.id)}
 							onMouseLeave={() => setHovered(null)}
 							style={
@@ -70,11 +119,16 @@ export function GroupHeatmap({
 											backgroundColor: `rgba(16, 122, 87, ${0.15 + (0.75 * (counts.get(cell.id)?.count ?? 0)) / max})`,
 										}
 							}
-							tabIndex={-1}
+							tabIndex={cell.id === roving ? 0 : -1}
 							type="button"
-						/>
+						>
+							{(counts.get(cell.id)?.count ?? 0) > 0
+								? String(counts.get(cell.id)?.count)
+								: ""}
+						</button>
 					)}
-					tableLabel="Group availability. Darker green means more people are free."
+					tableLabel="Group availability. Darker green means more people are free. Counts are shown as numbers."
+					tableRef={tableRef}
 				/>
 			</div>
 			<div

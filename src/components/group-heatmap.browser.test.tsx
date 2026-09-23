@@ -16,6 +16,18 @@ function crossingColumns() {
 	);
 }
 
+function singleColumn() {
+	return buildColumns(
+		[
+			"2026-09-28T09:00",
+			"2026-09-28T09:15",
+			"2026-09-28T09:30",
+			"2026-09-28T09:45",
+		],
+		"UTC",
+		"UTC",
+	);
+}
 test("heatmap shares inline date markers with the paint grid", async () => {
 	const cols = crossingColumns();
 	const counts = new Map(
@@ -36,4 +48,36 @@ test("heatmap shares inline date markers with the paint grid", async () => {
 	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
 	await expect.element(screen.getByText("Tue, 10/6")).toBeVisible();
 	expect(screen.getByText("Shows as").all()).toHaveLength(0);
+});
+
+test("arrow keys move focus between heatmap slots and announce counts", async () => {
+	const cols = singleColumn();
+	const counts = new Map(
+		cols.flatMap((c) =>
+			c.cells.map((cell) => [cell.id, { count: 1, names: ["Ada"] }]),
+		),
+	);
+	const screen = await render(
+		<GroupHeatmap
+			allNames={["Ada"]}
+			columns={cols}
+			counts={counts}
+			eventTimezone="UTC"
+			total={1}
+			viewTimezone="UTC"
+		/>,
+	);
+	const first = screen.getByRole("button", { name: /9:00 AM/ });
+	await expect.element(first).toBeVisible();
+	await first.click();
+	first.element().dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "ArrowDown",
+		}),
+	);
+	const second = screen.getByRole("button", { name: /9:15 AM/ });
+	await expect.element(second).toHaveFocus();
+	await expect.element(screen.getByText("1/1 available")).toBeVisible();
 });
