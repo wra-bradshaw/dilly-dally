@@ -78,9 +78,9 @@ export function GroupHeatmap({
 				/>
 			</div>
 			<div
-			aria-live="polite"
-			className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
-		>
+				aria-live="polite"
+				className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
+			>
 				{info && hovered ? (
 					<div>
 						<div className="font-semibold">

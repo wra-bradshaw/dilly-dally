@@ -165,9 +165,10 @@ describe("buildColumns", () => {
 			"UTC",
 			"UTC",
 		);
-		expect(
-			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:00"),
-		).toEqual(["2026-10-05T09:00", "2026-10-06T09:00"]);
+		expect(rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:00")).toEqual([
+			"2026-10-05T09:00",
+			"2026-10-06T09:00",
+		]);
 	});
 
 	it("paints only real columns when a gap sits inside the rectangle", () => {

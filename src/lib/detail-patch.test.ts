@@ -36,12 +36,16 @@ describe("patchDetailForSave", () => {
 			new Set(["2026-10-05T09:00"]),
 			new Date(3000).toISOString(),
 		);
-		expect(
-			out.counts.find((c) => c.slot === "2026-10-05T09:00"),
-		).toEqual({ count: 2, names: ["Ada", "Bob"], slot: "2026-10-05T09:00" });
-		expect(
-			out.counts.find((c) => c.slot === "2026-10-05T09:15"),
-		).toEqual({ count: 1, names: ["Bob"], slot: "2026-10-05T09:15" });
+		expect(out.counts.find((c) => c.slot === "2026-10-05T09:00")).toEqual({
+			count: 2,
+			names: ["Ada", "Bob"],
+			slot: "2026-10-05T09:00",
+		});
+		expect(out.counts.find((c) => c.slot === "2026-10-05T09:15")).toEqual({
+			count: 1,
+			names: ["Bob"],
+			slot: "2026-10-05T09:15",
+		});
 		expect(out.participants).toContainEqual({
 			count: 1,
 			name: "Ada",

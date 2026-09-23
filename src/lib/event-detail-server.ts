@@ -3,8 +3,8 @@ import { clientIp } from "./api-errors";
 import { type EventDetailResponse, HttpError } from "./client";
 import { getDb } from "./db-env";
 import { RATE_LIMITS, rateLimitKey } from "./rate-limit";
-import { checkRateLimitDb } from "./server-rate-limit";
 import { loadEventDetailFromDb } from "./server-event-detail";
+import { checkRateLimitDb } from "./server-rate-limit";
 
 type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
@@ -32,22 +32,28 @@ export const fetchEventDetailServerFn = createServerFn({ method: "GET" })
 		}
 		return id;
 	})
-	.handler(async ({ context, data: eventId }): Promise<EventDetailServerResult> => {
-		try {
-			if (context.readRateLimited) {
-				throw new HttpError(429, "rate_limited", "Too many requests");
+	.handler(
+		async ({ context, data: eventId }): Promise<EventDetailServerResult> => {
+			try {
+				if (context.readRateLimited) {
+					throw new HttpError(429, "rate_limited", "Too many requests");
+				}
+				const detail = await loadEventDetailFromDb(
+					getDb(),
+					eventId,
+					Date.now(),
+				);
+				return { detail, ok: true };
+			} catch (err) {
+				if (err instanceof HttpError) {
+					return {
+						code: err.code,
+						message: err.message,
+						ok: false,
+						status: err.status,
+					};
+				}
+				throw err;
 			}
-			const detail = await loadEventDetailFromDb(getDb(), eventId, Date.now());
-			return { detail, ok: true };
-		} catch (err) {
-			if (err instanceof HttpError) {
-				return {
-					code: err.code,
-					message: err.message,
-					ok: false,
-					status: err.status,
-				};
-			}
-			throw err;
-		}
-	});
+		},
+	);

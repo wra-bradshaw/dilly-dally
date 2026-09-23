@@ -238,7 +238,11 @@ function Home() {
 									No earlier than
 								</span>
 								<Select onValueChange={setStartTime} value={startTime}>
-									<SelectTrigger aria-label="No earlier than" className="w-32" type="button">
+									<SelectTrigger
+										aria-label="No earlier than"
+										className="w-32"
+										type="button"
+									>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -253,7 +257,11 @@ function Home() {
 									No later than
 								</span>
 								<Select onValueChange={setEndTime} value={endTime}>
-									<SelectTrigger aria-label="No later than" className="w-32" type="button">
+									<SelectTrigger
+										aria-label="No later than"
+										className="w-32"
+										type="button"
+									>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>

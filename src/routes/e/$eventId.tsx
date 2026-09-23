@@ -21,14 +21,14 @@ import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
 import {
+	type EventDetailResponse,
 	fetchOwnAvailability,
 	HttpError,
 	saveAvailability,
-	type EventDetailResponse,
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
-import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-server";
+import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
@@ -51,8 +51,7 @@ export const Route = createFileRoute("/e/$eventId")({
 
 function EventError({ error }: { error: unknown }) {
 	const gone = error instanceof HttpError && error.code === "gone";
-	const limited =
-		!gone && error instanceof HttpError && error.status === 429;
+	const limited = !gone && error instanceof HttpError && error.status === 429;
 	return (
 		<div className="page-wrap py-16 text-center">
 			<h1 className="display-title text-3xl font-bold">
@@ -264,9 +263,7 @@ function EventPage() {
 		const err = detail.error;
 		const gone = err instanceof HttpError && err.code === "gone";
 		const retryable =
-			!(err instanceof HttpError) ||
-			err.status === 429 ||
-			err.status >= 500;
+			!(err instanceof HttpError) || err.status === 429 || err.status >= 500;
 		if (retryable && !gone) {
 			return (
 				<div className="page-wrap py-16 text-center">
@@ -310,10 +307,7 @@ function EventPage() {
 	return (
 		<div className="page-wrap rise-in pb-16">
 			{stale && (
-				<p
-					className="mt-4 rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground"
-					role="status"
-				>
+				<output className="mt-4 block rounded-xl border border-input bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					Couldn&apos;t refresh — showing the last update.{" "}
 					<button
 						className="nav-link text-sm"
@@ -322,7 +316,7 @@ function EventPage() {
 					>
 						Retry
 					</button>
-				</p>
+				</output>
 			)}
 			<header className="flex items-center justify-between py-5">
 				<a className="display-title text-2xl font-bold" href="/">

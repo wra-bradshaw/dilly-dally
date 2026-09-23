@@ -38,7 +38,12 @@ export function useOwnAvailabilityRestore(options: {
 	const [status, setStatus] = useState<OwnAvailabilityRestoreStatus>(() =>
 		storedName.trim() === "" ? "idle" : "restoring",
 	);
-	const callbacksRef = useRef({ onCleared, onGone, onNeedsPassword, onRestored });
+	const callbacksRef = useRef({
+		onCleared,
+		onGone,
+		onNeedsPassword,
+		onRestored,
+	});
 	useEffect(() => {
 		callbacksRef.current = { onCleared, onGone, onNeedsPassword, onRestored };
 	});
