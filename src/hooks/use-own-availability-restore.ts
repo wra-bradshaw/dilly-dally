@@ -5,7 +5,8 @@ export type OwnAvailabilityRestoreStatus =
 	| "idle"
 	| "restoring"
 	| "needs-password"
-	| "ready";
+	| "ready"
+	| "failed";
 
 export interface OwnAvailabilityRestoreResult {
 	name: string;
@@ -15,13 +16,15 @@ export interface OwnAvailabilityRestoreResult {
 export function useOwnAvailabilityRestore(options: {
 	eventId: string;
 	storedName: string;
+	eventMissing?: boolean;
 	fetchAvailability?: typeof fetchOwnAvailability;
 	onRestored: (own: OwnAvailabilityRestoreResult) => void;
 	onNeedsPassword?: (name: string) => void;
 	onCleared?: () => void;
-}): OwnAvailabilityRestoreStatus {
+}): { retry: () => void; status: OwnAvailabilityRestoreStatus } {
 	const {
 		eventId,
+		eventMissing = false,
 		fetchAvailability = fetchOwnAvailability,
 		onCleared,
 		onNeedsPassword,
@@ -54,17 +57,26 @@ export function useOwnAvailabilityRestore(options: {
 				if (err instanceof HttpError && err.code === "invalid_password") {
 					callbacksRef.current.onNeedsPassword?.(name);
 					setStatus("needs-password");
-				} else if (err instanceof HttpError && err.status === 404) {
+				} else if (
+					err instanceof HttpError &&
+					(err.code === "availability_not_found" ||
+						(err.status === 404 && !eventMissing))
+				) {
 					callbacksRef.current.onCleared?.();
 					setStatus("ready");
 				} else {
-					setStatus("ready");
+					setStatus("failed");
 				}
 			},
 		);
 		return () => {
 			cancelled = true;
 		};
-	}, [status, eventId, storedName, fetchAvailability]);
-	return status;
+	}, [status, eventId, storedName, fetchAvailability, eventMissing]);
+	return {
+		retry: () => {
+			setStatus("restoring");
+		},
+		status,
+	};
 }

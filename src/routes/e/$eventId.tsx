@@ -72,6 +72,10 @@ function inviteUrl(eventId: string): string {
 function EventPage() {
 	const { eventId } = Route.useParams();
 	const detail = useEventDetail(eventId);
+	const eventMissing =
+		detail.isError &&
+		detail.error instanceof HttpError &&
+		(detail.error.status === 404 || detail.error.status === 410);
 	const queryClient = useQueryClient();
 	const { copied, copy } = useCopyToClipboard();
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
@@ -83,26 +87,28 @@ function EventPage() {
 	const [saveState, setSaveState] = useState("");
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
-	const restoreStatus = useOwnAvailabilityRestore({
-		eventId,
-		fetchAvailability: fetchOwnAvailability,
-		onCleared: () => {
-			setSelected(new Set());
-		},
-		onNeedsPassword: (name) => {
-			setName(name);
-			setSignedIn(false);
-			setSignError("Enter your password to continue.");
-		},
-		onRestored: (own) => {
-			setSelected(new Set(own.slots));
-			setActiveName(own.name);
-			setStoredName(own.name);
-			setName(own.name);
-			setSignedIn(true);
-		},
-		storedName,
-	});
+	const { retry: retryRestore, status: restoreStatus } =
+		useOwnAvailabilityRestore({
+			eventId,
+			eventMissing,
+			fetchAvailability: fetchOwnAvailability,
+			onCleared: () => {
+				setSelected(new Set());
+			},
+			onNeedsPassword: (name) => {
+				setName(name);
+				setSignedIn(false);
+				setSignError("Enter your password to continue.");
+			},
+			onRestored: (own) => {
+				setSelected(new Set(own.slots));
+				setActiveName(own.name);
+				setStoredName(own.name);
+				setName(own.name);
+				setSignedIn(true);
+			},
+			storedName,
+		});
 	const [view, setView] = useLocalStorage("dd:tz-view", "event");
 
 	const event = detail.data?.event;
@@ -161,10 +167,22 @@ function EventPage() {
 				setSignError("That name is taken with a different password.");
 				return;
 			}
-			if (err instanceof HttpError && err.status === 404) {
+			if (
+				err instanceof HttpError &&
+				(err.code === "availability_not_found" ||
+					(err.status === 404 && !eventMissing))
+			) {
 				setSelected(new Set());
 				setActiveName(name.trim());
 				setStoredName(name.trim());
+			} else if (
+				err instanceof HttpError &&
+				(err.code === "gone" ||
+					(err.status === 404 && eventMissing) ||
+					err.status === 410)
+			) {
+				setSignError("This event is gone. Check the link and try again.");
+				return;
 			} else {
 				setSignError("Could not sign in. Try again.");
 				return;
@@ -389,9 +407,23 @@ function EventPage() {
 							{restoreStatus === "restoring" && (
 								<p className="mb-2 text-sm text-muted-foreground">Restoring…</p>
 							)}
+							{restoreStatus === "failed" && (
+								<p className="mb-2 text-sm text-muted-foreground">
+									Could not restore your availability.{" "}
+									<button
+										className="nav-link text-sm"
+										onClick={retryRestore}
+										type="button"
+									>
+										Retry
+									</button>
+								</p>
+							)}
 							<AvailabilityGrid
 								columns={columns}
-								disabled={restoreStatus === "restoring"}
+								disabled={
+									restoreStatus === "restoring" || restoreStatus === "failed"
+								}
 								onCommit={commit}
 								selected={selected}
 							/>

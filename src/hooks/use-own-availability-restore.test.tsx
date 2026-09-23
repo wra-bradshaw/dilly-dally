@@ -7,6 +7,7 @@ const eventId = "AbC123_-XyZ9";
 
 function setup(options: {
 	storedName: string;
+	eventMissing?: boolean;
 	fetchAvailability: (
 		eventId: string,
 		name: string,
@@ -22,6 +23,7 @@ function setup(options: {
 		({ storedName }) =>
 			useOwnAvailabilityRestore({
 				eventId,
+				eventMissing: options.eventMissing,
 				fetchAvailability: options.fetchAvailability as never,
 				onCleared: () => onCleared(),
 				onNeedsPassword: (name) => onNeedsPassword(name),
@@ -43,8 +45,8 @@ describe("useOwnAvailabilityRestore", () => {
 			fetchAvailability,
 			storedName: "Ada",
 		});
-		expect(hook.result.current).toBe("restoring");
-		await waitFor(() => expect(hook.result.current).toBe("ready"));
+		expect(hook.result.current.status).toBe("restoring");
+		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
 		expect(fetchAvailability).toHaveBeenCalledWith(eventId, "Ada", undefined);
 		expect(onRestored).toHaveBeenCalledWith({
 			name: "Ada",
@@ -62,7 +64,9 @@ describe("useOwnAvailabilityRestore", () => {
 			fetchAvailability,
 			storedName: "Ada",
 		});
-		await waitFor(() => expect(hook.result.current).toBe("needs-password"));
+		await waitFor(() =>
+			expect(hook.result.current.status).toBe("needs-password"),
+		);
 		expect(onRestored).not.toHaveBeenCalled();
 		expect(onNeedsPassword).toHaveBeenCalledWith("Ada");
 		expect(fetchAvailability).toHaveBeenCalledWith(eventId, "Ada", undefined);
@@ -71,14 +75,46 @@ describe("useOwnAvailabilityRestore", () => {
 	it("clears selection when the stored name is gone", async () => {
 		const fetchAvailability = vi
 			.fn()
-			.mockRejectedValue(new HttpError(404, "not_found", "No availability"));
+			.mockRejectedValue(
+				new HttpError(404, "availability_not_found", "No availability"),
+			);
 		const { hook, onCleared, onRestored } = setup({
 			fetchAvailability,
 			storedName: "Ada",
 		});
-		await waitFor(() => expect(hook.result.current).toBe("ready"));
+		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
 		expect(onRestored).not.toHaveBeenCalled();
 		expect(onCleared).toHaveBeenCalledTimes(1);
+	});
+
+	it("treats a missing event as failed instead of clearing", async () => {
+		const fetchAvailability = vi
+			.fn()
+			.mockRejectedValue(new HttpError(404, "not_found", "Event not found"));
+		const { hook, onCleared } = setup({
+			eventMissing: true,
+			fetchAvailability,
+			storedName: "Ada",
+		});
+		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
+		expect(onCleared).not.toHaveBeenCalled();
+	});
+
+	it("reports failed and retries after a network error", async () => {
+		const fetchAvailability = vi
+			.fn()
+			.mockRejectedValueOnce(new TypeError("offline"))
+			.mockResolvedValueOnce({ name: "Ada", slots: [] });
+		const { hook, onRestored } = setup({
+			fetchAvailability,
+			storedName: "Ada",
+		});
+		await waitFor(() => expect(hook.result.current.status).toBe("failed"));
+		expect(onRestored).not.toHaveBeenCalled();
+		hook.result.current.retry();
+		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
+		expect(fetchAvailability).toHaveBeenCalledTimes(2);
+		expect(onRestored).toHaveBeenCalledTimes(1);
 	});
 
 	it("fetches once across parent re-renders while restoring", async () => {
@@ -90,18 +126,18 @@ describe("useOwnAvailabilityRestore", () => {
 				}),
 		);
 		const { hook } = setup({ fetchAvailability, storedName: "Ada" });
-		expect(hook.result.current).toBe("restoring");
+		expect(hook.result.current.status).toBe("restoring");
 		hook.rerender({ storedName: "Ada" } as never);
 		hook.rerender({ storedName: "Ada" } as never);
 		resolveFetch({ name: "Ada", slots: [] });
-		await waitFor(() => expect(hook.result.current).toBe("ready"));
+		await waitFor(() => expect(hook.result.current.status).toBe("ready"));
 		expect(fetchAvailability).toHaveBeenCalledTimes(1);
 	});
 
 	it("stays idle without fetching when no name is stored", () => {
 		const fetchAvailability = vi.fn();
 		const { hook } = setup({ fetchAvailability, storedName: "   " });
-		expect(hook.result.current).toBe("idle");
+		expect(hook.result.current.status).toBe("idle");
 		expect(fetchAvailability).not.toHaveBeenCalled();
 	});
 });

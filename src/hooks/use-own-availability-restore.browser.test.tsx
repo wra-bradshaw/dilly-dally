@@ -30,7 +30,7 @@ function Harness({
 	const [password, setPassword] = useState("");
 	const [signedIn, setSignedIn] = useState(storedName.trim() !== "");
 	const [selected, setSelected] = useState<Set<string>>(new Set());
-	const status = useOwnAvailabilityRestore({
+	const { status } = useOwnAvailabilityRestore({
 		eventId,
 		fetchAvailability,
 		onCleared: () => setSelected(new Set()),
