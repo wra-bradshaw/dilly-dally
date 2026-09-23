@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { buildColumns } from "./grid-model";
-import { GroupHeatmap } from "./group-heatmap";
+import { GroupHeatmap, heatmapAlpha } from "./group-heatmap";
 
 function cols() {
 	return buildColumns(
@@ -36,6 +36,41 @@ function ui() {
 		/>
 	);
 }
+
+describe("GroupHeatmap contrast", () => {
+	it("caps cell alpha at 0.6 so dark count text keeps contrast", () => {
+		expect(heatmapAlpha(1, 1)).toBeCloseTo(0.6, 5);
+		expect(heatmapAlpha(99, 1)).toBeCloseTo(0.6, 5);
+		expect(heatmapAlpha(1, 2)).toBeCloseTo(0.375, 5);
+		expect(heatmapAlpha(0, 4)).toBeCloseTo(0.15, 5);
+	});
+
+	it("leaves zero-count cells unfilled", () => {
+		const columns = cols();
+		const ids = columns.flatMap((c) => c.cells.map((cell) => cell.id));
+		const mixed = new Map(
+			ids.map((id, i) => [
+				id,
+				i === 0
+					? { count: 0, names: [] as string[] }
+					: { count: 1, names: ["Ada"] },
+			]),
+		);
+		render(
+			<GroupHeatmap
+				allNames={["Ada"]}
+				columns={columns}
+				counts={mixed}
+				eventTimezone="UTC"
+				total={1}
+				viewTimezone="UTC"
+			/>,
+		);
+		const [first, second] = screen.getAllByRole("button");
+		expect((first as HTMLElement).style.backgroundColor).toBe("");
+		expect((second as HTMLElement).style.backgroundColor).not.toBe("");
+	});
+});
 
 describe("GroupHeatmap hover focus", () => {
 	it("keeps the keyboard-focused panel when the mouse leaves another cell", () => {

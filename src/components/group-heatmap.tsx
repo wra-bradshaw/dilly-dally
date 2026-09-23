@@ -9,6 +9,12 @@ interface CellCount {
 	names: string[];
 }
 
+export function heatmapAlpha(count: number, max: number): number {
+	if (!(max > 0)) return 0.15;
+	const ratio = Math.min(1, Math.max(0, count / max));
+	return 0.15 + 0.45 * ratio;
+}
+
 interface GroupHeatmapProps {
 	columns: GridColumn[];
 	counts: Map<string, CellCount>;
@@ -110,7 +116,7 @@ export function GroupHeatmap({
 								(counts.get(cell.id)?.count ?? 0) === 0
 									? undefined
 									: {
-											backgroundColor: `rgba(16, 122, 87, ${0.15 + (0.75 * (counts.get(cell.id)?.count ?? 0)) / max})`,
+											backgroundColor: `rgba(16, 122, 87, ${heatmapAlpha(counts.get(cell.id)?.count ?? 0, max)})`,
 										}
 							}
 							tabIndex={cell.id === roving ? 0 : -1}
