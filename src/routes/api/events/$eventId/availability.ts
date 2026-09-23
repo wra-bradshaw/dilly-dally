@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { clientIp, contentLengthTooLarge, isJsonContentType, jsonError, rateLimited, zodFields } from "#/lib/api-errors";
+import {
+	clientIp,
+	contentLengthTooLarge,
+	isJsonContentType,
+	jsonError,
+	rateLimited,
+	zodFields,
+} from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS, rateLimitKey } from "#/lib/rate-limit";
@@ -26,7 +33,11 @@ async function saveAvailability(request: Request, eventId: string) {
 	if (contentLengthTooLarge(request))
 		return jsonError("bad_request", "Payload too large", 413);
 	if (!isJsonContentType(request))
-		return jsonError("bad_request", "Content-Type must be application/json", 415);
+		return jsonError(
+			"bad_request",
+			"Content-Type must be application/json",
+			415,
+		);
 	let raw: unknown;
 	try {
 		raw =

@@ -8,7 +8,13 @@ import { checkRateLimitDb } from "./server-rate-limit";
 
 type EventDetailServerResult =
 	| { detail: EventDetailResponse; ok: true }
-	| { code: string; message: string; ok: false; retryAfter?: number; status: number };
+	| {
+			code: string;
+			message: string;
+			ok: false;
+			retryAfter?: number;
+			status: number;
+	  };
 
 const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {

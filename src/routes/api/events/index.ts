@@ -45,7 +45,11 @@ export const Route = createFileRoute("/api/events/")({
 				if (contentLengthTooLarge(request))
 					return jsonError("bad_request", "Payload too large", 413);
 				if (!isJsonContentType(request))
-					return jsonError("bad_request", "Content-Type must be application/json", 415);
+					return jsonError(
+						"bad_request",
+						"Content-Type must be application/json",
+						415,
+					);
 				let raw: unknown;
 				try {
 					raw =
