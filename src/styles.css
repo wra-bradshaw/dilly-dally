@@ -119,6 +119,35 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  --text-xs: 1rem;
+  --text-xs--line-height: 1.3333rem;
+  --text-sm: 1.1667rem;
+  --text-sm--line-height: 1.6667rem;
+  --text-base: 1.3333rem;
+  --text-base--line-height: 2rem;
+  --text-lg: 1.5rem;
+  --text-lg--line-height: 2.3333rem;
+  --text-xl: 1.6667rem;
+  --text-xl--line-height: 2.3333rem;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 2.6667rem;
+  --text-3xl: 2.5rem;
+  --text-3xl--line-height: 3rem;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 3.3333rem;
+  --text-5xl: 4rem;
+  --text-5xl--line-height: 1.3333;
+  --text-6xl: 5rem;
+  --text-6xl--line-height: 1.3333;
+  --text-7xl: 6rem;
+  --text-7xl--line-height: 1.3333;
+  --text-8xl: 8rem;
+  --text-8xl--line-height: 1.3333;
+  --text-9xl: 10.6667rem;
+  --text-9xl--line-height: 1.3333;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
