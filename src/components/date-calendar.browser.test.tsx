@@ -13,7 +13,7 @@ test("clicking a day selects that date for the new event", async () => {
 		/>,
 	);
 
-	const day = screen.getByRole("button", { name: "28" });
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
 	await expect.element(day).toBeVisible();
 	await day.click();
 	expect(onCommit).toHaveBeenCalledTimes(1);
@@ -31,10 +31,13 @@ test("dates outside the event window cannot be picked", async () => {
 		/>,
 	);
 
-	const day = screen.getByRole("button", { name: "28" });
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
 	await expect.element(day).toBeVisible();
-	const offDay = screen.getByRole("button", { name: "22" });
-	await expect.element(offDay).toBeDisabled();
+	const offDay = screen.container.querySelector<HTMLButtonElement>(
+		'[data-day="2026-09-22"]',
+	);
+	expect(offDay?.disabled).toBe(true);
+	expect(offDay?.getAttribute("aria-hidden")).toBe("true");
 });
 
 test("dragging across days selects every date in between", async () => {
@@ -48,8 +51,8 @@ test("dragging across days selects every date in between", async () => {
 		/>,
 	);
 
-	const first = screen.getByRole("button", { name: "24" });
-	const last = screen.getByRole("button", { name: "27" });
+	const first = screen.getByRole("button", { name: "Thu, 9/24" });
+	const last = screen.getByRole("button", { name: "Sun, 9/27" });
 	await expect.element(first).toBeVisible();
 	await first.dropTo(last);
 	expect(onCommit).toHaveBeenCalledTimes(1);
