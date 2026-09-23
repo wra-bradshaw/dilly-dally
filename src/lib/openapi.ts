@@ -288,6 +288,22 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							},
 							description: "Validation error",
 						},
+						"413": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Payload too large",
+						},
+						"415": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Content-Type must be application/json",
+						},
 						"429": {
 							content: {
 								"application/json": {
@@ -489,6 +505,22 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							},
 							description: "Expired",
 						},
+						"413": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Payload too large",
+						},
+						"415": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Content-Type must be application/json",
+						},
 						"422": {
 							content: {
 								"application/json": {
@@ -507,6 +539,100 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 					},
 					summary: "Create or update availability",
+				},
+				post: {
+					operationId: "postAvailability",
+					parameters: [
+						{
+							in: "path",
+							name: "id",
+							required: true,
+							schema: { type: "string" },
+						},
+					],
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: { $ref: "#/components/schemas/AvailabilityRequest" },
+							},
+						},
+						required: true,
+					},
+					responses: {
+						"200": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/AvailabilityResponse" },
+								},
+							},
+							description: "Saved",
+						},
+						"400": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Validation error",
+						},
+						"401": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Invalid password",
+						},
+						"404": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Not found",
+						},
+						"410": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Expired",
+						},
+						"413": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Payload too large",
+						},
+						"415": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Content-Type must be application/json",
+						},
+						"422": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Invalid slot",
+						},
+						"429": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Rate limited",
+						},
+					},
+					summary: "Create or update availability (alias of PUT)",
 				},
 			},
 		},

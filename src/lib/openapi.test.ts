@@ -26,4 +26,24 @@ describe("openapi availability errors", () => {
 			"availability_not_found",
 		);
 	});
+
+	it("documents POST as a PUT alias with matching responses", () => {
+		expect(availability.post.responses["200"]).toBeDefined();
+		expect(availability.post.responses["422"]).toBeDefined();
+		expect(availability.post.responses["429"]).toBeDefined();
+	});
+
+	it("documents payload guards on create and availability writes", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const create = spec.paths["/api/events"] as Record<
+			string,
+			{ responses: Record<string, unknown> }
+		>;
+		expect(create.post.responses["413"]).toBeDefined();
+		expect(create.post.responses["415"]).toBeDefined();
+		expect(availability.put.responses["413"]).toBeDefined();
+		expect(availability.put.responses["415"]).toBeDefined();
+		expect(availability.post.responses["413"]).toBeDefined();
+		expect(availability.post.responses["415"]).toBeDefined();
+	});
 });
