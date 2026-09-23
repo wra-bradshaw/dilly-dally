@@ -16,6 +16,13 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "#/components/ui/select";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useLocalStorage } from "#/hooks/use-local-storage";
@@ -30,6 +37,7 @@ import { patchDetailForSave } from "#/lib/detail-patch";
 import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { HttpError } from "#/lib/http-error";
+import { allTimezones, browserTimezone } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/e/$eventId")({
 	component: EventPage,
@@ -148,13 +156,28 @@ function EventPage() {
 			},
 			storedName,
 		});
-	const [view, setView] = useLocalStorage("dd:tz-view", "event");
+	const [view, setView] = useLocalStorage("dd:tz-view", "");
 
 	const event = detail.data?.event;
+	const browserTz = browserTimezone();
+	const eventTz = event?.timezone ?? "UTC";
+	const zones = useMemo(() => allTimezones(), []);
 	const viewTimezone =
-		view === "local" && typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone
-			: (event?.timezone ?? "UTC");
+		view !== "" && view !== "event" && view !== "local" && zones.includes(view)
+			? view
+			: view === "local"
+				? browserTz
+				: eventTz;
+	const zoneOptions = useMemo(() => {
+		const rest = zones.filter((z) => z !== eventTz && z !== browserTz);
+		return [
+			{ label: `${eventTz} (event time)`, value: eventTz },
+			...(browserTz === eventTz
+				? []
+				: [{ label: `${browserTz} (your time)`, value: browserTz }]),
+			...rest.map((z) => ({ label: z, value: z })),
+		];
+	}, [zones, eventTz, browserTz]);
 
 	const columns = useMemo(() => {
 		if (!detail.data) return [];
@@ -467,25 +490,21 @@ function EventPage() {
 				</div>
 			)}
 
-			<div className="mt-4 flex items-center gap-2 text-sm">
-				<span className="text-muted-foreground">Show times in</span>
-				<fieldset className="flex gap-1">
-					<legend className="sr-only">Timezone view</legend>
-					{(["event", "local"] as const).map((v) => (
-						<Button
-							aria-pressed={view === v}
-							key={v}
-							onClick={() => setView(v)}
-							size="xs"
-							type="button"
-							variant={view === v ? "default" : "outline"}
-						>
-							{v === "event" ? `Event time` : "My time"}
-						</Button>
-					))}
-				</fieldset>
-				<span className="text-xs text-muted-foreground">{viewTimezone}</span>
-			</div>
+				<div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+					<Label htmlFor="tz-view">Show times in</Label>
+					<Select onValueChange={setView} value={viewTimezone}>
+						<SelectTrigger className="w-80" id="tz-view" type="button">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{zoneOptions.map((z) => (
+								<SelectItem key={z.value} value={z.value}>
+									{z.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 
 			<Card className="mt-4">
 				<CardHeader>

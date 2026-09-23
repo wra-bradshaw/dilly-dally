@@ -14,6 +14,24 @@ export const WEEKDAY_CODES = [
 
 export type EventMode = "dates" | "weekly";
 
+export function browserTimezone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone;
+	} catch {
+		return "UTC";
+	}
+}
+
+export function allTimezones(): string[] {
+	try {
+		const supported = (
+			Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
+		).supportedValuesOf?.("timeZone");
+		if (supported && supported.length > 0) return supported;
+	} catch {}
+	return [browserTimezone()];
+}
+
 export function weekdayCode(weekday: number): string | null {
 	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return null;
 	return WEEKDAY_CODES[weekday] as string;

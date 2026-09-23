@@ -16,7 +16,11 @@ import {
 import { WeekdayPicker } from "#/components/weekday-picker";
 import { createEvent } from "#/lib/client";
 import { HttpError } from "#/lib/http-error";
-import { formatSlotLabel } from "#/lib/time-slots";
+import {
+	allTimezones,
+	browserTimezone,
+	formatSlotLabel,
+} from "#/lib/time-slots";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -34,24 +38,6 @@ function hourOptions(): string[] {
 		{ length: 24 },
 		(_, h) => `${String(h).padStart(2, "0")}:00`,
 	);
-}
-
-function browserTimezone(): string {
-	try {
-		return Intl.DateTimeFormat().resolvedOptions().timeZone;
-	} catch {
-		return "UTC";
-	}
-}
-
-function allTimezones(): string[] {
-	try {
-		const supported = (
-			Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
-		).supportedValuesOf?.("timeZone");
-		if (supported && supported.length > 0) return supported;
-	} catch {}
-	return [browserTimezone()];
 }
 
 function Home() {

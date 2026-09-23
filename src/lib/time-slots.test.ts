@@ -1,12 +1,36 @@
 import { describe, expect, it } from "vitest";
 import {
+	allTimezones,
+	browserTimezone,
 	buildEventUniverse,
 	buildSlotUniverse,
 	computeCounts,
 	findBestTimes,
+	formatSlotLabel,
 	formatSlotWithDate,
 	normalizeSlots,
 } from "./time-slots";
+
+describe("browserTimezone", () => {
+	it("returns a non-empty zone name", () => {
+		expect(browserTimezone()).toMatch(/.+/);
+	});
+});
+
+describe("formatSlotLabel", () => {
+	it("pins en-US output so server and client render identically", () => {
+		expect(formatSlotLabel("2026-01-01T09:00")).toBe("9:00 AM");
+	});
+});
+
+describe("allTimezones", () => {
+	it("lists IANA zones", () => {
+		const zones = allTimezones();
+		expect(zones.length).toBeGreaterThan(100);
+		expect(zones).toContain("Europe/London");
+		for (const z of zones) expect(typeof z).toBe("string");
+	});
+});
 
 describe("buildSlotUniverse", () => {
 	it("expands dates and hours into 15-min slots", () => {
