@@ -396,81 +396,33 @@ function EventPage() {
 				</span>
 			</p>
 
-			{!signedIn ? (
-				<Card className="mt-4">
-					<CardHeader>
-						<CardTitle>Sign in</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="mb-4 text-sm text-muted-foreground">
-							Your name and password are only for this event. New here? Make up
-							a password. Returning? Use the same name and password.
-						</p>
-						<form
-							className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-							onSubmit={(e) => {
-								e.preventDefault();
-								void signIn();
+			<div className="contents" suppressHydrationWarning>
+				{signedIn ? (
+					<div className="mt-4 flex items-center gap-3 text-sm">
+						<span>
+							Signed in as <strong>{activeName}</strong>
+						</span>
+						<Button
+							className="h-auto p-0 text-sm"
+							onClick={() => {
+								saver.cancel();
+								lastSubmittedRef.current = null;
+								setSignedIn(false);
+								setPassword("");
+								setSelected(new Set());
+								setActiveName("");
+								setStoredName("");
+								setName("");
+								setSaveState("");
+								setSignError("");
 							}}
+							type="button"
+							variant="link"
 						>
-							<div className="grid gap-2">
-								<Label htmlFor="who-name">Your name</Label>
-								<Input
-									autoComplete="username"
-									id="who-name"
-									maxLength={40}
-									onChange={(e) => setName(e.target.value)}
-									placeholder="Ada Lovelace"
-									value={name}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="who-pass">Password (optional)</Label>
-								<Input
-									autoComplete="current-password"
-									id="who-pass"
-									onChange={(e) => setPassword(e.target.value)}
-									type="password"
-									value={password}
-								/>
-							</div>
-							<Button disabled={signing} type="submit">
-								{signing ? "Signing in…" : "Continue"}
-							</Button>
-						</form>
-						{signError !== "" && (
-							<p className="mt-2 text-sm text-destructive" role="alert">
-								{signError}
-							</p>
-						)}
-					</CardContent>
-				</Card>
-			) : (
-				<div className="mt-4 flex items-center gap-3 text-sm">
-					<span>
-						Signed in as <strong>{activeName}</strong>
-					</span>
-					<Button
-						className="h-auto p-0 text-sm"
-						onClick={() => {
-							saver.cancel();
-							lastSubmittedRef.current = null;
-							setSignedIn(false);
-							setPassword("");
-							setSelected(new Set());
-							setActiveName("");
-							setStoredName("");
-							setName("");
-							setSaveState("");
-							setSignError("");
-						}}
-						type="button"
-						variant="link"
-					>
-						Switch user
-					</Button>
-				</div>
-			)}
+							Switch user
+						</Button>
+					</div>
+				) : null}
 
 				<div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
 					<Label htmlFor="tz-view">Show times in</Label>
@@ -488,52 +440,95 @@ function EventPage() {
 					</Select>
 				</div>
 
-			<Card className="mt-4">
-				<CardHeader>
-					<CardTitle>
-						Your availability{" "}
-						<span
-							aria-live="polite"
-							className="text-xs font-normal text-muted-foreground"
-						>
-							{saveState}
-						</span>
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p
-						aria-live="polite"
-						className={
-							restoreStatus === "restoring" || restoreStatus === "failed"
-								? "mb-2 text-sm text-muted-foreground"
-								: "sr-only"
-						}
-					>
-						{restoreStatus === "restoring" ? (
-							"Restoring…"
-						) : restoreStatus === "failed" ? (
-							<>
-								Could not restore your availability.{" "}
-								<Button
-									className="h-auto p-0 text-sm"
-									onClick={retryRestore}
-									type="button"
-									variant="link"
-								>
-									Retry
+				{!signedIn ? (
+					<Card className="mt-4">
+						<CardHeader>
+							<CardTitle>Sign in to add your availability</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p className="mb-4 text-sm text-muted-foreground">
+								Your name and password are only for this event. New here? Make
+								up a password. Returning? Use the same name and password.
+							</p>
+							<form
+								className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+								onSubmit={(e) => {
+									e.preventDefault();
+									void signIn();
+								}}
+							>
+								<div className="grid gap-2">
+									<Label htmlFor="who-name">Your name</Label>
+									<Input
+										autoComplete="username"
+										id="who-name"
+										maxLength={40}
+										onChange={(e) => setName(e.target.value)}
+										placeholder="Ada Lovelace"
+										value={name}
+									/>
+								</div>
+								<div className="grid gap-2">
+									<Label htmlFor="who-pass">Password (optional)</Label>
+									<Input
+										autoComplete="current-password"
+										id="who-pass"
+										onChange={(e) => setPassword(e.target.value)}
+										type="password"
+										value={password}
+									/>
+								</div>
+								<Button disabled={signing} type="submit">
+									{signing ? "Signing in…" : "Continue"}
 								</Button>
-							</>
-						) : (
-							""
-						)}
-					</p>
-					{!signedIn ? (
-						<p className="text-sm text-muted-foreground">
-							Sign in above, then click and drag to paint the times you are
-							free.
-						</p>
-					) : (
-						<>
+							</form>
+							{signError !== "" && (
+								<p className="mt-2 text-sm text-destructive" role="alert">
+									{signError}
+								</p>
+							)}
+						</CardContent>
+					</Card>
+				) : (
+					<Card className="mt-4">
+						<CardHeader>
+							<CardTitle>
+								Your availability{" "}
+								<span
+									aria-live="polite"
+									className="text-xs font-normal text-muted-foreground"
+								>
+									{saveState}
+								</span>
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p
+								aria-live="polite"
+								className={
+									restoreStatus === "restoring" || restoreStatus === "failed"
+										? "mb-2 text-sm text-muted-foreground"
+										: "sr-only"
+								}
+							>
+								{restoreStatus === "restoring" ? (
+									"Restoring…"
+								) : restoreStatus === "failed" ? (
+									<>
+										Could not restore your availability.{" "}
+										<Button
+											className="h-auto p-0 text-sm"
+											onClick={retryRestore}
+											type="button"
+											variant="link"
+										>
+											Retry
+										</Button>
+									</>
+								) : (
+									""
+								)}
+							</p>
 							{restoreStatus === "gone" && (
 								<p className="mb-2 text-sm text-muted-foreground" role="alert">
 									This event has expired. Reload the page.
@@ -549,10 +544,9 @@ function EventPage() {
 								onCommit={commit}
 								selected={selected}
 							/>
-						</>
-					)}
-				</CardContent>
-			</Card>
+						</CardContent>
+					</Card>
+				)}
 
 				<Card className="mt-4">
 					<CardHeader>
@@ -570,6 +564,7 @@ function EventPage() {
 						/>
 					</CardContent>
 				</Card>
+			</div>
 
 			<footer className="mt-8 text-center text-xs text-muted-foreground">
 				The link is the event, keep it. Data auto-deletes after the event
