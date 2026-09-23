@@ -142,8 +142,6 @@ interface SlotUniverseInput {
 	dates?: string[];
 	startTime: string;
 	endTime: string;
-	mode?: EventMode;
-	weekdays?: number[];
 }
 
 interface WeeklyUniverseInput {
@@ -159,13 +157,6 @@ function hourToMinutes(t: string): number | null {
 }
 
 export function buildSlotUniverse(input: SlotUniverseInput): string[] {
-	if (input.mode === "weekly") {
-		return buildWeeklyUniverse({
-			endTime: input.endTime,
-			startTime: input.startTime,
-			weekdays: input.weekdays ?? [],
-		});
-	}
 	const start = hourToMinutes(input.startTime);
 	const end = hourToMinutes(input.endTime);
 	if (start === null || end === null) return [];

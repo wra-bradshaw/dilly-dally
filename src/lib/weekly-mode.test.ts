@@ -9,6 +9,7 @@ import { computeExpiry } from "./expiry";
 import { getEventDetail, upsertAvailability } from "./server-availability";
 import { createTestDb } from "./test-db";
 import {
+	buildEventUniverse,
 	buildSlotUniverse,
 	buildWeeklyUniverse,
 	isWeeklySlotId,
@@ -173,8 +174,9 @@ describe("weekly slot universe", () => {
 		).toEqual([]);
 	});
 
-	it("buildSlotUniverse branches on weekly mode", () => {
-		const slots = buildSlotUniverse({
+	it("buildEventUniverse dispatches weekly mode", () => {
+		const slots = buildEventUniverse({
+			dates: [],
 			endTime: "10:00",
 			mode: "weekly",
 			startTime: "09:00",
