@@ -118,7 +118,7 @@ export function formatWeeklySlot(slot: string): string {
 	return `${weekdayShortForCode(code)}, ${formatSlotLabel(`2000-01-01T${time}`)}`;
 }
 
-export function weeklySlotRank(slot: string): number | null {
+function weeklySlotRank(slot: string): number | null {
 	const dash = slot.indexOf("-");
 	if (dash === -1 || !isWeeklySlotId(slot)) return null;
 	const idx = weekdayForCode(slot.slice(0, dash));
