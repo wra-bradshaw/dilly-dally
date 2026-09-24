@@ -329,8 +329,7 @@ function Home() {
                   className="text-xs text-muted-foreground"
                   id={weekdaysGroup.hintId}
                 >
-                  Availability means that weekday generally, every week. Click
-                  and drag weekdays to choose possibilities.
+                  Click and drag weekdays to choose days.
                 </p>
                 <WeekdayPicker
                   describedBy={weekdaysDescribedBy}
@@ -411,9 +410,7 @@ function Home() {
             <div className="grid gap-2">
               <Label htmlFor="tz">Time zone</Label>
               <p className="text-xs text-muted-foreground" id={tzHintId}>
-                Type to filter{" "}
-                {tzCount > 0 ? `${tzCount} time zones` : "time zones"}. Pick a
-                valid IANA name, for example America/New_York.
+                Type to filter the time zones.
               </p>
               <Input
                 aria-describedby={tzDescribedBy}
