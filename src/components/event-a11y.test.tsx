@@ -198,6 +198,13 @@ describe("control focus rings", () => {
 			["emerald-100", [0.95, 0.052, 163.051]],
 			["emerald-400", [0.765, 0.177, 163.223]],
 		];
+		const darkFills: Array<[string, Oklch]> = [
+			["emerald-700", [0.508, 0.118, 165.612]],
+			["emerald-800", [0.432, 0.095, 166.913]],
+			["emerald-900", [0.378, 0.077, 168.94]],
+			["emerald-950", [0.262, 0.051, 172.552]],
+			["rose-950", [0.271, 0.105, 12.094]],
+		];
 		for (const [name, adjacent] of adjacents) {
 			expect(
 				contrastRatio(lightRing, adjacent),
@@ -205,6 +212,12 @@ describe("control focus rings", () => {
 			).toBeGreaterThanOrEqual(3);
 		}
 		expect(contrastRatio(darkRing, darkBackground)).toBeGreaterThanOrEqual(3);
+		for (const [name, fill] of darkFills) {
+			expect(
+				contrastRatio(darkRing, fill),
+				`dark --ring vs ${name}`,
+			).toBeGreaterThanOrEqual(3);
+		}
 		expect(css).toMatch(/forced-colors:\s*active/);
 		expect(css).toMatch(/outline:\s*2px solid Highlight/);
 	});
