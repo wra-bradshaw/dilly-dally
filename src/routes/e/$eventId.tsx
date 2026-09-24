@@ -28,6 +28,7 @@ import { useFocusOnChange } from "#/hooks/use-focus-on-change";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
+import { useTooltipOpen } from "#/hooks/use-tooltip-open";
 import {
 	type EventDetailResponse,
 	fetchOwnAvailability,
@@ -74,7 +75,7 @@ function EventError({ error }: { error: unknown }) {
 		limited && error instanceof HttpError ? error.retryAfter : undefined;
 	return (
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-			<h1 className="font-heading text-3xl font-bold">
+			<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
 				{limited
 					? "Slow down — too many requests"
 					: gone
@@ -117,6 +118,7 @@ function EventPage() {
 	const detail = useEventDetail(eventId);
 	const queryClient = useQueryClient();
 	const { copied, copy, copyError } = useCopyToClipboard();
+	const copyTooltip = useTooltipOpen(copied || copyError);
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
 	const [name, setName] = useState(storedName);
 	const [password, setPassword] = useState("");
@@ -318,7 +320,7 @@ function EventPage() {
 		if (retryable && !gone) {
 			return (
 				<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-					<h1 className="font-heading text-3xl font-bold">
+					<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
 						Could not load this event
 					</h1>
 					<p className="mt-2 text-muted-foreground">
@@ -336,7 +338,7 @@ function EventPage() {
 		}
 		return (
 			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-				<h1 className="font-heading text-3xl font-bold">
+				<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
 					{gone ? "This event has expired" : "Event not found"}
 				</h1>
 				<p className="mt-2 text-muted-foreground">
@@ -378,7 +380,9 @@ function EventPage() {
 			)}
 			<SiteHeader />
 
-			<h1 className="font-heading mt-2 text-3xl font-bold">{event?.title}</h1>
+			<h1 className="font-heading mt-2 text-3xl font-bold" tabIndex={-1}>
+				{event?.title}
+			</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
 				{event?.timezone} ·{" "}
 				<a
@@ -390,7 +394,10 @@ function EventPage() {
 					{url}
 					<span className="sr-only"> (invite link — open this event)</span>
 				</a>{" "}
-				<Tooltip open={copied || copyError ? true : undefined}>
+				<Tooltip
+					onOpenChange={copyTooltip.onOpenChange}
+					open={copyTooltip.open}
+				>
 					<TooltipTrigger asChild>
 						<Button
 							aria-describedby={inviteHintId}
