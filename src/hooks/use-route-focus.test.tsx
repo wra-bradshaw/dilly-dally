@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { useRouteFocus } from "./use-route-focus";
 
 function setupMain(heading = "Plan a new event"): HTMLElement {
-	document.body.innerHTML = `<main id="main"><h1>${heading}</h1></main>`;
+	document.body.innerHTML = `<main id="main"><h1 tabindex="-1">${heading}</h1></main>`;
 	const h1 = document.querySelector("main h1") as HTMLElement;
 	return h1;
 }
@@ -19,6 +19,17 @@ describe("useRouteFocus", () => {
 		rerender({ routeKey: "/e/abc" });
 		expect(document.activeElement).toBe(h1);
 		expect(h1.getAttribute("tabindex")).toBe("-1");
+	});
+
+	it("does not mutate the DOM to add tabindex; headings must be focusable declaratively", () => {
+		document.body.innerHTML = `<main id="main"><h1>Plan a new event</h1></main>`;
+		const h1 = document.querySelector("main h1") as HTMLElement;
+		const { rerender } = renderHook(
+			({ routeKey }: { routeKey: string }) => useRouteFocus(routeKey),
+			{ initialProps: { routeKey: "/" } },
+		);
+		rerender({ routeKey: "/e/abc" });
+		expect(h1.hasAttribute("tabindex")).toBe(false);
 	});
 
 	it("does not steal focus on first mount", () => {

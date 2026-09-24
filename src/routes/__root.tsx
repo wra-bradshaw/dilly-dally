@@ -109,7 +109,9 @@ function NotFoundPage() {
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
 			<SiteHeader />
 			<div className="py-16 text-center">
-				<h1 className="font-heading text-3xl font-bold">Page not found</h1>
+				<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
+					Page not found
+				</h1>
 				<p className="mt-2 text-muted-foreground">
 					Check the link and try again.
 				</p>

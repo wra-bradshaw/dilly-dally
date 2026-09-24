@@ -207,7 +207,11 @@ function Home() {
 
 			<Card className="mx-auto max-w-lg">
 				<CardHeader>
-					<h1 className="font-heading text-sm font-medium" id="plan-heading">
+					<h1
+						className="font-heading text-sm font-medium"
+						id="plan-heading"
+						tabIndex={-1}
+					>
 						Plan a new event
 					</h1>
 				</CardHeader>
