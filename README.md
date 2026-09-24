@@ -1,11 +1,26 @@
 # Dilly Dally
 
-Dilly Dally is an agent friendly replacement for when2meet. 
+An agent-friendly scheduling tool for finding when everyone is free.
 
-First, we studied the experience that when2meet has. The first priority was copying this experience almost exactly for humans. Someone creates an event with a name. That takes you to the event page. There, you enter your name and optionally a password. You can then update your availability. You can come back later and enter your name again (and optionally password) to update your availability. The URL is persistent until the time of the event (max 3 months from the date of its creation). Once the event passes, the event and all associated data is deleted to free up space.
+## What it does
 
-Dilly Dally is hosted on Cloudflare. No other infrastructure is required. Just Cloudflare products. It is almost a 1-click deploy.
+Dilly Dally lets a group of people mark their availability on a simple grid and see which time slots work best for everyone. Create an event, share the link, and participants click and drag to show when they're free. No accounts, no friction—just a persistent URL that works until the event passes.
 
-The key differentiator for Dilly Dally is that agents can use it easily. It should be very simply for agents to create events via a curl request (they get an event ID and URL to show to their user). Then it should be super easy for agents to add availability for a particular name, and optionally supply a password. Do this in a sensible way such that the password is secure. A persistent markdown guide shows agents how to use Dilly Dally. An OpenAPI spec is provided, complete with JSON schemas, and the use of OpenAPI TypeScript. 
+## Why it exists
 
-Rate limiting is also implemented to prevent abuse by rogue agents and script kiddies. 
+We started by studying [when2meet](https://www.when2meet.com/), the classic group scheduling tool, and made sure the human experience feels instantly familiar. But the real goal was to make the entire service trivial for AI agents to use: create events, update availability, and fetch results—all through clean REST endpoints with typed schemas and an OpenAPI spec.
+
+## Agent features
+
+- **OpenAPI 3.1 spec** at `/api/openapi.json`
+- **Markdown agent guide** at `/api/agent-guide` with exact `curl` examples
+- **Type-safe client** generated from the spec via OpenAPI TypeScript
+- **Rate limiting** via Cloudflare Durable Objects to prevent abuse
+
+## Stack
+
+Hosted entirely on Cloudflare: Workers, D1, and Durable Objects. React 19 on the frontend with TanStack Router, Tailwind CSS, and shadcn/ui. Drizzle ORM and Zod for type-safe data handling. Deploy with a single command—no other infrastructure required.
+
+## Data lifecycle
+
+Events and all associated data are automatically deleted after the event passes, up to a maximum of 90 days from creation. A scheduled cron job purges expired events every 30 minutes.
