@@ -7,7 +7,22 @@ import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
-	resolve: { tsconfigPaths: true },
+	resolve: { tsconfigPaths: true, dedupe: ["react", "react-dom"] },
+	environments: {
+		ssr: {
+			optimizeDeps: {
+				include: [
+					"react",
+					"react/jsx-runtime",
+					"react-dom",
+					"react-dom/server",
+				],
+			},
+			resolve: {
+				dedupe: ["react", "react-dom"],
+			},
+		},
+	},
 	plugins: [
 		devtools(),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
