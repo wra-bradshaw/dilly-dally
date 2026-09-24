@@ -88,8 +88,7 @@ export function GroupHeatmap({
 					onKeyDown={onHeatmapKeyDown}
 					renderCell={(cell, ctx) => (
 						<button
-							aria-controls={detailId}
-							aria-expanded={hovered === cell.id}
+							aria-describedby={detailId}
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
 								"block h-6 min-h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
@@ -150,7 +149,6 @@ export function GroupHeatmap({
 				/>
 			</div>
 			<div
-				aria-live="polite"
 				className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
 				id={detailId}
 			>

@@ -152,7 +152,7 @@ describe("grid cell focus and selection cues", () => {
 		expect(pressed?.textContent).not.toBe("");
 	});
 
-	it("exposes heatmap cells as disclosures linked to a list-based detail panel", () => {
+	it("describes heatmap cells via a hover-preview panel with list markup", () => {
 		const columns = cols();
 		render(
 			<GroupHeatmap
@@ -165,10 +165,15 @@ describe("grid cell focus and selection cues", () => {
 			/>,
 		);
 		const [first] = screen.getAllByRole("button");
-		expect(first).toHaveAttribute("aria-expanded");
-		expect(first).toHaveAttribute("aria-controls");
-		const panelId = (first as HTMLElement).getAttribute("aria-controls") ?? "";
-		expect(document.getElementById(panelId)).not.toBeNull();
+		expect(first).toHaveAttribute("aria-describedby");
+		expect(first).not.toHaveAttribute("aria-expanded");
+		expect(first).not.toHaveAttribute("aria-controls");
+		const panelId =
+			(first as HTMLElement).getAttribute("aria-describedby") ?? "";
+		const panel = document.getElementById(panelId);
+		expect(panel).not.toBeNull();
+		expect(panel?.getAttribute("aria-live")).toBeNull();
+		expect(panel?.textContent).toMatch(/Hover or tap/);
 	});
 });
 
