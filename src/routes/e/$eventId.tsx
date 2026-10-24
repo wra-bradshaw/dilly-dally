@@ -659,14 +659,6 @@ function EventPage() {
 					</Card>
 				)}
 
-				<PollsSection
-					activeName={activeName}
-					eventId={eventId}
-					password={password}
-					polls={detail.data?.polls ?? []}
-					signedIn={signedIn}
-				/>
-
 				<Card className="mt-4">
 					<CardHeader>
 						<CardTitle>Group&apos;s availability</CardTitle>
@@ -683,6 +675,14 @@ function EventPage() {
 						/>
 					</CardContent>
 				</Card>
+
+				<PollsSection
+					activeName={activeName}
+					eventId={eventId}
+					password={password}
+					polls={detail.data?.polls ?? []}
+					signedIn={signedIn}
+				/>
 			</div>
 
 			<footer className="mt-8 text-center text-xs text-muted-foreground">
