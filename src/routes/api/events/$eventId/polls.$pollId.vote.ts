@@ -7,7 +7,7 @@ import {
 	liveEventErrorResponse,
 	loadLiveEvent,
 } from "#/lib/server-event-detail";
-import { listPollsDetail, votePollInDb } from "#/lib/server-polls";
+import { votePollInDb } from "#/lib/server-polls";
 import { guardRateLimit } from "#/lib/server-rate-limit";
 import { type PollVoteInput, pollVoteSchema } from "#/lib/validation";
 
@@ -40,12 +40,7 @@ export async function votePollHandler(
 	)
 		return jsonError("invalid_option", "Invalid poll selection", 422);
 	if (!res.ok) return jsonError("internal", "Could not save vote", 500);
-	const polls = await listPollsDetail(db, eventId);
-	const poll = polls.find((p) => p.id === pollId);
-	const out: components["schemas"]["PollVoteResponse"] = {
-		pollId,
-		totalVoters: poll?.totalVoters ?? 0,
-	};
+	const out: components["schemas"]["PollVoteResponse"] = { pollId };
 	return Response.json(out, { headers: securityHeaders() });
 }
 

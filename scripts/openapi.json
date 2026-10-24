@@ -267,14 +267,10 @@
         "properties": {
           "pollId": {
             "type": "string"
-          },
-          "totalVoters": {
-            "type": "integer"
           }
         },
         "required": [
-          "pollId",
-          "totalVoters"
+          "pollId"
         ],
         "type": "object"
       },

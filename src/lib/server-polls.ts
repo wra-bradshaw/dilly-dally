@@ -217,12 +217,17 @@ export async function votePollInDb(
 		verify: typeof verifyPassword;
 	} = { hash: hashPassword, verify: verifyPassword },
 ): Promise<{ ok: true } | { code: string; ok: false }> {
-	const pollRows = await db
+	const pollPromise = db
 		.select()
 		.from(schema.polls)
 		.where(
 			and(eq(schema.polls.id, pollId), eq(schema.polls.eventId, event.id)),
 		);
+	const existingPromise = getParticipantRow(db, event.id, nameKey(input.name));
+	const [pollRows, existing] = await Promise.all([
+		pollPromise,
+		existingPromise,
+	]);
 	const poll = pollRows[0];
 	if (!poll) return { code: "not_found", ok: false };
 	const options = await db
@@ -238,7 +243,6 @@ export async function votePollInDb(
 		return { code: "invalid_selection", ok: false };
 	const key = nameKey(input.name);
 	const display = input.name.trim();
-	const existing = await getParticipantRow(db, event.id, key);
 	if (existing?.passwordHash) {
 		if (!input.password) return { code: "invalid_password", ok: false };
 		const valid = await deps.verify(input.password, existing.passwordHash);

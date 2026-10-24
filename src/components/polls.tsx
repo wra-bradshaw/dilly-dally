@@ -1,6 +1,5 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useRef, useState } from "react";
-import { useSerialSaver } from "#/hooks/use-serial-saver";
 import {
 	addPollOption,
 	createPoll,
@@ -79,52 +78,64 @@ function PollCard({
 		}
 		return ids;
 	}, [poll.options, activeKey]);
-	const saver = useSerialSaver<{
-		identity: string;
-		optionIds: string[];
-	}>({
-		onError: (err) => {
+	const voteMutation = useMutation({
+		mutationFn: (optionIds: string[]) =>
+			votePoll(eventId, poll.id, {
+				name: activeName,
+				optionIds,
+				password: password === "" ? undefined : password,
+			}),
+		onError: (err, _next, ctx) => {
 			setVoteError(voteErrorMessage(err));
+			const prev = (ctx as { prev?: EventDetailResponse } | undefined)?.prev;
+			if (prev) queryClient.setQueryData(["event", eventId], prev);
 			if (err instanceof HttpError && err.code === "invalid_option") {
 				void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 			}
 		},
-		onSuccess: (value) => {
+		onMutate: async (next: string[]) => {
 			setVoteError("");
+			await queryClient.cancelQueries({ queryKey: ["event", eventId] });
+			const prev = queryClient.getQueryData<EventDetailResponse>([
+				"event",
+				eventId,
+			]);
 			queryClient.setQueryData(
 				["event", eventId],
 				(old: EventDetailResponse | undefined) =>
-					old
-						? patchDetailForPollVote(
-								old,
-								poll.id,
-								value.identity,
-								value.optionIds,
-							)
-						: old,
+					old ? patchDetailForPollVote(old, poll.id, activeName, next) : old,
 			);
+			return { prev };
 		},
-		save: async (value) => {
-			await votePoll(eventId, poll.id, {
-				name: value.identity,
-				optionIds: value.optionIds,
-				password: password === "" ? undefined : password,
-			});
+		onSettled: () => {
+			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		},
 	});
+	const readOwnIds = () => {
+		const cached = queryClient.getQueryData<EventDetailResponse>([
+			"event",
+			eventId,
+		]);
+		const current = cached?.polls.find((q) => q.id === poll.id) ?? poll;
+		const ids = new Set<string>();
+		for (const o of current.options) {
+			if (o.names.some((n) => nameKey(n) === activeKey)) ids.add(o.id);
+		}
+		return ids;
+	};
 	const commit = (next: string[]) => {
-		if (!signedIn || activeName === "" || saver.inFlight) return;
-		setVoteError("");
-		saver.submit({ identity: activeName, optionIds: next });
+		if (!signedIn || activeName === "") return;
+		voteMutation.mutate(next);
 	};
 	const toggleMulti = (optionId: string) => {
-		const next = new Set(ownIds);
+		const next = readOwnIds();
 		if (next.has(optionId)) next.delete(optionId);
 		else next.add(optionId);
 		commit([...next]);
 	};
 	const pickSingle = (optionId: string) => {
-		if (ownIds.has(optionId) && ownIds.size === 1) return;
+		const current = readOwnIds();
+		if (current.has(optionId) && current.size === 1) return;
 		commit([optionId]);
 	};
 	const clearVote = () => {
@@ -222,7 +233,7 @@ function PollCard({
 								<Checkbox
 									aria-label={`${o.label}, ${o.count} votes`}
 									checked={ownIds.has(o.id)}
-									disabled={!signedIn || saver.inFlight}
+									disabled={!signedIn}
 									id={`${voteGroupId}-${o.id}`}
 									onCheckedChange={() => toggleMulti(o.id)}
 								/>
@@ -239,7 +250,7 @@ function PollCard({
 								{o.count === 0 && signedIn && poll.options.length > 2 ? (
 									<Button
 										aria-label={`Remove ${o.label}`}
-										disabled={deletingId !== null || saver.inFlight}
+										disabled={deletingId !== null}
 										onClick={() => void removeOption(o.id)}
 										size="xs"
 										type="button"
@@ -261,7 +272,7 @@ function PollCard({
 							<div className="flex items-start gap-2" key={o.id}>
 								<RadioGroupItem
 									aria-label={`${o.label}, ${o.count} votes`}
-									disabled={!signedIn || saver.inFlight}
+									disabled={!signedIn}
 									id={`${voteGroupId}-${o.id}`}
 									value={o.id}
 								/>
@@ -278,7 +289,7 @@ function PollCard({
 								{o.count === 0 && signedIn && poll.options.length > 2 ? (
 									<Button
 										aria-label={`Remove ${o.label}`}
-										disabled={deletingId !== null || saver.inFlight}
+										disabled={deletingId !== null}
 										onClick={() => void removeOption(o.id)}
 										size="xs"
 										type="button"
@@ -296,9 +307,14 @@ function PollCard({
 						{voteError}
 					</p>
 				) : null}
+				{voteMutation.isPending ? (
+					<p aria-live="polite" className="mt-2 text-xs text-muted-foreground">
+						Saving…
+					</p>
+				) : null}
 				{signedIn && ownIds.size > 0 ? (
 					<Button
-						disabled={!signedIn || saver.inFlight}
+						disabled={!signedIn}
 						className="mt-2 h-auto min-h-6 p-0 text-sm"
 						onClick={clearVote}
 						type="button"

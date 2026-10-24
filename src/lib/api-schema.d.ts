@@ -197,7 +197,6 @@ export interface components {
         };
         PollVoteResponse: {
             pollId: string;
-            totalVoters: number;
         };
         /**
          * @description dates picks specific dates; weekly repeats on weekdays.

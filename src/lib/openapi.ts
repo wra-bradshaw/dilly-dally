@@ -226,9 +226,8 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 				PollVoteResponse: {
 					properties: {
 						pollId: { type: "string" },
-						totalVoters: { type: "integer" },
 					},
-					required: ["pollId", "totalVoters"],
+					required: ["pollId"],
 					type: "object",
 				},
 				EventMode: {
