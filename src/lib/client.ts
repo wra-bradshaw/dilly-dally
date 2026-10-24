@@ -10,6 +10,15 @@ export type AvailabilityResponse =
 	components["schemas"]["AvailabilityResponse"];
 export type OwnAvailabilityResponse =
 	components["schemas"]["OwnAvailabilityResponse"];
+export type CreatePollRequest = components["schemas"]["CreatePollRequest"];
+export type CreatePollResponse = components["schemas"]["CreatePollResponse"];
+export type AddPollOptionRequest =
+	components["schemas"]["AddPollOptionRequest"];
+export type AddPollOptionResponse =
+	components["schemas"]["AddPollOptionResponse"];
+export type PollVoteRequest = components["schemas"]["PollVoteRequest"];
+export type PollVoteResponse = components["schemas"]["PollVoteResponse"];
+export type Poll = components["schemas"]["Poll"];
 
 const client = createClient<paths>({
 	baseUrl:
@@ -99,4 +108,74 @@ export async function fetchOwnAvailability(
 		throw toHttpError(response.status, error, response.statusText);
 	}
 	return data as OwnAvailabilityResponse;
+}
+
+export async function createPoll(
+	id: string,
+	input: CreatePollRequest,
+): Promise<CreatePollResponse> {
+	const { data, error, response } = await client.POST(
+		"/api/events/{id}/polls",
+		{
+			body: input,
+			params: { path: { id } },
+		},
+	);
+	if (!response.ok) {
+		throw toHttpError(response.status, error, response.statusText);
+	}
+	return data as CreatePollResponse;
+}
+
+export async function addPollOption(
+	id: string,
+	pollId: string,
+	input: AddPollOptionRequest,
+): Promise<AddPollOptionResponse> {
+	const { data, error, response } = await client.POST(
+		"/api/events/{id}/polls/{pollId}/options",
+		{
+			body: input,
+			params: { path: { id, pollId } },
+		},
+	);
+	if (!response.ok) {
+		throw toHttpError(response.status, error, response.statusText);
+	}
+	return data as AddPollOptionResponse;
+}
+
+export async function deletePollOption(
+	id: string,
+	pollId: string,
+	optionId: string,
+): Promise<unknown> {
+	const { data, error, response } = await client.DELETE(
+		"/api/events/{id}/polls/{pollId}/options/{optionId}",
+		{
+			params: { path: { id, optionId, pollId } },
+		},
+	);
+	if (!response.ok) {
+		throw toHttpError(response.status, error, response.statusText);
+	}
+	return data;
+}
+
+export async function votePoll(
+	id: string,
+	pollId: string,
+	input: PollVoteRequest,
+): Promise<PollVoteResponse> {
+	const { data, error, response } = await client.PUT(
+		"/api/events/{id}/polls/{pollId}/vote",
+		{
+			body: input,
+			params: { path: { id, pollId } },
+		},
+	);
+	if (!response.ok) {
+		throw toHttpError(response.status, error, response.statusText);
+	}
+	return data as PollVoteResponse;
 }
