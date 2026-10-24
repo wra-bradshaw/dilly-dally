@@ -18,6 +18,10 @@ import { Route as EEventIdRouteImport } from './routes/e/$eventId'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
 import { Route as ApiEventsEventIdIndexRouteImport } from './routes/api/events/$eventId/index'
 import { Route as ApiEventsEventIdAvailabilityRouteImport } from './routes/api/events/$eventId/availability'
+import { Route as ApiEventsEventIdPollsRouteImport } from './routes/api/events/$eventId/polls'
+import { Route as ApiEventsEventIdPollsPollIdOptionsRouteImport } from './routes/api/events/$eventId/polls.$pollId.options'
+import { Route as ApiEventsEventIdPollsPollIdVoteRouteImport } from './routes/api/events/$eventId/polls.$pollId.vote'
+import { Route as ApiEventsEventIdPollsPollIdOptionsOptionIdRouteImport } from './routes/api/events/$eventId/polls.$pollId.options.$optionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,6 +69,29 @@ const ApiEventsEventIdAvailabilityRoute =
     path: '/api/events/$eventId/availability',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiEventsEventIdPollsRoute = ApiEventsEventIdPollsRouteImport.update({
+  id: '/api/events/$eventId/polls',
+  path: '/api/events/$eventId/polls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsEventIdPollsPollIdOptionsRoute =
+  ApiEventsEventIdPollsPollIdOptionsRouteImport.update({
+    id: '/$pollId/options',
+    path: '/$pollId/options',
+    getParentRoute: () => ApiEventsEventIdPollsRoute,
+  } as any)
+const ApiEventsEventIdPollsPollIdVoteRoute =
+  ApiEventsEventIdPollsPollIdVoteRouteImport.update({
+    id: '/$pollId/vote',
+    path: '/$pollId/vote',
+    getParentRoute: () => ApiEventsEventIdPollsRoute,
+  } as any)
+const ApiEventsEventIdPollsPollIdOptionsOptionIdRoute =
+  ApiEventsEventIdPollsPollIdOptionsOptionIdRouteImport.update({
+    id: '/$optionId',
+    path: '/$optionId',
+    getParentRoute: () => ApiEventsEventIdPollsPollIdOptionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,7 +102,11 @@ export interface FileRoutesByFullPath {
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId/polls': typeof ApiEventsEventIdPollsRouteWithChildren
   '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
+  '/api/events/$eventId/polls/$pollId/options': typeof ApiEventsEventIdPollsPollIdOptionsRouteWithChildren
+  '/api/events/$eventId/polls/$pollId/vote': typeof ApiEventsEventIdPollsPollIdVoteRoute
+  '/api/events/$eventId/polls/$pollId/options/$optionId': typeof ApiEventsEventIdPollsPollIdOptionsOptionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,7 +117,11 @@ export interface FileRoutesByTo {
   '/e/$eventId': typeof EEventIdRoute
   '/api/events': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId/polls': typeof ApiEventsEventIdPollsRouteWithChildren
   '/api/events/$eventId': typeof ApiEventsEventIdIndexRoute
+  '/api/events/$eventId/polls/$pollId/options': typeof ApiEventsEventIdPollsPollIdOptionsRouteWithChildren
+  '/api/events/$eventId/polls/$pollId/vote': typeof ApiEventsEventIdPollsPollIdVoteRoute
+  '/api/events/$eventId/polls/$pollId/options/$optionId': typeof ApiEventsEventIdPollsPollIdOptionsOptionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,7 +133,11 @@ export interface FileRoutesById {
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
   '/api/events/$eventId/availability': typeof ApiEventsEventIdAvailabilityRoute
+  '/api/events/$eventId/polls': typeof ApiEventsEventIdPollsRouteWithChildren
   '/api/events/$eventId/': typeof ApiEventsEventIdIndexRoute
+  '/api/events/$eventId/polls/$pollId/options': typeof ApiEventsEventIdPollsPollIdOptionsRouteWithChildren
+  '/api/events/$eventId/polls/$pollId/vote': typeof ApiEventsEventIdPollsPollIdVoteRoute
+  '/api/events/$eventId/polls/$pollId/options/$optionId': typeof ApiEventsEventIdPollsPollIdOptionsOptionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,7 +150,11 @@ export interface FileRouteTypes {
     | '/e/$eventId'
     | '/api/events/'
     | '/api/events/$eventId/availability'
+    | '/api/events/$eventId/polls'
     | '/api/events/$eventId/'
+    | '/api/events/$eventId/polls/$pollId/options'
+    | '/api/events/$eventId/polls/$pollId/vote'
+    | '/api/events/$eventId/polls/$pollId/options/$optionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,7 +165,11 @@ export interface FileRouteTypes {
     | '/e/$eventId'
     | '/api/events'
     | '/api/events/$eventId/availability'
+    | '/api/events/$eventId/polls'
     | '/api/events/$eventId'
+    | '/api/events/$eventId/polls/$pollId/options'
+    | '/api/events/$eventId/polls/$pollId/vote'
+    | '/api/events/$eventId/polls/$pollId/options/$optionId'
   id:
     | '__root__'
     | '/'
@@ -133,7 +180,11 @@ export interface FileRouteTypes {
     | '/e/$eventId'
     | '/api/events/'
     | '/api/events/$eventId/availability'
+    | '/api/events/$eventId/polls'
     | '/api/events/$eventId/'
+    | '/api/events/$eventId/polls/$pollId/options'
+    | '/api/events/$eventId/polls/$pollId/vote'
+    | '/api/events/$eventId/polls/$pollId/options/$optionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +196,7 @@ export interface RootRouteChildren {
   EEventIdRoute: typeof EEventIdRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
   ApiEventsEventIdAvailabilityRoute: typeof ApiEventsEventIdAvailabilityRoute
+  ApiEventsEventIdPollsRoute: typeof ApiEventsEventIdPollsRouteWithChildren
   ApiEventsEventIdIndexRoute: typeof ApiEventsEventIdIndexRoute
 }
 
@@ -213,8 +265,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEventsEventIdAvailabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/events/$eventId/polls': {
+      id: '/api/events/$eventId/polls'
+      path: '/api/events/$eventId/polls'
+      fullPath: '/api/events/$eventId/polls'
+      preLoaderRoute: typeof ApiEventsEventIdPollsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events/$eventId/polls/$pollId/options': {
+      id: '/api/events/$eventId/polls/$pollId/options'
+      path: '/$pollId/options'
+      fullPath: '/api/events/$eventId/polls/$pollId/options'
+      preLoaderRoute: typeof ApiEventsEventIdPollsPollIdOptionsRouteImport
+      parentRoute: typeof ApiEventsEventIdPollsRoute
+    }
+    '/api/events/$eventId/polls/$pollId/vote': {
+      id: '/api/events/$eventId/polls/$pollId/vote'
+      path: '/$pollId/vote'
+      fullPath: '/api/events/$eventId/polls/$pollId/vote'
+      preLoaderRoute: typeof ApiEventsEventIdPollsPollIdVoteRouteImport
+      parentRoute: typeof ApiEventsEventIdPollsRoute
+    }
+    '/api/events/$eventId/polls/$pollId/options/$optionId': {
+      id: '/api/events/$eventId/polls/$pollId/options/$optionId'
+      path: '/$optionId'
+      fullPath: '/api/events/$eventId/polls/$pollId/options/$optionId'
+      preLoaderRoute: typeof ApiEventsEventIdPollsPollIdOptionsOptionIdRouteImport
+      parentRoute: typeof ApiEventsEventIdPollsPollIdOptionsRoute
+    }
   }
 }
+
+interface ApiEventsEventIdPollsPollIdOptionsRouteChildren {
+  ApiEventsEventIdPollsPollIdOptionsOptionIdRoute: typeof ApiEventsEventIdPollsPollIdOptionsOptionIdRoute
+}
+
+const ApiEventsEventIdPollsPollIdOptionsRouteChildren: ApiEventsEventIdPollsPollIdOptionsRouteChildren =
+  {
+    ApiEventsEventIdPollsPollIdOptionsOptionIdRoute:
+      ApiEventsEventIdPollsPollIdOptionsOptionIdRoute,
+  }
+
+const ApiEventsEventIdPollsPollIdOptionsRouteWithChildren =
+  ApiEventsEventIdPollsPollIdOptionsRoute._addFileChildren(
+    ApiEventsEventIdPollsPollIdOptionsRouteChildren,
+  )
+
+interface ApiEventsEventIdPollsRouteChildren {
+  ApiEventsEventIdPollsPollIdOptionsRoute: typeof ApiEventsEventIdPollsPollIdOptionsRouteWithChildren
+  ApiEventsEventIdPollsPollIdVoteRoute: typeof ApiEventsEventIdPollsPollIdVoteRoute
+}
+
+const ApiEventsEventIdPollsRouteChildren: ApiEventsEventIdPollsRouteChildren = {
+  ApiEventsEventIdPollsPollIdOptionsRoute:
+    ApiEventsEventIdPollsPollIdOptionsRouteWithChildren,
+  ApiEventsEventIdPollsPollIdVoteRoute: ApiEventsEventIdPollsPollIdVoteRoute,
+}
+
+const ApiEventsEventIdPollsRouteWithChildren =
+  ApiEventsEventIdPollsRoute._addFileChildren(
+    ApiEventsEventIdPollsRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -225,6 +336,7 @@ const rootRouteChildren: RootRouteChildren = {
   EEventIdRoute: EEventIdRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,
   ApiEventsEventIdAvailabilityRoute: ApiEventsEventIdAvailabilityRoute,
+  ApiEventsEventIdPollsRoute: ApiEventsEventIdPollsRouteWithChildren,
   ApiEventsEventIdIndexRoute: ApiEventsEventIdIndexRoute,
 }
 export const routeTree = rootRouteImport

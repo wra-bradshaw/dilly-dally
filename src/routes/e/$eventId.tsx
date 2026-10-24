@@ -4,6 +4,7 @@ import { useId, useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
+import { PollsSection } from "#/components/polls";
 import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -657,6 +658,14 @@ function EventPage() {
 						</CardContent>
 					</Card>
 				)}
+
+				<PollsSection
+					activeName={activeName}
+					eventId={eventId}
+					password={password}
+					polls={detail.data?.polls ?? []}
+					signedIn={signedIn}
+				/>
 
 				<Card className="mt-4">
 					<CardHeader>

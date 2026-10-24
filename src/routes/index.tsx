@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
 import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
+import { Checkbox } from "#/components/ui/checkbox";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -26,6 +27,7 @@ import {
 	formatSlotLabel,
 	todayPlusInTimezone,
 } from "#/lib/time-slots";
+import { MAX_OPTIONS_PER_POLL, MAX_POLLS_PER_EVENT } from "#/lib/validation";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -43,6 +45,14 @@ interface FieldErrors {
 	time?: string;
 	timeField?: "end" | "start";
 	timezone?: string;
+	polls?: string;
+}
+
+interface PollDraft {
+	allowMultiple: boolean;
+	key: number;
+	options: Array<{ key: number; value: string }>;
+	question: string;
 }
 
 function isValidTimezone(tz: string): boolean {
@@ -63,6 +73,9 @@ function Home() {
 	const [weekdays, setWeekdays] = useState<Set<number>>(
 		new Set([1, 2, 3, 4, 5]),
 	);
+	const [pollDrafts, setPollDrafts] = useState<PollDraft[]>([]);
+	const nextPollKey = useRef(0);
+	const nextOptionKey = useRef(0);
 	const [startTime, setStartTime] = useState("09:00");
 	const [endTime, setEndTime] = useState("17:00");
 	const [timezoneOverride, setTimezoneOverride] = useState("");
@@ -116,6 +129,39 @@ function Home() {
 			nextFields.timezone =
 				"Enter a valid time zone, for example America/New_York.";
 		}
+		if (pollDrafts.length > MAX_POLLS_PER_EVENT) {
+			nextFields.polls = "Events have at most 10 polls.";
+		} else {
+			for (const [idx, draft] of pollDrafts.entries()) {
+				const q = draft.question.trim();
+				const labels = draft.options
+					.map((o) => o.value.trim())
+					.filter((o) => o !== "");
+				if (q === "" || labels.length < 2) {
+					nextFields.polls = `Poll ${idx + 1} needs a question and at least two options.`;
+					break;
+				}
+				if (q.length > 140 || labels.some((l) => l.length > 80)) {
+					nextFields.polls = `Poll ${idx + 1} has text that is too long.`;
+					break;
+				}
+				if (
+					new Set(labels.map((l) => l.toLowerCase())).size !== labels.length
+				) {
+					nextFields.polls = `Poll ${idx + 1} options must be unique.`;
+					break;
+				}
+			}
+			const seenQuestions = new Set<string>();
+			for (const draft of pollDrafts) {
+				const k = draft.question.trim().toLowerCase();
+				if (seenQuestions.has(k)) {
+					nextFields.polls = "Poll questions must be unique.";
+					break;
+				}
+				seenQuestions.add(k);
+			}
+		}
 		if (Object.keys(nextFields).length > 0) {
 			const summary = Object.values(nextFields).join(" ");
 			fail(nextFields, summary);
@@ -123,11 +169,22 @@ function Home() {
 		}
 		setSaving(true);
 		try {
+			const pollsPayload =
+				pollDrafts.length === 0
+					? undefined
+					: pollDrafts.map((d) => ({
+							allowMultiple: d.allowMultiple,
+							options: d.options
+								.map((o) => o.value.trim())
+								.filter((o) => o !== ""),
+							question: d.question.trim(),
+						}));
 			const res = await createEvent(
 				mode === "weekly"
 					? {
 							endTime,
 							mode: "weekly",
+							polls: pollsPayload,
 							startTime,
 							timezone,
 							title: title.trim(),
@@ -136,6 +193,7 @@ function Home() {
 					: {
 							dates: [...dates].sort(),
 							endTime,
+							polls: pollsPayload,
 							startTime,
 							timezone,
 							title: title.trim(),
@@ -161,6 +219,8 @@ function Home() {
 					} else if (key === "startTime") {
 						mapped.time = text;
 						mapped.timeField = "start";
+					} else if (key.startsWith("polls")) {
+						mapped.polls = text;
 					} else if (key === "end_time" || key === "start_time") {
 						mapped.time = text;
 						mapped.timeField = "end";
@@ -403,6 +463,169 @@ function Home() {
 								<p className="text-xs text-destructive" id="time-error">
 									{fields.time}
 								</p>
+							)}
+						</fieldset>
+						<fieldset className="grid gap-2">
+							<legend className="text-xs leading-none">Polls (optional)</legend>
+							<p className="text-xs text-muted-foreground">
+								Add up to 10 polls. Each needs a question and 2-10 options.
+							</p>
+							{pollDrafts.map((draft, pIdx) => (
+								<div
+									className="grid gap-2 rounded-none border p-3"
+									key={draft.key}
+								>
+									<div className="grid gap-2">
+										<Label htmlFor={`poll-q-${draft.key}`}>
+											Question {pIdx + 1}
+										</Label>
+										<Input
+											id={`poll-q-${draft.key}`}
+											maxLength={140}
+											onChange={(e) => {
+												const v = e.target.value;
+												setPollDrafts((prev) =>
+													prev.map((d) =>
+														d.key === draft.key ? { ...d, question: v } : d,
+													),
+												);
+											}}
+											placeholder="Where should we eat?"
+											value={draft.question}
+										/>
+									</div>
+									<div className="grid gap-2">
+										<span className="text-xs">Options</span>
+										{draft.options.map((opt) => (
+											<Input
+												aria-label={`Poll ${pIdx + 1} option ${draft.options.findIndex((o) => o.key === opt.key) + 1}`}
+												key={opt.key}
+												maxLength={80}
+												onChange={(e) => {
+													const v = e.target.value;
+													setPollDrafts((prev) =>
+														prev.map((d, i) =>
+															i === pIdx
+																? {
+																		...d,
+																		options: d.options.map((o) =>
+																			o.key === opt.key
+																				? { ...o, value: v }
+																				: o,
+																		),
+																	}
+																: d,
+														),
+													);
+												}}
+												placeholder={`Option ${draft.options.findIndex((o) => o.key === opt.key) + 1}`}
+												value={opt.value}
+											/>
+										))}
+										<div className="flex gap-2">
+											{draft.options.length < MAX_OPTIONS_PER_POLL ? (
+												<Button
+													onClick={() =>
+														setPollDrafts((prev) =>
+															prev.map((d, i) =>
+																i === pIdx
+																	? {
+																			...d,
+																			options: [
+																				...d.options,
+																				{
+																					key: nextOptionKey.current++,
+																					value: "",
+																				},
+																			],
+																		}
+																	: d,
+															),
+														)
+													}
+													size="sm"
+													type="button"
+													variant="outline"
+												>
+													Add option
+												</Button>
+											) : null}
+											{draft.options.length > 2 ? (
+												<Button
+													onClick={() =>
+														setPollDrafts((prev) =>
+															prev.map((d, i) =>
+																i === pIdx
+																	? { ...d, options: d.options.slice(0, -1) }
+																	: d,
+															),
+														)
+													}
+													size="sm"
+													type="button"
+													variant="ghost"
+												>
+													Remove last option
+												</Button>
+											) : null}
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										<Checkbox
+											checked={draft.allowMultiple}
+											id={`poll-multi-${draft.key}`}
+											onCheckedChange={(v) =>
+												setPollDrafts((prev) =>
+													prev.map((d) =>
+														d.key === draft.key
+															? { ...d, allowMultiple: v === true }
+															: d,
+													),
+												)
+											}
+										/>
+										<Label htmlFor={`poll-multi-${draft.key}`}>
+											Allow multiple picks
+										</Label>
+									</div>
+									<Button
+										onClick={() =>
+											setPollDrafts((prev) =>
+												prev.filter((d) => d.key !== draft.key),
+											)
+										}
+										size="sm"
+										type="button"
+										variant="ghost"
+									>
+										Remove poll
+									</Button>
+								</div>
+							))}
+							{pollDrafts.length < MAX_POLLS_PER_EVENT ? (
+								<Button
+									onClick={() =>
+										setPollDrafts((prev) => [
+											...prev,
+											{
+												allowMultiple: false,
+												key: nextPollKey.current++,
+												options: [
+													{ key: nextOptionKey.current++, value: "" },
+													{ key: nextOptionKey.current++, value: "" },
+												],
+												question: "",
+											},
+										])
+									}
+									type="button"
+									variant="outline"
+								>
+									Add a poll
+								</Button>
+							) : null}
+							{fields.polls !== undefined && (
+								<p className="text-xs text-destructive">{fields.polls}</p>
 							)}
 						</fieldset>
 						<div className="grid gap-2">
