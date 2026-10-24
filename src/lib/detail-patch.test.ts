@@ -24,6 +24,7 @@ function detail(): EventDetailResponse {
 		participants: [
 			{ count: 2, name: "Bob", updatedAt: new Date(1000).toISOString() },
 		],
+		polls: [],
 		slotUniverse: ["2026-10-05T09:00", "2026-10-05T09:15"],
 	};
 }
