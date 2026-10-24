@@ -90,7 +90,9 @@ function PollCard({
 		onError: (err, _variables, ctx) => {
 			setVoteError(voteErrorMessage(err));
 			if (
-				queryClient.isMutating({ mutationKey: ["poll-vote", eventId] }) <= 1
+				queryClient.isMutating({
+					mutationKey: ["poll-vote", eventId, poll.id],
+				}) === 0
 			) {
 				if (ctx?.prev) queryClient.setQueryData(["event", eventId], ctx.prev);
 			}
@@ -117,7 +119,13 @@ function PollCard({
 			return { next: variables.optionIds, prev };
 		},
 		onSettled: () => {
-			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+			if (
+				queryClient.isMutating({
+					mutationKey: ["poll-vote", eventId, poll.id],
+				}) === 0
+			) {
+				void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+			}
 		},
 		onSuccess: () => {
 			setVoteError("");
