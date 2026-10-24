@@ -29,6 +29,7 @@ import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
 import { useTooltipOpen } from "#/hooks/use-tooltip-open";
+import { buildAgentPrompt } from "#/lib/agent-prompt";
 import {
 	type EventDetailResponse,
 	fetchOwnAvailability,
@@ -119,6 +120,12 @@ function EventPage() {
 	const queryClient = useQueryClient();
 	const { copied, copy, copyError } = useCopyToClipboard();
 	const copyTooltip = useTooltipOpen(copied || copyError);
+	const {
+		copied: promptCopied,
+		copy: copyPrompt,
+		copyError: promptCopyError,
+	} = useCopyToClipboard();
+	const promptTooltip = useTooltipOpen(promptCopied || promptCopyError);
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
 	const [name, setName] = useState(storedName);
 	const [password, setPassword] = useState("");
@@ -139,6 +146,8 @@ function EventPage() {
 	const signInTitleId = useId();
 	const inviteHintId = useId();
 	const copyStatusId = useId();
+	const promptHintId = useId();
+	const promptStatusId = useId();
 	const restoreStatusId = useId();
 	const tzLabelId = useId();
 	const signErrorRef = useErrorFocus<HTMLParagraphElement>(signError);
@@ -355,6 +364,11 @@ function EventPage() {
 
 	const total = allNames.length;
 	const url = inviteUrl(eventId);
+	const origin = url.startsWith("http") ? new URL(url).origin : "";
+	const agentPrompt = buildAgentPrompt({
+		guideUrl: `${origin}/api/agent-guide`,
+		inviteUrl: url,
+	});
 	const stale = detail.isError && detail.data !== undefined;
 	const gridDisabled =
 		restoreStatus === "restoring" ||
@@ -426,6 +440,41 @@ function EventPage() {
 					{copied
 						? "Invite link copied to clipboard"
 						: copyError
+							? "Copy failed. Select the link and copy it manually."
+							: ""}
+				</span>{" "}
+				<Tooltip
+					onOpenChange={promptTooltip.onOpenChange}
+					open={promptTooltip.open}
+				>
+					<TooltipTrigger asChild>
+						<Button
+							aria-describedby={promptHintId}
+							aria-label="Copy agent prompt"
+							className="min-h-6"
+							onClick={() => void copyPrompt(agentPrompt)}
+							size="xs"
+							type="button"
+							variant="outline"
+						>
+							Copy agent prompt
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						{promptCopyError
+							? "Copy failed — select the link and copy it manually"
+							: promptCopied
+								? "Copied!"
+								: "Ask your agent"}
+					</TooltipContent>
+				</Tooltip>
+				<span className="sr-only" id={promptHintId}>
+					Copies a prompt that asks your agent to fill in your availability
+				</span>
+				<span aria-live="polite" className="sr-only" id={promptStatusId}>
+					{promptCopied
+						? "Agent prompt copied to clipboard"
+						: promptCopyError
 							? "Copy failed. Select the link and copy it manually."
 							: ""}
 				</span>
