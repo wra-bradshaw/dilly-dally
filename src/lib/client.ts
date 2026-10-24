@@ -54,45 +54,51 @@ function toHttpError(
 	);
 }
 
+function unwrap<T>(result: {
+	data?: T;
+	error?: unknown;
+	response: Response;
+}): T {
+	if (!result.response.ok) {
+		throw toHttpError(
+			result.response.status,
+			result.error,
+			result.response.statusText,
+		);
+	}
+	return result.data as T;
+}
+
 export async function createEvent(
 	input: CreateEventRequest,
 ): Promise<CreateEventResponse> {
-	const { data, error, response } = await client.POST("/api/events", {
-		body: input,
-	});
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as CreateEventResponse;
+	return unwrap<CreateEventResponse>(
+		await client.POST("/api/events", {
+			body: input,
+		}),
+	);
 }
 
 export async function fetchEventDetail(
 	id: string,
 ): Promise<EventDetailResponse> {
-	const { data, error, response } = await client.GET("/api/events/{id}", {
-		params: { path: { id } },
-	});
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as EventDetailResponse;
+	return unwrap<EventDetailResponse>(
+		await client.GET("/api/events/{id}", {
+			params: { path: { id } },
+		}),
+	);
 }
 
 export async function saveAvailability(
 	id: string,
 	input: AvailabilityRequest,
 ): Promise<AvailabilityResponse> {
-	const { data, error, response } = await client.PUT(
-		"/api/events/{id}/availability",
-		{
+	return unwrap<AvailabilityResponse>(
+		await client.PUT("/api/events/{id}/availability", {
 			body: input,
 			params: { path: { id } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as AvailabilityResponse;
 }
 
 export async function fetchOwnAvailability(
@@ -100,34 +106,24 @@ export async function fetchOwnAvailability(
 	name: string,
 	password?: string,
 ): Promise<OwnAvailabilityResponse> {
-	const { data, error, response } = await client.GET(
-		"/api/events/{id}/availability",
-		{
+	return unwrap<OwnAvailabilityResponse>(
+		await client.GET("/api/events/{id}/availability", {
 			headers: password ? { "x-event-password": password } : undefined,
 			params: { path: { id }, query: { name } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as OwnAvailabilityResponse;
 }
 
 export async function createPoll(
 	id: string,
 	input: CreatePollRequest,
 ): Promise<CreatePollResponse> {
-	const { data, error, response } = await client.POST(
-		"/api/events/{id}/polls",
-		{
+	return unwrap<CreatePollResponse>(
+		await client.POST("/api/events/{id}/polls", {
 			body: input,
 			params: { path: { id } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as CreatePollResponse;
 }
 
 export async function addPollOption(
@@ -135,17 +131,12 @@ export async function addPollOption(
 	pollId: string,
 	input: AddPollOptionRequest,
 ): Promise<AddPollOptionResponse> {
-	const { data, error, response } = await client.POST(
-		"/api/events/{id}/polls/{pollId}/options",
-		{
+	return unwrap<AddPollOptionResponse>(
+		await client.POST("/api/events/{id}/polls/{pollId}/options", {
 			body: input,
 			params: { path: { id, pollId } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as AddPollOptionResponse;
 }
 
 export async function deletePollOption(
@@ -153,16 +144,11 @@ export async function deletePollOption(
 	pollId: string,
 	optionId: string,
 ): Promise<unknown> {
-	const { data, error, response } = await client.DELETE(
-		"/api/events/{id}/polls/{pollId}/options/{optionId}",
-		{
+	return unwrap<unknown>(
+		await client.DELETE("/api/events/{id}/polls/{pollId}/options/{optionId}", {
 			params: { path: { id, optionId, pollId } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data;
 }
 
 export async function votePoll(
@@ -170,17 +156,12 @@ export async function votePoll(
 	pollId: string,
 	input: PollVoteRequest,
 ): Promise<PollVoteResponse> {
-	const { data, error, response } = await client.PUT(
-		"/api/events/{id}/polls/{pollId}/vote",
-		{
+	return unwrap<PollVoteResponse>(
+		await client.PUT("/api/events/{id}/polls/{pollId}/vote", {
 			body: input,
 			params: { path: { id, pollId } },
-		},
+		}),
 	);
-	if (!response.ok) {
-		throw toHttpError(response.status, error, response.statusText);
-	}
-	return data as PollVoteResponse;
 }
 
 export interface SessionResponse {

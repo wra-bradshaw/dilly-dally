@@ -1,6 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { suppressToggleKey, usePaintSurface } from "#/hooks/use-paint-surface";
-import { headerForWeekday, weekdayFullName } from "./grid-model";
+import { weekdayName } from "./grid-model";
 
 interface WeekdayPickerProps {
 	selected: Set<number>;
@@ -51,7 +51,7 @@ export function WeekdayPicker({
 			variant="outline"
 		>
 			{WEEKDAYS.map((day) => {
-				const full = weekdayFullName(day);
+				const full = weekdayName(day, "long");
 				return (
 					<ToggleGroupItem
 						aria-label={full}
@@ -67,7 +67,7 @@ export function WeekdayPicker({
 						title={full}
 						value={String(day)}
 					>
-						{headerForWeekday(day)}
+						{weekdayName(day)}
 					</ToggleGroupItem>
 				);
 			})}

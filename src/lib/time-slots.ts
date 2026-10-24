@@ -229,15 +229,23 @@ function hourToMinutes(t: string): number | null {
 	return h * 60 + m;
 }
 
+function halfHourRange(startTime: string, endTime: string): number[] | null {
+	const start = hourToMinutes(startTime);
+	const end = hourToMinutes(endTime);
+	if (start === null || end === null) return null;
+	if (start >= end) return null;
+	const out: number[] = [];
+	for (let mins = start; mins < end; mins += 30) out.push(mins);
+	return out;
+}
+
 export function buildSlotUniverse(input: SlotUniverseInput): string[] {
-	const start = hourToMinutes(input.startTime);
-	const end = hourToMinutes(input.endTime);
-	if (start === null || end === null) return [];
-	if (start >= end) return [];
+	const range = halfHourRange(input.startTime, input.endTime);
+	if (range === null) return [];
 	const dates = [...new Set(input.dates ?? [])].sort();
 	const out: string[] = [];
 	for (const date of dates) {
-		for (let mins = start; mins < end; mins += 30) {
+		for (const mins of range) {
 			const h = String(Math.floor(mins / 60)).padStart(2, "0");
 			const mm = String(mins % 60).padStart(2, "0");
 			out.push(`${date}T${h}:${mm}`);
@@ -247,10 +255,8 @@ export function buildSlotUniverse(input: SlotUniverseInput): string[] {
 }
 
 export function buildWeeklyUniverse(input: WeeklyUniverseInput): string[] {
-	const start = hourToMinutes(input.startTime);
-	const end = hourToMinutes(input.endTime);
-	if (start === null || end === null) return [];
-	if (start >= end) return [];
+	const range = halfHourRange(input.startTime, input.endTime);
+	if (range === null) return [];
 	const weekdays = [...new Set(input.weekdays)]
 		.filter((w) => Number.isInteger(w) && w >= 0 && w <= 6)
 		.sort((a, b) => a - b);
@@ -258,7 +264,7 @@ export function buildWeeklyUniverse(input: WeeklyUniverseInput): string[] {
 	for (const weekday of weekdays) {
 		const code = weekdayCode(weekday);
 		if (code === null) continue;
-		for (let mins = start; mins < end; mins += 30) {
+		for (const mins of range) {
 			const h = String(Math.floor(mins / 60)).padStart(2, "0");
 			const mm = String(mins % 60).padStart(2, "0");
 			out.push(`${code}-${h}:${mm}`);

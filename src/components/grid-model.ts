@@ -38,23 +38,16 @@ type TimeRow =
 	| { kind: "cells"; rowIndex: number }
 	| { kind: "markers"; markers: (DateMarker | null)[] };
 
-export function headerForWeekday(weekday: number): string {
+export function weekdayName(
+	weekday: number,
+	style: "short" | "long" = "short",
+): string {
 	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
 		return `Day ${weekday}`;
 	}
 	return new Intl.DateTimeFormat("en-US", {
 		timeZone: "UTC",
-		weekday: "short",
-	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
-}
-
-export function weekdayFullName(weekday: number): string {
-	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
-		return `Day ${weekday}`;
-	}
-	return new Intl.DateTimeFormat("en-US", {
-		timeZone: "UTC",
-		weekday: "long",
+		weekday: style,
 	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
 }
 
@@ -290,7 +283,7 @@ export function buildWeeklyColumns(
 			return {
 				cells,
 				key: code,
-				header: headerForWeekday(weekday),
+				header: weekdayName(weekday),
 			};
 		});
 }

@@ -32,22 +32,6 @@ interface TimeGridProps {
 	onPointerUp?: (e: React.PointerEvent) => void;
 }
 
-function useTimeGrid(columns: GridColumn[]) {
-	const gaps = useMemo(() => getDayGaps(columns), [columns]);
-	const gapByAfter = useMemo(
-		() => new Map(gaps.map((g) => [g.afterIndex, g])),
-		[gaps],
-	);
-	const breaksByCol = useMemo(
-		() => columns.map((c) => getDateBreaks(c)),
-		[columns],
-	);
-	const rows = useMemo(() => buildTimeRows(columns), [columns]);
-	const summary = useMemo(() => summarizeDates(columns), [columns]);
-	const totalSkipped = gaps.reduce((n, g) => n + g.skipped, 0);
-	return { breaksByCol, gapByAfter, gaps, rows, summary, totalSkipped };
-}
-
 export function TimeGrid({
 	announce = true,
 	columns,
@@ -60,8 +44,18 @@ export function TimeGrid({
 	tableLabel,
 	tableRef,
 }: TimeGridProps) {
-	const { breaksByCol, gapByAfter, gaps, rows, summary, totalSkipped } =
-		useTimeGrid(columns);
+	const gaps = useMemo(() => getDayGaps(columns), [columns]);
+	const gapByAfter = useMemo(
+		() => new Map(gaps.map((g) => [g.afterIndex, g])),
+		[gaps],
+	);
+	const breaksByCol = useMemo(
+		() => columns.map((c) => getDateBreaks(c)),
+		[columns],
+	);
+	const rows = useMemo(() => buildTimeRows(columns), [columns]);
+	const summary = useMemo(() => summarizeDates(columns), [columns]);
+	const totalSkipped = gaps.reduce((n, g) => n + g.skipped, 0);
 	const rawId = useId();
 	const baseId = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
 	const captionId = `${baseId}-caption`;
