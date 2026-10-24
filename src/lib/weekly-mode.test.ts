@@ -33,8 +33,14 @@ describe("weekly createEventSchema", () => {
 	});
 
 	it("keeps old date curls working without mode", () => {
+		const d1 = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+			.toISOString()
+			.slice(0, 10);
+		const d2 = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
+			.toISOString()
+			.slice(0, 10);
 		const parsed = createEventSchema.safeParse({
-			dates: ["2026-10-05", "2026-10-06"],
+			dates: [d1, d2],
 			endTime: "17:00",
 			startTime: "09:00",
 			timezone: "America/New_York",
