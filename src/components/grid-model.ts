@@ -3,6 +3,7 @@ import {
 	formatSlotLabel,
 	formatSlotWithDate,
 	formatWeeklySlot,
+	type HourCycle,
 	isWeeklySlotId,
 	weekdayForCode,
 } from "#/lib/time-slots";
@@ -252,12 +253,19 @@ export function formatViewerSlot(
 	slot: string,
 	eventTimezone: string,
 	viewTimezone: string,
+	hourCycle: HourCycle = "h12",
 ): string {
-	if (isWeeklySlotId(slot)) return formatWeeklySlot(slot);
-	return formatSlotWithDate(convertSlotZone(slot, eventTimezone, viewTimezone));
+	if (isWeeklySlotId(slot)) return formatWeeklySlot(slot, hourCycle);
+	return formatSlotWithDate(
+		convertSlotZone(slot, eventTimezone, viewTimezone),
+		hourCycle,
+	);
 }
 
-export function buildWeeklyColumns(universe: string[]): GridColumn[] {
+export function buildWeeklyColumns(
+	universe: string[],
+	hourCycle: HourCycle = "h12",
+): GridColumn[] {
 	const byWeekday = new Map<number, GridCell[]>();
 	for (const id of universe) {
 		if (!isWeeklySlotId(id)) continue;
@@ -271,7 +279,7 @@ export function buildWeeklyColumns(universe: string[]): GridColumn[] {
 			display: id,
 			hourStart: minutes === "00",
 			id,
-			label: formatSlotLabel(`2000-01-01T${time}`),
+			label: formatSlotLabel(`2000-01-01T${time}`, hourCycle),
 		});
 		byWeekday.set(weekday, list);
 	}
@@ -291,12 +299,13 @@ export function buildColumns(
 	universe: string[],
 	eventTimezone: string,
 	viewTimezone: string,
+	hourCycle: HourCycle = "h12",
 ): GridColumn[] {
 	const byEventDate = new Map<string, GridCell[]>();
 	for (const id of universe) {
 		const eventDate = id.slice(0, 10);
 		const display = convertSlotZone(id, eventTimezone, viewTimezone);
-		const label = formatSlotLabel(display);
+		const label = formatSlotLabel(display, hourCycle);
 		const minutes = display.slice(14, 16);
 		const list = byEventDate.get(eventDate) ?? [];
 		list.push({

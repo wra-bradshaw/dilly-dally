@@ -2,10 +2,9 @@ import { z } from "zod";
 import { DAY_MS, EVENT_MAX_FUTURE_DAYS } from "./expiry";
 
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-const hourRe = /^([01]\d|2[0-3]):00$/;
-const slotRe = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):(00|15|30|45)$/;
-const weeklySlotRe =
-	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|15|30|45)$/;
+const hourRe = /^([01]\d|2[0-3]):(00|30)$/;
+const slotRe = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):(00|30)$/;
+const weeklySlotRe = /^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|30)$/;
 
 function isSlotId(s: string): boolean {
 	return slotRe.test(s) || weeklySlotRe.test(s);

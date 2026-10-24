@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
+import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { cn } from "#/lib/utils";
 import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
 import { TimeGrid } from "./time-grid";
@@ -15,19 +16,19 @@ export function heatmapAnnounce(signedIn: boolean): boolean {
 
 export function heatmapFill(count: number, total: number): string {
 	if (!(count > 0)) {
-		return "border-rose-600 bg-rose-100 dark:border-rose-400 dark:bg-rose-950/40";
+		return "border-rose-200 bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40";
 	}
 	const ratio = total > 0 ? count / total : 0;
 	if (ratio >= 1) {
-		return "border-emerald-800 bg-emerald-400 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-700 dark:text-emerald-100";
+		return "border-emerald-500 bg-emerald-400 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-700 dark:text-emerald-100";
 	}
 	if (ratio >= 0.6) {
-		return "border-emerald-800 bg-emerald-300 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-800 dark:text-emerald-100";
+		return "border-emerald-400 bg-emerald-300 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-800 dark:text-emerald-100";
 	}
 	if (ratio >= 0.3) {
-		return "border-emerald-800 bg-emerald-200 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-900 dark:text-emerald-100";
+		return "border-emerald-300 bg-emerald-200 text-emerald-950 dark:border-emerald-950 dark:bg-emerald-900 dark:text-emerald-100";
 	}
-	return "border-emerald-800 bg-emerald-100 text-emerald-950 dark:border-emerald-300 dark:bg-emerald-950 dark:text-emerald-100";
+	return "border-emerald-200 bg-emerald-100 text-emerald-950 dark:border-emerald-950 dark:bg-emerald-950 dark:text-emerald-100";
 }
 
 interface GroupHeatmapProps {
@@ -53,6 +54,7 @@ export function GroupHeatmap({
 	const [focusedId, setFocusedId] = useState<string | null>(null);
 	const tapped = useRef<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
+	const hourCycle = useHourCycle();
 	const rawDetailId = useId();
 	const detailId = rawDetailId.replace(/[^a-zA-Z0-9_-]/g, "");
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
@@ -76,7 +78,7 @@ export function GroupHeatmap({
 	);
 	const hoveredDisplay =
 		hovered && eventTimezone && viewTimezone
-			? formatViewerSlot(hovered, eventTimezone, viewTimezone)
+			? formatViewerSlot(hovered, eventTimezone, viewTimezone, hourCycle)
 			: hovered;
 
 	return (
@@ -91,9 +93,9 @@ export function GroupHeatmap({
 							aria-describedby={detailId}
 							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
-								"block h-6 min-h-6 w-full cursor-default border-r border-b border-l text-[10px] leading-6 font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
+								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs sm:text-[10px] leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 								heatmapFill(counts.get(cell.id)?.count ?? 0, total),
-								ctx.afterBreak && "border-t-2 border-t-foreground/50",
+								ctx.afterBreak && "border-t-2 border-t-foreground/20",
 								hovered === cell.id && "ring-2 ring-inset ring-ring",
 							)}
 							data-cell={cell.id}
@@ -149,7 +151,7 @@ export function GroupHeatmap({
 				/>
 			</div>
 			<div
-				className="min-h-24 w-full shrink-0 rounded-md border p-3 text-sm lg:w-64"
+				className="max-h-64 min-h-24 w-full shrink-0 overflow-y-auto rounded-md border p-3 text-sm lg:max-h-none lg:w-64"
 				id={detailId}
 			>
 				{info && hovered ? (
@@ -157,7 +159,10 @@ export function GroupHeatmap({
 						<h3 className="font-semibold">
 							{info.count}/{total} available
 						</h3>
-						<p className="mt-1 text-xs text-muted-foreground" title={hovered}>
+						<p
+							className="mt-1 line-clamp-2 text-xs break-all text-muted-foreground"
+							title={hovered}
+						>
 							{hoveredDisplay}
 						</p>
 						{info.names.length > 0 && (

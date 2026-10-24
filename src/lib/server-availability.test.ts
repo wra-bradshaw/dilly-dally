@@ -105,7 +105,7 @@ describe("upsertAvailability", () => {
 			upsertAvailability(
 				db,
 				event,
-				{ name: "race", slots: ["2026-10-05T09:15"] },
+				{ name: "race", slots: ["2026-10-05T09:30"] },
 				1001,
 			),
 		]);
@@ -115,7 +115,7 @@ describe("upsertAvailability", () => {
 		expect(stored.ok).toBe(true);
 		if (stored.ok) {
 			expect(stored.slots).toHaveLength(1);
-			expect(["2026-10-05T09:00", "2026-10-05T09:15"]).toContain(
+			expect(["2026-10-05T09:00", "2026-10-05T09:30"]).toContain(
 				stored.slots[0],
 			);
 		}
@@ -221,14 +221,14 @@ describe("getOwnAvailability", () => {
 		await upsertAvailability(
 			db,
 			event,
-			{ name: "Dan", password: "dan-secret-1", slots: ["2026-10-05T09:15"] },
+			{ name: "Dan", password: "dan-secret-1", slots: ["2026-10-05T09:30"] },
 			1000,
 		);
 		const authed = await getOwnAvailability(db, event, "dan", "dan-secret-1");
 		expect(authed).toEqual({
 			name: "Dan",
 			ok: true,
-			slots: ["2026-10-05T09:15"],
+			slots: ["2026-10-05T09:30"],
 		});
 		expect(await getOwnAvailability(db, event, "dan", null)).toEqual({
 			code: "invalid_password",

@@ -71,7 +71,7 @@ export function AvailabilityGrid({
 		<div>
 			<div
 				className={cn(
-					"touch-pan-x touch-pan-y overflow-x-auto pb-2",
+					"touch-pan-x touch-pan-y overflow-x-auto overscroll-x-contain pb-2",
 					disabled && "opacity-60",
 				)}
 			>
@@ -97,13 +97,15 @@ export function AvailabilityGrid({
 								aria-label={`${ctx.segment.label} ${cell.label}`}
 								aria-pressed={isSelected}
 								className={cn(
-									"relative block h-6 min-h-6 w-full border-r border-b border-l transition-colors motion-reduce:transition-none first:border-t hover:ring-2 hover:ring-inset hover:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
+									"absolute inset-0 w-full border-r border-b border-l transition-colors motion-reduce:transition-none first:border-t hover:ring-2 hover:ring-inset hover:ring-ring active:ring-2 active:ring-inset active:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 									isSelected
-										? "border-emerald-800 bg-emerald-400 dark:border-emerald-300 dark:bg-emerald-700"
-										: "border-rose-600 bg-rose-100 hover:bg-rose-200 dark:border-rose-400 dark:bg-rose-950/40 dark:hover:bg-rose-900/60",
+										? "border-emerald-500 bg-emerald-400 dark:border-emerald-800 dark:bg-emerald-700"
+										: "border-rose-200 bg-rose-100 hover:bg-rose-200 dark:border-rose-800 dark:bg-rose-950/40 dark:hover:bg-rose-900/60",
 									cell.hourStart &&
-										"border-t border-t-rose-600 dark:border-t-rose-400",
-									ctx.afterBreak && "border-t-2 border-t-foreground/50",
+										(isSelected
+											? "border-t border-t-emerald-500 dark:border-t-emerald-800"
+											: "border-t border-t-rose-200 dark:border-t-rose-800"),
+									ctx.afterBreak && "border-t-2 border-t-foreground/20",
 								)}
 								data-cell={cell.id}
 								onClick={(e) => surface.toggle(cell.id, e.detail)}
@@ -113,9 +115,9 @@ export function AvailabilityGrid({
 									if (e.button !== 0 && e.pointerType === "mouse") return;
 									surface.start(cell.id, e);
 								}}
-								onPointerEnter={() => {
+								onPointerEnter={(e) => {
 									if (disabled) return;
-									surface.hover(cell.id);
+									surface.hover(cell.id, e);
 								}}
 								tabIndex={cell.id === roving ? 0 : -1}
 								type="button"
@@ -123,7 +125,7 @@ export function AvailabilityGrid({
 								<span
 									aria-hidden="true"
 									className={cn(
-										"pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] leading-none font-bold",
+										"pointer-events-none absolute inset-0 flex items-center justify-center text-xs sm:text-[10px] leading-none font-bold",
 										isSelected
 											? "text-emerald-950 dark:text-emerald-100"
 											: "text-transparent",
@@ -134,8 +136,8 @@ export function AvailabilityGrid({
 							</button>
 						);
 					}}
-					tableClassName="touch-none"
-					tableLabel="Your availability. Click or drag to paint times you are free. Use arrow keys to move, space to toggle."
+					tableClassName="touch-manipulation"
+					tableLabel="Your availability. Click or drag to paint times you are free. On touch screens, touch and hold, then drag. Use arrow keys to move, space to toggle."
 					tableRef={surface.containerRef}
 				/>
 			</div>

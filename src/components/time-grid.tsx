@@ -91,14 +91,14 @@ export function TimeGrid({
 				</caption>
 				<thead>
 					<tr>
-						<th className="w-16" scope="col">
+						<th className="w-12 sm:w-16" scope="col">
 							<span className="sr-only">Time</span>
 						</th>
 						{columns.map((col, i) => (
 							<Fragment key={col.key}>
 								{i > 0 && gapByAfter.get(i - 1) ? (
 									<th
-										className="min-w-4 px-0.5 pb-1"
+										className="min-w-3 sm:min-w-4 px-0.5 pb-1"
 										key={`gap-${gapByAfter.get(i - 1)?.afterDate}-${gapByAfter.get(i - 1)?.beforeDate}`}
 										scope="col"
 									>
@@ -116,7 +116,7 @@ export function TimeGrid({
 									</th>
 								) : null}
 								<th
-									className="min-w-9 px-0.5"
+									className="min-w-8 px-0.5 sm:min-w-9"
 									id={`${baseId}-col-${i}`}
 									scope="col"
 								>
@@ -135,7 +135,7 @@ export function TimeGrid({
 								// biome-ignore lint/suspicious/noArrayIndexKey: interleaved marker/cell rows are positional and never reorder
 								<tr key={`marker-${ri}`}>
 									<td aria-hidden="true" className="p-0">
-										<span className="block h-1 w-16" />
+										<span className="block h-1 w-12 sm:w-16" />
 									</td>
 									{columns.map((col, i) => {
 										const gap = i > 0 ? gapByAfter.get(i - 1) : undefined;
@@ -147,19 +147,19 @@ export function TimeGrid({
 														aria-hidden="true"
 														className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
 													>
-														<span className="block h-7 w-4" />
+														<span className="block h-7 w-3 sm:w-4" />
 													</td>
 												) : null}
 												{marker ? (
 													<th
 														className={cn(
 															"px-0.5 pb-1",
-															marker.rowIndex === 0 ? "pt-1" : "pt-4",
+															marker.rowIndex === 0 ? "pt-1" : "pt-2 sm:pt-4",
 														)}
 														id={`${baseId}-date-${col.key}-${marker.rowIndex}`}
 														scope="col"
 													>
-														<div className="text-[11px] font-semibold">
+														<div className="text-xs font-semibold sm:text-[11px]">
 															{marker.label}
 														</div>
 													</th>
@@ -182,7 +182,7 @@ export function TimeGrid({
 							<tr key={`row-${r}`}>
 								{gutter?.hourStart === true && gutter ? (
 									<th
-										className="pr-1 text-right align-top text-[10px] leading-6 font-normal text-muted-foreground"
+										className="h-12 pr-1 text-right align-top text-xs sm:text-[10px] leading-6 font-normal text-muted-foreground sm:h-auto"
 										id={rowId ?? undefined}
 										scope="row"
 									>
@@ -190,7 +190,7 @@ export function TimeGrid({
 									</th>
 								) : (
 									<td aria-hidden="true" className="p-0">
-										<span className="block h-6 w-16" />
+										<span className="block h-12 w-12 sm:h-6 sm:w-16" />
 									</td>
 								)}
 								{columns.map((col, i) => {
@@ -215,11 +215,15 @@ export function TimeGrid({
 													aria-hidden="true"
 													className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
 												>
-													<span className="block h-6 w-4" />
+													<span className="block h-6 w-3 sm:w-4" />
 												</td>
 											) : null}
 											{cell && segment ? (
-												<td className="p-0" headers={headers} key={cell.id}>
+												<td
+													className="relative p-0"
+													headers={headers}
+													key={cell.id}
+												>
 													{renderCell(cell, {
 														afterBreak,
 														column: col,
@@ -230,7 +234,7 @@ export function TimeGrid({
 												</td>
 											) : (
 												<td className="p-0">
-													<span className="block h-6 w-full" />
+													<span className="block h-12 w-full sm:h-6" />
 												</td>
 											)}
 										</Fragment>

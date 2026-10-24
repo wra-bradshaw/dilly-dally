@@ -151,14 +151,14 @@ describe("weekday codes", () => {
 });
 
 describe("weekly slot universe", () => {
-	it("expands weekdays and hours into 15-min slots", () => {
+	it("expands weekdays and hours into 30-min slots", () => {
 		expect(
 			buildWeeklyUniverse({
 				endTime: "10:00",
 				startTime: "09:00",
 				weekdays: [1],
 			}),
-		).toEqual(["MON-09:00", "MON-09:15", "MON-09:30", "MON-09:45"]);
+		).toEqual(["MON-09:00", "MON-09:30"]);
 	});
 
 	it("orders columns by weekday regardless of input order", () => {
@@ -167,8 +167,8 @@ describe("weekly slot universe", () => {
 			startTime: "09:00",
 			weekdays: [5, 1],
 		});
-		expect(slots.slice(0, 2)).toEqual(["MON-09:00", "MON-09:15"]);
-		expect(slots.slice(4, 6)).toEqual(["FRI-09:00", "FRI-09:15"]);
+		expect(slots.slice(0, 2)).toEqual(["MON-09:00", "MON-09:30"]);
+		expect(slots.slice(2, 4)).toEqual(["FRI-09:00", "FRI-09:30"]);
 	});
 
 	it("returns empty for invalid range", () => {
@@ -189,7 +189,7 @@ describe("weekly slot universe", () => {
 			startTime: "09:00",
 			weekdays: [3],
 		});
-		expect(slots).toEqual(["WED-09:00", "WED-09:15", "WED-09:30", "WED-09:45"]);
+		expect(slots).toEqual(["WED-09:00", "WED-09:30"]);
 	});
 
 	it("buildSlotUniverse keeps date behavior unchanged", () => {
@@ -199,18 +199,13 @@ describe("weekly slot universe", () => {
 				endTime: "10:00",
 				startTime: "09:00",
 			}),
-		).toEqual([
-			"2026-10-05T09:00",
-			"2026-10-05T09:15",
-			"2026-10-05T09:30",
-			"2026-10-05T09:45",
-		]);
+		).toEqual(["2026-10-05T09:00", "2026-10-05T09:30"]);
 	});
 
 	it("validates weekly slot ids", () => {
-		expect(isWeeklySlotId("MON-09:15")).toBe(true);
+		expect(isWeeklySlotId("MON-09:30")).toBe(true);
 		expect(isWeeklySlotId("SUN-00:00")).toBe(true);
-		expect(isWeeklySlotId("2026-10-05T09:15")).toBe(false);
+		expect(isWeeklySlotId("2026-10-05T09:30")).toBe(false);
 		expect(isWeeklySlotId("MON-09:07")).toBe(false);
 	});
 });
@@ -260,7 +255,7 @@ describe("weekly server availability", () => {
 		const res = await upsertAvailability(
 			db,
 			weeklyEvent,
-			{ name: "Alice", slots: ["MON-09:00", "WED-09:15"] },
+			{ name: "Alice", slots: ["MON-09:00", "WED-09:30"] },
 			1000,
 		);
 		expect(res.ok).toBe(true);
@@ -304,14 +299,14 @@ describe("weekly server availability", () => {
 		await upsertAvailability(
 			db,
 			weeklyEvent,
-			{ name: "Bob", slots: ["MON-09:00", "MON-09:15"] },
+			{ name: "Bob", slots: ["MON-09:00", "MON-09:30"] },
 			1001,
 		);
 		const stored = await fetchEvent(db, weeklyEvent.id);
 		const detail = await getEventDetail(db, stored ?? weeklyEvent);
 		expect(detail.slotUniverse).toContain("MON-09:00");
-		expect(detail.slotUniverse).toContain("WED-09:45");
-		expect(detail.slotUniverse).toHaveLength(8);
+		expect(detail.slotUniverse).toContain("WED-09:30");
+		expect(detail.slotUniverse).toHaveLength(4);
 		expect(detail.bestTimes[0]).toEqual({ count: 2, slot: "MON-09:00" });
 		expect(detail.event.mode).toBe("weekly");
 	});
@@ -321,7 +316,7 @@ describe("weekly server availability", () => {
 		await insertEvent(db, dateEvent);
 		const stored = await fetchEvent(db, dateEvent.id);
 		const detail = await getEventDetail(db, stored ?? dateEvent);
-		expect(detail.slotUniverse).toHaveLength(4);
+		expect(detail.slotUniverse).toHaveLength(2);
 		expect(detail.event.mode).toBe("dates");
 	});
 

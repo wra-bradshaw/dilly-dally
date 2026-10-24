@@ -30,7 +30,7 @@ describe("loadEventDetailFromDb", () => {
 		);
 		const detail = await loadEventDetailFromDb(db, event.id, 1_000_000);
 		expect(detail.event.title).toBe("Standup");
-		expect(detail.slotUniverse).toHaveLength(4);
+		expect(detail.slotUniverse).toHaveLength(2);
 		expect(detail.participants).toHaveLength(1);
 	});
 
@@ -71,12 +71,12 @@ describe("getEventDetail", () => {
 		await upsertAvailability(
 			db,
 			event,
-			{ name: "Bob", slots: ["2026-10-05T09:00", "2026-10-05T09:15"] },
+			{ name: "Bob", slots: ["2026-10-05T09:00", "2026-10-05T09:30"] },
 			1001,
 		);
 		const stored = await fetchEvent(db, event.id);
 		const detail = await getEventDetail(db, stored ?? event);
-		expect(detail.slotUniverse).toHaveLength(4);
+		expect(detail.slotUniverse).toHaveLength(2);
 		expect(detail.counts[0]).toEqual({
 			count: 2,
 			names: ["Alice", "Bob"],

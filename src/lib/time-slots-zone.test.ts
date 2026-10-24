@@ -31,8 +31,8 @@ describe("instantToSlot", () => {
 	});
 
 	it("round-trips across zones", () => {
-		const ms = slotToInstant("2026-10-05T09:15", "America/New_York");
-		expect(instantToSlot(ms, "Asia/Tokyo")).toBe("2026-10-05T22:15");
+		const ms = slotToInstant("2026-10-05T09:30", "America/New_York");
+		expect(instantToSlot(ms, "Asia/Tokyo")).toBe("2026-10-05T22:30");
 	});
 });
 

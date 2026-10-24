@@ -17,11 +17,11 @@ describe("buildWeeklyColumns", () => {
 		});
 		const cols = buildWeeklyColumns(universe);
 		expect(cols.map((c) => c.key)).toEqual(["MON", "WED", "FRI"]);
-		for (const col of cols) expect(col.cells).toHaveLength(4);
+		for (const col of cols) expect(col.cells).toHaveLength(2);
 	});
 
 	it("labels cells with weekday headers and hour times", () => {
-		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:15"]);
+		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:30"]);
 		expect(cols).toHaveLength(1);
 		expect(cols[0].header).toBe(headerForWeekday(1));
 		expect(cols[0].cells[0].label).toBe(
@@ -42,7 +42,7 @@ describe("buildWeeklyColumns", () => {
 			weekdays: [1, 3],
 		});
 		const cols = buildWeeklyColumns(universe);
-		expect(cols.map((c) => c.cells.length)).toEqual([32, 32]);
+		expect(cols.map((c) => c.cells.length)).toEqual([16, 16]);
 	});
 
 	it("leaves date columns untouched", () => {

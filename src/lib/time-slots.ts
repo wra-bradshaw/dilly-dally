@@ -1,8 +1,8 @@
 import { DAY_MS } from "./expiry";
 
 const WEEKLY_SLOT_RE =
-	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|15|30|45)$/;
-const HOUR_RE = /^([01]\d|2[0-3]):00$/;
+	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|30)$/;
+const HOUR_RE = /^([01]\d|2[0-3]):(00|30)$/;
 
 export const WEEKDAY_CODES = [
 	"SUN",
@@ -15,6 +15,25 @@ export const WEEKDAY_CODES = [
 ] as const;
 
 export type EventMode = "dates" | "weekly";
+
+export type HourCycle = "h11" | "h12" | "h23" | "h24";
+
+export function systemHourCycle(): HourCycle {
+	try {
+		const resolved = new Intl.DateTimeFormat(undefined, {
+			hour: "numeric",
+		}).resolvedOptions().hourCycle;
+		if (
+			resolved === "h11" ||
+			resolved === "h12" ||
+			resolved === "h23" ||
+			resolved === "h24"
+		) {
+			return resolved;
+		}
+	} catch {}
+	return "h12";
+}
 
 export function browserTimezone(): string {
 	try {
@@ -80,11 +99,20 @@ function wallFormatter(tz: string): Intl.DateTimeFormat {
 	return fmt;
 }
 
-const slotLabelFormatter = new Intl.DateTimeFormat("en-US", {
-	hour: "numeric",
-	minute: "2-digit",
-	timeZone: "UTC",
-});
+const slotLabelFormatters = new Map<HourCycle, Intl.DateTimeFormat>();
+
+function slotLabelFormatterFor(hourCycle: HourCycle): Intl.DateTimeFormat {
+	const cached = slotLabelFormatters.get(hourCycle);
+	if (cached) return cached;
+	const fmt = new Intl.DateTimeFormat("en-US", {
+		hour: "numeric",
+		hourCycle,
+		minute: "2-digit",
+		timeZone: "UTC",
+	});
+	slotLabelFormatters.set(hourCycle, fmt);
+	return fmt;
+}
 const weekdayShortFormatter = new Intl.DateTimeFormat("en-US", {
 	timeZone: "UTC",
 	weekday: "short",
@@ -132,10 +160,15 @@ export function convertSlotZone(
 	return instantToSlot(slotToInstant(slot, fromTz), toTz);
 }
 
-export function formatSlotLabel(slot: string): string {
+export function formatSlotLabel(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
 	const [, time] = slot.split("T");
 	const [hh, mm] = time.split(":").map(Number);
-	return slotLabelFormatter.format(new Date(Date.UTC(2000, 0, 1, hh, mm)));
+	return slotLabelFormatterFor(hourCycle).format(
+		new Date(Date.UTC(2000, 0, 1, hh, mm)),
+	);
 }
 
 function weekdayShortForCode(code: string): string {
@@ -144,12 +177,15 @@ function weekdayShortForCode(code: string): string {
 	return weekdayShortFormatter.format(new Date(Date.UTC(2000, 0, 2 + idx)));
 }
 
-export function formatWeeklySlot(slot: string): string {
+export function formatWeeklySlot(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
 	const dash = slot.indexOf("-");
 	if (dash === -1 || !isWeeklySlotId(slot)) return slot;
 	const code = slot.slice(0, dash);
 	const time = slot.slice(dash + 1);
-	return `${weekdayShortForCode(code)}, ${formatSlotLabel(`2000-01-01T${time}`)}`;
+	return `${weekdayShortForCode(code)}, ${formatSlotLabel(`2000-01-01T${time}`, hourCycle)}`;
 }
 
 function weeklySlotRank(slot: string): number | null {
@@ -164,12 +200,15 @@ function weeklySlotRank(slot: string): number | null {
 	return idx * 24 * 60 + h * 60 + m;
 }
 
-export function formatSlotWithDate(slot: string): string {
+export function formatSlotWithDate(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
 	const [date] = slot.split("T");
 	const [y, m, d] = date.split("-").map(Number);
 	const dt = new Date(Date.UTC(y, m - 1, d));
 	const monthDay = monthDayFormatter.format(dt);
-	return `${monthDay}, ${formatSlotLabel(slot)}`;
+	return `${monthDay}, ${formatSlotLabel(slot, hourCycle)}`;
 }
 
 interface SlotUniverseInput {
@@ -198,7 +237,7 @@ export function buildSlotUniverse(input: SlotUniverseInput): string[] {
 	const dates = [...new Set(input.dates ?? [])].sort();
 	const out: string[] = [];
 	for (const date of dates) {
-		for (let mins = start; mins < end; mins += 15) {
+		for (let mins = start; mins < end; mins += 30) {
 			const h = String(Math.floor(mins / 60)).padStart(2, "0");
 			const mm = String(mins % 60).padStart(2, "0");
 			out.push(`${date}T${h}:${mm}`);
@@ -219,7 +258,7 @@ export function buildWeeklyUniverse(input: WeeklyUniverseInput): string[] {
 	for (const weekday of weekdays) {
 		const code = weekdayCode(weekday);
 		if (code === null) continue;
-		for (let mins = start; mins < end; mins += 15) {
+		for (let mins = start; mins < end; mins += 30) {
 			const h = String(Math.floor(mins / 60)).padStart(2, "0");
 			const mm = String(mins % 60).padStart(2, "0");
 			out.push(`${code}-${h}:${mm}`);

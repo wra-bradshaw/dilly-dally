@@ -394,7 +394,7 @@ test("Home and End jump to row edges", async () => {
 	).toHaveLength(1);
 });
 
-test("calendar paint surface presents touch-none at rest", async () => {
+test("calendar paint surface allows touch scroll", async () => {
 	const screen = await render(
 		<DateCalendar
 			maxDate="2026-10-31"
@@ -405,10 +405,9 @@ test("calendar paint surface presents touch-none at rest", async () => {
 	);
 	const day = screen.getByRole("button", { name: "Mon, 9/28" });
 	await expect.element(day).toBeVisible();
-	const surface = day.element().closest(".touch-none");
+	const surface = day.element().closest('[data-slot="date-calendar"]');
 	expect(surface).not.toBeNull();
-	expect(surface?.className ?? "").toContain("touch-none");
-	expect(getComputedStyle(surface as HTMLElement).touchAction).toBe("none");
+	expect(surface?.className ?? "").toContain("touch-pan-y");
 });
 
 test("trusted key presses toggle exactly once per press", async () => {

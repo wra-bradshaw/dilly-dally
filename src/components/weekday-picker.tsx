@@ -40,7 +40,7 @@ export function WeekdayPicker({
 			aria-describedby={describedBy}
 			aria-label={labelledBy ? undefined : "Weekdays"}
 			aria-labelledby={labelledBy}
-			className="flex-wrap touch-none select-none"
+			className="flex-wrap touch-pan-y select-none"
 			onKeyDown={onGroupKeyDown}
 			onPointerCancel={surface.onPointerCancel}
 			onPointerMove={surface.onPointerMove}
@@ -57,7 +57,7 @@ export function WeekdayPicker({
 				return (
 					<ToggleGroupItem
 						aria-label={full}
-						className="text-muted-foreground data-[state=on]:border-emerald-700 data-[state=on]:bg-emerald-400 data-[state=on]:font-semibold data-[state=on]:text-emerald-950 dark:data-[state=on]:border-emerald-500 dark:data-[state=on]:bg-emerald-700 dark:data-[state=on]:text-emerald-50 aria-pressed:border-emerald-700 aria-pressed:bg-emerald-400 aria-pressed:font-semibold aria-pressed:text-emerald-950 dark:aria-pressed:border-emerald-500 dark:aria-pressed:bg-emerald-700 dark:aria-pressed:text-emerald-50"
+						className="max-sm:h-11 max-sm:min-w-11 text-muted-foreground data-[state=on]:border-emerald-700 data-[state=on]:bg-emerald-400 data-[state=on]:font-semibold data-[state=on]:text-emerald-950 dark:data-[state=on]:border-emerald-500 dark:data-[state=on]:bg-emerald-700 dark:data-[state=on]:text-emerald-50 aria-pressed:border-emerald-700 aria-pressed:bg-emerald-400 aria-pressed:font-semibold aria-pressed:text-emerald-950 dark:aria-pressed:border-emerald-500 dark:aria-pressed:bg-emerald-700 dark:aria-pressed:text-emerald-50"
 						data-weekday={day}
 						key={day}
 						onClick={(e) => surface.toggle(day, e.detail)}
@@ -65,7 +65,7 @@ export function WeekdayPicker({
 							if (e.button !== 0 && e.pointerType === "mouse") return;
 							surface.start(day, e);
 						}}
-						onPointerEnter={() => surface.hover(day)}
+						onPointerEnter={(e) => surface.hover(day, e)}
 						title={full}
 						value={String(day)}
 					>

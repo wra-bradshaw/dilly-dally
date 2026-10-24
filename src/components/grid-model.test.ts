@@ -6,6 +6,7 @@ import {
 	buildTimeRows,
 	buildWeeklyColumns,
 	formatMarkerDate,
+	formatViewerSlot,
 	getDateBreaks,
 	getDayGaps,
 	gridRectangleIdsFromPos,
@@ -43,14 +44,14 @@ function expectedMarker(date: string): string {
 describe("buildColumns", () => {
 	it("groups slots by date with labels", () => {
 		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-05T09:15", "2026-10-06T09:00"],
+			["2026-10-05T09:00", "2026-10-05T09:30", "2026-10-06T09:00"],
 			"America/New_York",
 			"America/New_York",
 		);
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		expect(cols[0].cells.map((c) => c.id)).toEqual([
 			"2026-10-05T09:00",
-			"2026-10-05T09:15",
+			"2026-10-05T09:30",
 		]);
 		expect(cols[0].cells[0].label).toBe(expectedTime("09:00"));
 		expect(cols[0].cells[0].hourStart).toBe(true);
@@ -59,7 +60,7 @@ describe("buildColumns", () => {
 
 	it("uses single-line headers with no annotations", () => {
 		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-05T09:15"],
+			["2026-10-05T09:00", "2026-10-05T09:30"],
 			"America/New_York",
 			"America/New_York",
 		);
@@ -94,7 +95,7 @@ describe("buildColumns", () => {
 		);
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		const lengths = cols.map((c) => c.cells.length);
-		expect(lengths).toEqual([32, 32]);
+		expect(lengths).toEqual([16, 16]);
 		const total = cols.reduce((n, c) => n + c.cells.length, 0);
 		expect(total).toBe(universe.length);
 		const max = Math.max(...lengths);
@@ -115,7 +116,7 @@ describe("buildColumns", () => {
 		});
 		const cols = buildColumns(universe, "America/New_York", "Asia/Tokyo");
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
-		expect(cols.map((c) => c.cells.length)).toEqual([32, 32]);
+		expect(cols.map((c) => c.cells.length)).toEqual([16, 16]);
 		expect(cols.flatMap((c) => c.cells.map((cell) => cell.id)).sort()).toEqual(
 			[...universe].sort(),
 		);
@@ -129,28 +130,28 @@ describe("buildColumns", () => {
 		const cols = buildColumns(
 			[
 				"2026-10-05T09:00",
-				"2026-10-05T09:15",
+				"2026-10-05T09:30",
 				"2026-10-06T09:00",
-				"2026-10-06T09:15",
+				"2026-10-06T09:30",
 			],
 			"UTC",
 			"UTC",
 		);
 		expect(
-			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:15").sort(),
+			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:30").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
-			"2026-10-05T09:15",
+			"2026-10-05T09:30",
 			"2026-10-06T09:00",
-			"2026-10-06T09:15",
+			"2026-10-06T09:30",
 		]);
 		expect(
-			rectIds(cols, "2026-10-06T09:15", "2026-10-05T09:00").sort(),
+			rectIds(cols, "2026-10-06T09:30", "2026-10-05T09:00").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
-			"2026-10-05T09:15",
+			"2026-10-05T09:30",
 			"2026-10-06T09:00",
-			"2026-10-06T09:15",
+			"2026-10-06T09:30",
 		]);
 	});
 
@@ -158,9 +159,9 @@ describe("buildColumns", () => {
 		const cols = buildColumns(
 			[
 				"2026-10-05T09:00",
-				"2026-10-05T09:15",
+				"2026-10-05T09:30",
 				"2026-10-06T09:00",
-				"2026-10-06T09:15",
+				"2026-10-06T09:30",
 			],
 			"UTC",
 			"UTC",
@@ -175,20 +176,20 @@ describe("buildColumns", () => {
 		const cols = buildColumns(
 			[
 				"2026-10-05T09:00",
-				"2026-10-05T09:15",
+				"2026-10-05T09:30",
 				"2026-10-08T09:00",
-				"2026-10-08T09:15",
+				"2026-10-08T09:30",
 			],
 			"UTC",
 			"UTC",
 		);
 		expect(
-			rectIds(cols, "2026-10-05T09:00", "2026-10-08T09:15").sort(),
+			rectIds(cols, "2026-10-05T09:00", "2026-10-08T09:30").sort(),
 		).toEqual([
 			"2026-10-05T09:00",
-			"2026-10-05T09:15",
+			"2026-10-05T09:30",
 			"2026-10-08T09:00",
-			"2026-10-08T09:15",
+			"2026-10-08T09:30",
 		]);
 	});
 });
@@ -274,7 +275,7 @@ describe("formatMarkerDate", () => {
 describe("getDateBreaks", () => {
 	it("marks a single date above the top cell in event time", () => {
 		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-05T09:15"],
+			["2026-10-05T09:00", "2026-10-05T09:30"],
 			"America/New_York",
 			"America/New_York",
 		);
@@ -324,7 +325,7 @@ describe("getDateBreaks", () => {
 	});
 
 	it("marks weekly columns once above the top cell", () => {
-		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:15"]);
+		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:30"]);
 		expect(cols[0].header).toBe(
 			new Intl.DateTimeFormat(undefined, {
 				timeZone: "UTC",
@@ -387,5 +388,67 @@ describe("buildTimeRows", () => {
 				expect(row.markers).toHaveLength(cols.length);
 			}
 		}
+	});
+});
+
+describe("hourCycle", () => {
+	it("labels date columns in 24-hour time", () => {
+		const cols = buildColumns(
+			["2026-10-05T13:00"],
+			"America/New_York",
+			"America/New_York",
+			"h23",
+		);
+		expect(cols[0].cells[0].label).toBe("13:00");
+	});
+
+	it("labels date columns in 12-hour time by default", () => {
+		const cols = buildColumns(
+			["2026-10-05T13:00"],
+			"America/New_York",
+			"America/New_York",
+		);
+		expect(cols[0].cells[0].label).toBe("1:00 PM");
+	});
+
+	it("labels weekly columns in 24-hour time", () => {
+		const cols = buildWeeklyColumns(["MON-13:00"], "h23");
+		expect(cols[0].cells[0].label).toBe("13:00");
+	});
+
+	it("formats viewer slots in 24-hour time", () => {
+		expect(
+			formatViewerSlot(
+				"2026-10-05T13:00",
+				"America/New_York",
+				"America/New_York",
+				"h23",
+			),
+		).toBe("Oct 5, 13:00");
+	});
+});
+
+describe("hourCycle variants", () => {
+	it("labels weekly columns in 12-hour time by default", () => {
+		const cols = buildWeeklyColumns(["MON-13:00"]);
+		expect(cols[0].cells[0].label).toBe("1:00 PM");
+	});
+
+	it("formats weekly viewer slots in 24-hour time", () => {
+		expect(formatViewerSlot("MON-13:00", "UTC", "UTC", "h23")).toBe(
+			"Mon, 13:00",
+		);
+	});
+
+	it("labels midnight across cycles", () => {
+		const date = buildColumns(
+			["2026-10-05T00:00"],
+			"America/New_York",
+			"America/New_York",
+			"h11",
+		);
+		expect(date[0].cells[0].label).toBe("0:00 AM");
+		const weekly = buildWeeklyColumns(["MON-00:00"], "h24");
+		expect(weekly[0].cells[0].label).toBe("24:00");
 	});
 });

@@ -34,7 +34,7 @@ test("dragging across weekdays selects every day in between", async () => {
 	]);
 });
 
-test("weekday paint surface presents touch-none at rest", async () => {
+test("weekday paint surface allows touch scroll", async () => {
 	const screen = await render(
 		<WeekdayPicker onCommit={() => {}} selected={new Set()} />,
 	);
@@ -42,8 +42,8 @@ test("weekday paint surface presents touch-none at rest", async () => {
 	await expect.element(monday).toBeVisible();
 	const surface = monday.element().closest('[data-slot="toggle-group"]');
 	expect(surface).not.toBeNull();
-	expect(surface?.className ?? "").toContain("touch-none");
-	expect(getComputedStyle(surface as HTMLElement).touchAction).toBe("none");
+	expect(surface?.className ?? "").toContain("touch-pan-y");
+	expect(surface?.className ?? "").not.toContain("touch-none");
 });
 
 test("pressed weekdays follow the paint preview, not just selection", async () => {

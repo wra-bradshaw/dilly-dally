@@ -13,13 +13,13 @@ describe("openapi spec", () => {
 		expect(spec.components?.schemas?.CreateEventRequest).toBeDefined();
 	});
 
-	it("slot pattern only allows quarter hours", () => {
+	it("slot pattern only allows half hours", () => {
 		const spec = getOpenApiSpec("https://example.com");
 		const schemas = spec.components?.schemas as Record<
 			string,
 			{ pattern?: string }
 		>;
-		expect(schemas.SlotId?.pattern).toContain("00|15|30|45");
+		expect(schemas.SlotId?.pattern).toContain("00|30");
 	});
 
 	it("documents weekly mode with weekday slots", () => {
@@ -46,6 +46,6 @@ describe("agent guide", () => {
 
 	it("documents the weekly curl flow", () => {
 		expect(AGENT_GUIDE_MARKDOWN).toContain('"mode": "weekly"');
-		expect(AGENT_GUIDE_MARKDOWN).toContain("MON-09:15");
+		expect(AGENT_GUIDE_MARKDOWN).toContain("MON-09:30");
 	});
 });

@@ -17,16 +17,7 @@ function crossingColumns() {
 }
 
 function singleColumn() {
-	return buildColumns(
-		[
-			"2026-09-28T09:00",
-			"2026-09-28T09:15",
-			"2026-09-28T09:30",
-			"2026-09-28T09:45",
-		],
-		"UTC",
-		"UTC",
-	);
+	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], "UTC", "UTC");
 }
 test("heatmap shares inline date markers with the paint grid", async () => {
 	const cols = crossingColumns();
@@ -77,7 +68,7 @@ test("arrow keys move focus between heatmap slots and announce counts", async ()
 			key: "ArrowDown",
 		}),
 	);
-	const second = screen.getByRole("button", { name: /9:15 AM/ });
+	const second = screen.getByRole("button", { name: /9:30 AM/ });
 	await expect.element(second).toHaveFocus();
 	await expect.element(screen.getByText("1/1 available")).toBeVisible();
 });
@@ -86,9 +77,9 @@ function twoColumns() {
 	return buildColumns(
 		[
 			"2026-09-28T09:00",
-			"2026-09-28T09:15",
+			"2026-09-28T09:30",
 			"2026-09-29T09:00",
-			"2026-09-29T09:15",
+			"2026-09-29T09:30",
 		],
 		"UTC",
 		"UTC",
@@ -184,7 +175,7 @@ test("pointerdown focuses the heatmap cell without scrolling the page", async ()
 	);
 	await expect.element(first).toHaveFocus();
 	press(first, "ArrowDown");
-	const second = screen.getByRole("button", { name: /9:15 AM/ });
+	const second = screen.getByRole("button", { name: /9:30 AM/ });
 	await expect.element(second).toHaveFocus();
 });
 
@@ -205,7 +196,7 @@ test("heatmap arrows move Up Left Right with roving tabindex", async () => {
 			viewTimezone="UTC"
 		/>,
 	);
-	const lower = screen.getByRole("button", { name: /9\/28 9:15 AM/ });
+	const lower = screen.getByRole("button", { name: /9\/28 9:30 AM/ });
 	await lower.click();
 	press(lower, "ArrowUp");
 	const upper = screen.getByRole("button", { name: /9\/28 9:00 AM/ });

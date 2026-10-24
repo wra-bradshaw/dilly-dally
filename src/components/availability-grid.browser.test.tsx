@@ -6,25 +6,16 @@ import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 
 function columns() {
-	return buildColumns(
-		[
-			"2026-09-28T09:00",
-			"2026-09-28T09:15",
-			"2026-09-28T09:30",
-			"2026-09-28T09:45",
-		],
-		"UTC",
-		"UTC",
-	);
+	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], "UTC", "UTC");
 }
 
 function twoColumns() {
 	return buildColumns(
 		[
 			"2026-09-28T09:00",
-			"2026-09-28T09:15",
+			"2026-09-28T09:30",
 			"2026-09-29T09:00",
-			"2026-09-29T09:15",
+			"2026-09-29T09:30",
 		],
 		"UTC",
 		"UTC",
@@ -35,9 +26,9 @@ function gapColumns() {
 	return buildColumns(
 		[
 			"2026-09-28T09:00",
-			"2026-09-28T09:15",
+			"2026-09-28T09:30",
 			"2026-10-01T09:00",
-			"2026-10-01T09:15",
+			"2026-10-01T09:30",
 		],
 		"UTC",
 		"UTC",
@@ -210,7 +201,7 @@ test("Home and End jump focus across dates", async () => {
 		/>,
 	);
 
-	const first = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
+	const first = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
 	await expect.element(first).toBeVisible();
 	(first.element() as HTMLButtonElement).focus();
 	await expect.element(first).toHaveFocus();
@@ -221,7 +212,7 @@ test("Home and End jump focus across dates", async () => {
 			key: "End",
 		}),
 	);
-	const last = screen.getByRole("button", { name: "Tue, 9/29 9:15 AM" });
+	const last = screen.getByRole("button", { name: "Tue, 9/29 9:30 AM" });
 	await expect.element(last).toHaveFocus();
 	last.element().dispatchEvent(
 		new KeyboardEvent("keydown", {
@@ -251,7 +242,7 @@ test("arrow keys move focus between slots for keyboard painters", async () => {
 			key: "ArrowDown",
 		}),
 	);
-	const second = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
+	const second = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
 	await expect.element(second).toHaveFocus();
 	await userEvent.keyboard("{ArrowDown}");
 	const third = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
@@ -267,7 +258,7 @@ test("pointerdown focuses the cell without scrolling the page", async () => {
 		/>,
 	);
 
-	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:15 AM" });
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:30 AM" });
 	await expect.element(cell).toBeVisible();
 	const node = cell.element() as HTMLButtonElement;
 	node.dispatchEvent(
@@ -322,11 +313,7 @@ test("dragging across times paints every slot in between", async () => {
 	await first.dropTo(last);
 	expect(onCommit).toHaveBeenCalledTimes(1);
 	const next = onCommit.mock.calls[0]?.[0] as Set<string>;
-	expect([...next].sort()).toEqual([
-		"2026-09-28T09:00",
-		"2026-09-28T09:15",
-		"2026-09-28T09:30",
-	]);
+	expect([...next].sort()).toEqual(["2026-09-28T09:00", "2026-09-28T09:30"]);
 });
 
 test("dragging across dates paints the rectangle in between", async () => {
@@ -340,16 +327,16 @@ test("dragging across dates paints the rectangle in between", async () => {
 	);
 
 	const first = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
-	const last = screen.getByRole("button", { name: "Tue, 9/29 9:15 AM" });
+	const last = screen.getByRole("button", { name: "Tue, 9/29 9:30 AM" });
 	await expect.element(first).toBeVisible();
 	await first.dropTo(last);
 	expect(onCommit).toHaveBeenCalledTimes(1);
 	const next = onCommit.mock.calls[0]?.[0] as Set<string>;
 	expect([...next].sort()).toEqual([
 		"2026-09-28T09:00",
-		"2026-09-28T09:15",
+		"2026-09-28T09:30",
 		"2026-09-29T09:00",
-		"2026-09-29T09:15",
+		"2026-09-29T09:30",
 	]);
 });
 
@@ -422,7 +409,7 @@ test("marks the day crossing inline above the midnight cell", async () => {
 	expect(after.element().className).toContain("border-t-2");
 });
 
-test("paint surface presents touch-none at rest so touch drags paint", async () => {
+test("paint surface allows touch scroll so page pans on mobile", async () => {
 	const screen = await render(
 		<AvailabilityGrid
 			columns={columns()}
@@ -432,15 +419,55 @@ test("paint surface presents touch-none at rest so touch drags paint", async () 
 	);
 	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
 	await expect.element(cell).toBeVisible();
-	expect(cell.element().closest("table")?.className).toContain("touch-none");
-	expect(
-		getComputedStyle(cell.element().closest("table") as HTMLElement)
-			.touchAction,
-	).toBe("none");
+	expect(cell.element().closest("table")?.className).toContain(
+		"touch-manipulation",
+	);
+	expect(cell.element().closest("table")?.className).not.toContain(
+		"touch-none",
+	);
 	const scroller = cell.element().closest("table")?.parentElement;
 	expect(scroller?.className).toContain("touch-pan-x");
 	expect(scroller?.className).toContain("touch-pan-y");
 	expect(getComputedStyle(scroller as HTMLElement).touchAction).toContain(
 		"pan-x",
 	);
+});
+
+test("selected hour-start cells use emerald top border with no rose visible", async () => {
+	const screen = await render(
+		<AvailabilityGrid
+			columns={columns()}
+			onCommit={() => {}}
+			selected={new Set(["2026-09-28T09:00"])}
+		/>,
+	);
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toBeVisible();
+	const cls = cell.element().className;
+	expect(cls).toContain("bg-emerald-400");
+	expect(cls).toContain("border-emerald-500");
+	expect(cls).toContain("border-t-emerald-500");
+	expect(cls).not.toContain("rose");
+});
+
+test("renders 24-hour labels when the system uses 24-hour time", async () => {
+	const onCommit = vi.fn();
+	const screen = await render(
+		<AvailabilityGrid
+			columns={buildColumns(
+				["2026-09-28T13:00", "2026-09-28T13:30"],
+				"UTC",
+				"UTC",
+				"h23",
+			)}
+			onCommit={onCommit}
+			selected={new Set()}
+		/>,
+	);
+
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 13:00" });
+	await expect.element(cell).toBeVisible();
+	await cell.click();
+	expect(onCommit).toHaveBeenCalledTimes(1);
+	expect(onCommit.mock.calls[0]?.[0].has("2026-09-28T13:00")).toBe(true);
 });

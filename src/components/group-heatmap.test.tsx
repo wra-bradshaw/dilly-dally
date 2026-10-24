@@ -8,9 +8,9 @@ function cols() {
 	return buildColumns(
 		[
 			"2026-09-28T09:00",
-			"2026-09-28T09:15",
+			"2026-09-28T09:30",
 			"2026-09-29T09:00",
-			"2026-09-29T09:15",
+			"2026-09-29T09:30",
 		],
 		"UTC",
 		"UTC",
@@ -41,9 +41,9 @@ function ui() {
 describe("GroupHeatmap colors", () => {
 	it("matches the paint grid exactly when everyone is available", () => {
 		expect(heatmapFill(2, 2)).toContain("bg-emerald-400");
-		expect(heatmapFill(2, 2)).toContain("border-emerald-800");
+		expect(heatmapFill(2, 2)).toContain("border-emerald-500");
 		expect(heatmapFill(2, 2)).toContain("dark:bg-emerald-700");
-		expect(heatmapFill(2, 2)).toContain("dark:border-emerald-300");
+		expect(heatmapFill(2, 2)).toContain("dark:border-emerald-800");
 	});
 
 	it("dims as availability decreases from full", () => {
@@ -65,9 +65,9 @@ describe("GroupHeatmap colors", () => {
 			.find((b) => b.textContent === "1");
 		expect(filled?.style.backgroundColor ?? "").toBe("");
 		expect(filled?.className ?? "").toContain("bg-emerald-400");
-		expect(filled?.className ?? "").toContain("border-emerald-800");
+		expect(filled?.className ?? "").toContain("border-emerald-500");
 		expect(filled?.className ?? "").toContain("dark:bg-emerald-700");
-		expect(filled?.className ?? "").toContain("dark:border-emerald-300");
+		expect(filled?.className ?? "").toContain("dark:border-emerald-800");
 	});
 
 	it("dims partial availability instead of reusing the full fill", () => {
@@ -128,16 +128,16 @@ describe("GroupHeatmap colors", () => {
 		const [first, second] = screen.getAllByRole("button");
 		expect((first as HTMLElement).style.backgroundColor).toBe("");
 		expect((first as HTMLElement).className).toContain("bg-rose-100");
-		expect((first as HTMLElement).className).toContain("border-rose-600");
+		expect((first as HTMLElement).className).toContain("border-rose-200");
 		expect((second as HTMLElement).style.backgroundColor).toBe("");
 		expect((second as HTMLElement).className).toContain("bg-emerald-400");
 	});
 
-	it("renders date markers smaller than the old text-xs size", () => {
+	it("renders date markers", () => {
 		const { container } = render(ui());
 		const marker = container.querySelector("thead, tbody")?.parentElement;
 		expect(marker).toBeTruthy();
-		const label = container.querySelector("div.text-\\[11px\\]");
+		const label = container.querySelector("div.text-xs");
 		expect(label?.textContent).toMatch(/Mon|Tue/);
 	});
 });

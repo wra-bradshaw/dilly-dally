@@ -43,17 +43,17 @@ export function openApiResponse(request: Request): Response {
 export function getOpenApiSpec(origin: string): OpenApiSpec {
 	const slotId: OpenApiSchema = {
 		description:
-			"Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15.",
-		example: "2026-10-05T09:15",
+			"Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.",
+		example: "2026-10-05T09:30",
 		pattern:
-			"^(\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|15|30|45)|(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|15|30|45))$",
+			"^(\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|30)|(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30))$",
 		type: "string",
 	};
 	const weeklySlotId: OpenApiSchema = {
 		description:
 			"Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.",
-		example: "MON-09:15",
-		pattern: "^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|15|30|45)$",
+		example: "MON-09:30",
+		pattern: "^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30)$",
 		type: "string",
 	};
 	return {
@@ -71,7 +71,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 						slots: {
 							description:
-								"Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15. Empty array means unavailable everywhere.",
+								"Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere.",
 							items: { $ref: "#/components/schemas/SlotId" },
 							maxItems: 2852,
 							type: "array",
@@ -102,7 +102,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 						endTime: {
 							example: "17:00",
-							pattern: "^([01]\\d|2[0-3]):00$",
+							pattern: "^([01]\\d|2[0-3]):(00|30)$",
 							type: "string",
 						},
 						mode: { $ref: "#/components/schemas/EventMode" },
@@ -115,7 +115,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 						startTime: {
 							example: "09:00",
-							pattern: "^([01]\\d|2[0-3]):00$",
+							pattern: "^([01]\\d|2[0-3]):(00|30)$",
 							type: "string",
 						},
 						timezone: { example: "America/New_York", type: "string" },

@@ -25,6 +25,7 @@ import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useErrorFocus } from "#/hooks/use-error-focus";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useFocusOnChange } from "#/hooks/use-focus-on-change";
+import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
@@ -177,6 +178,7 @@ function EventPage() {
 			storedName,
 		});
 	const [view, setView] = useLocalStorage("dd:tz-view", "");
+	const hourCycle = useHourCycle();
 
 	const event = detail.data?.event;
 	const browserTz = browserTimezone();
@@ -202,14 +204,15 @@ function EventPage() {
 	const columns = useMemo(() => {
 		if (!detail.data) return [];
 		if ((detail.data.event.mode ?? "dates") === "weekly") {
-			return buildWeeklyColumns(detail.data.slotUniverse);
+			return buildWeeklyColumns(detail.data.slotUniverse, hourCycle);
 		}
 		return buildColumns(
 			detail.data.slotUniverse,
 			detail.data.event.timezone,
 			viewTimezone,
+			hourCycle,
 		);
-	}, [detail.data, viewTimezone]);
+	}, [detail.data, viewTimezone, hourCycle]);
 	const counts = useMemo(() => {
 		const map = new Map<string, { count: number; names: string[] }>();
 		for (const c of detail.data?.counts ?? []) map.set(c.slot, c);

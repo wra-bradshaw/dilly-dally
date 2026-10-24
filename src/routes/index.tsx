@@ -16,6 +16,7 @@ import {
 import { WeekdayPicker } from "#/components/weekday-picker";
 import { useErrorFocus } from "#/hooks/use-error-focus";
 import { useGroupLabelling } from "#/hooks/use-group-labelling";
+import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useHydrated } from "#/hooks/use-hydrated";
 import { useRadioGroup } from "#/hooks/use-radio-group";
 import { createEvent } from "#/lib/client";
@@ -80,6 +81,7 @@ function Home() {
 	const [endTime, setEndTime] = useState("17:00");
 	const [timezoneOverride, setTimezoneOverride] = useState("");
 	const browserTz = hydrated ? browserTimezone() : "UTC";
+	const hourCycle = useHourCycle();
 	const timezone = timezoneOverride !== "" ? timezoneOverride : browserTz;
 	const [error, setError] = useState("");
 	const [fields, setFields] = useState<FieldErrors>({});
@@ -430,7 +432,7 @@ function Home() {
 									<SelectContent>
 										{hourOptions().map((h) => (
 											<SelectItem key={h} value={h}>
-												{formatSlotLabel(`2026-01-01T${h}`)}
+												{formatSlotLabel(`2026-01-01T${h}`, hourCycle)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -452,7 +454,7 @@ function Home() {
 									<SelectContent>
 										{hourOptions().map((h) => (
 											<SelectItem key={h} value={h}>
-												{formatSlotLabel(`2026-01-01T${h}`)}
+												{formatSlotLabel(`2026-01-01T${h}`, hourCycle)}
 											</SelectItem>
 										))}
 									</SelectContent>

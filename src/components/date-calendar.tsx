@@ -158,6 +158,7 @@ export function DateCalendar({
 	const surface = usePaintSurface<string, HTMLDivElement>({
 		attr: "data-day",
 		onCommit: commitEnabled,
+		pageScroll: false,
 		parse: identityParse,
 		selected,
 		values: days.filter((d): d is string => d !== null),
@@ -338,7 +339,7 @@ export function DateCalendar({
 			<div
 				aria-describedby={describedBy}
 				aria-labelledby={labelledBy}
-				className={cn("touch-none select-none")}
+				className={cn("touch-pan-y select-none")}
 				data-slot="date-calendar"
 				onKeyDown={onDayKeyDown}
 				onPointerCancel={onPointerCancel}
@@ -348,12 +349,12 @@ export function DateCalendar({
 				role="group"
 			>
 				<div
-					className="max-h-[400px] overflow-y-auto overscroll-contain"
+					className="max-h-[60dvh] overflow-y-auto overscroll-contain sm:max-h-[400px]"
 					data-slot="date-calendar-months"
 					ref={scrollRef}
 				>
 					<div
-						className="sticky top-0 z-10 grid grid-cols-7 gap-1 bg-card py-1"
+						className="sticky top-0 z-10 grid grid-cols-7 gap-1 border-b border-border bg-card/95 py-1 backdrop-blur"
 						data-slot="date-calendar-weekdays"
 					>
 						{[
@@ -421,7 +422,7 @@ export function DateCalendar({
 													aria-label={formatMarkerDate(day)}
 													aria-pressed={on}
 													className={cn(
-														"flex aspect-square items-center justify-center rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+														"flex aspect-square min-h-11 items-center justify-center rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
 														!on &&
 															"border-input bg-background hover:border-primary",
 														on &&
@@ -438,8 +439,8 @@ export function DateCalendar({
 															return;
 														surface.start(day, e);
 													}}
-													onPointerEnter={() => {
-														surface.hover(day);
+													onPointerEnter={(e) => {
+														surface.hover(day, e);
 													}}
 													type="button"
 												>

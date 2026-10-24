@@ -134,7 +134,7 @@ export interface components {
             name: string;
             /** @description Optional password. Sent only over HTTPS, never stored in plain text. */
             password?: string;
-            /** @description Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15. Empty array means unavailable everywhere. */
+            /** @description Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere. */
             slots: components["schemas"]["SlotId"][];
         };
         AvailabilityResponse: {
@@ -211,7 +211,7 @@ export interface components {
         Weekday: number;
         /**
          * @description Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.
-         * @example MON-09:15
+         * @example MON-09:30
          */
         WeeklySlotId: string;
         CreateEventResponse: {
@@ -243,8 +243,8 @@ export interface components {
             weekdays: components["schemas"]["Weekday"][];
         };
         /**
-         * @description Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:15.
-         * @example 2026-10-05T09:15
+         * @description Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.
+         * @example 2026-10-05T09:30
          */
         SlotId: string;
         EventDetailResponse: {

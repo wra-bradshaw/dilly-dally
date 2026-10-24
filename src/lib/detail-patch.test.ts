@@ -7,7 +7,7 @@ function detail(): EventDetailResponse {
 		bestTimes: [{ count: 1, slot: "2026-10-05T09:00" }],
 		counts: [
 			{ count: 1, names: ["Bob"], slot: "2026-10-05T09:00" },
-			{ count: 1, names: ["Bob"], slot: "2026-10-05T09:15" },
+			{ count: 1, names: ["Bob"], slot: "2026-10-05T09:30" },
 		],
 		event: {
 			createdAt: new Date(1000).toISOString(),
@@ -25,7 +25,7 @@ function detail(): EventDetailResponse {
 			{ count: 2, name: "Bob", updatedAt: new Date(1000).toISOString() },
 		],
 		polls: [],
-		slotUniverse: ["2026-10-05T09:00", "2026-10-05T09:15"],
+		slotUniverse: ["2026-10-05T09:00", "2026-10-05T09:30"],
 	};
 }
 
@@ -42,10 +42,10 @@ describe("patchDetailForSave", () => {
 			names: ["Ada", "Bob"],
 			slot: "2026-10-05T09:00",
 		});
-		expect(out.counts.find((c) => c.slot === "2026-10-05T09:15")).toEqual({
+		expect(out.counts.find((c) => c.slot === "2026-10-05T09:30")).toEqual({
 			count: 1,
 			names: ["Bob"],
-			slot: "2026-10-05T09:15",
+			slot: "2026-10-05T09:30",
 		});
 		expect(out.participants).toContainEqual({
 			count: 1,
@@ -62,7 +62,7 @@ describe("patchDetailForSave", () => {
 		const base = patchDetailForSave(
 			detail(),
 			"Ada",
-			["2026-10-05T09:00", "2026-10-05T09:15"],
+			["2026-10-05T09:00", "2026-10-05T09:30"],
 			new Date(3000).toISOString(),
 		);
 		const out = patchDetailForSave(
