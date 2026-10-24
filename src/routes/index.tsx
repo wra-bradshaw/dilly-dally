@@ -14,7 +14,7 @@ import {
 	SelectValue,
 } from "#/components/ui/select";
 import { WeekdayPicker } from "#/components/weekday-picker";
-import { useErrorFocus } from "#/hooks/use-error-focus";
+import { useFocusOnSignal } from "#/hooks/use-focus-on-signal";
 import { useGroupLabelling } from "#/hooks/use-group-labelling";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useHydrated } from "#/hooks/use-hydrated";
@@ -93,7 +93,7 @@ function Home() {
 		],
 		[browserTz],
 	);
-	const summaryRef = useErrorFocus<HTMLDivElement>(error);
+	const summaryRef = useFocusOnSignal<HTMLDivElement>(error);
 	const modeGroup = useGroupLabelling("mode");
 	const datesGroup = useGroupLabelling("dates");
 	const weekdaysGroup = useGroupLabelling("weekdays");

@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import { useId, useMemo, useRef } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import {
@@ -5,7 +6,6 @@ import {
 	suppressToggleKey,
 	usePaintSurface,
 } from "#/hooks/use-paint-surface";
-import { cn } from "#/lib/utils";
 import {
 	buildGridPos,
 	type GridColumn,

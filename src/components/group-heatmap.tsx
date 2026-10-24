@@ -1,7 +1,7 @@
+import { cn } from "cn";
 import { useId, useMemo, useRef, useState } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
-import { cn } from "#/lib/utils";
 import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
 import { TimeGrid } from "./time-grid";
 

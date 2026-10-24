@@ -22,16 +22,13 @@ import {
 	TooltipTrigger,
 } from "#/components/ui/tooltip";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
-import { useErrorFocus } from "#/hooks/use-error-focus";
 import { useEventDetail } from "#/hooks/use-event-detail";
-import { useFocusOnChange } from "#/hooks/use-focus-on-change";
+import { useFocusOnSignal } from "#/hooks/use-focus-on-signal";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useOwnSession } from "#/hooks/use-own-session";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
-import { useTooltipOpen } from "#/hooks/use-tooltip-open";
-import { buildAgentPrompt } from "#/lib/agent-prompt";
 import {
 	createEventSession,
 	deleteEventSession,
@@ -137,13 +134,21 @@ function EventPage() {
 	const sessionData = ownSession.data?.ok ? ownSession.data : null;
 	const queryClient = useQueryClient();
 	const { copied, copy, copyError } = useCopyToClipboard();
-	const copyTooltip = useTooltipOpen(copied || copyError);
+	const [copyUserOpen, setCopyUserOpen] = useState(false);
+	const copyTooltip = {
+		onOpenChange: setCopyUserOpen,
+		open: copyUserOpen || copied || copyError,
+	};
 	const {
 		copied: promptCopied,
 		copy: copyPrompt,
 		copyError: promptCopyError,
 	} = useCopyToClipboard();
-	const promptTooltip = useTooltipOpen(promptCopied || promptCopyError);
+	const [promptUserOpen, setPromptUserOpen] = useState(false);
+	const promptTooltip = {
+		onOpenChange: setPromptUserOpen,
+		open: promptUserOpen || promptCopied || promptCopyError,
+	};
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
 	const [name, setName] = useState(storedName);
 	const [password, setPassword] = useState("");
@@ -174,8 +179,8 @@ function EventPage() {
 	const promptStatusId = useId();
 	const restoreStatusId = useId();
 	const tzLabelId = useId();
-	const signErrorRef = useErrorFocus<HTMLParagraphElement>(signError);
-	const signedInRef = useFocusOnChange<HTMLHeadingElement>(signedIn);
+	const signErrorRef = useFocusOnSignal<HTMLParagraphElement>(signError);
+	const signedInRef = useFocusOnSignal<HTMLHeadingElement>(signedIn);
 	const restoreName = sessionData ? "" : storedName;
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
@@ -414,7 +419,7 @@ function EventPage() {
 
 	const total = allNames.length;
 	const url = inviteUrl(eventId);
-	const agentPrompt = buildAgentPrompt({ inviteUrl: url });
+	const agentPrompt = `Fill in my availability using my calendar: ${url}\nFetch ${url} with header Accept: text/markdown for the machine-readable version.`;
 	const stale = detail.isError && detail.data !== undefined;
 	const gridDisabled =
 		restoreStatus === "restoring" ||
