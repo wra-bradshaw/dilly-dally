@@ -11,11 +11,6 @@ interface WeekdayPickerProps {
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
-function parseWeekday(raw: string): number | undefined {
-	const n = Number(raw);
-	return Number.isInteger(n) && n >= 0 && n <= 6 ? n : undefined;
-}
-
 export function WeekdayPicker({
 	describedBy,
 	labelledBy,
@@ -25,7 +20,10 @@ export function WeekdayPicker({
 	const surface = usePaintSurface<number, HTMLDivElement>({
 		attr: "data-weekday",
 		onCommit,
-		parse: parseWeekday,
+		parse: (raw: string) => {
+			const n = Number(raw);
+			return Number.isInteger(n) && n >= 0 && n <= 6 ? n : undefined;
+		},
 		selected,
 		values: WEEKDAYS,
 	});

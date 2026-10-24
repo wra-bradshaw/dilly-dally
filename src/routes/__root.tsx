@@ -49,7 +49,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 	shellComponent: RootDocument,
 });
 
-export function routeTitle(
+function routeTitle(
 	pathname: string,
 	eventTitle: string | undefined,
 	eventError: unknown,

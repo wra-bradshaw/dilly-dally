@@ -1,7 +1,6 @@
 import { isBot } from "isbot";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	acceptsMarkdown,
 	isAgentUserAgent,
 	markdownPreference,
 	wantsMarkdown,
@@ -27,40 +26,6 @@ function docRequest(
 beforeEach(() => {
 	mockedIsBot.mockReset();
 	mockedIsBot.mockReturnValue(false);
-});
-
-describe("acceptsMarkdown", () => {
-	it("matches explicit markdown preferences", () => {
-		expect(acceptsMarkdown("text/markdown")).toBe(true);
-		expect(acceptsMarkdown("text/markdown, text/html, */*")).toBe(true);
-		expect(acceptsMarkdown("text/markdown;q=1.0, text/html;q=0.7")).toBe(true);
-		expect(acceptsMarkdown("text/markdown,text/html;q=0.9")).toBe(true);
-	});
-
-	it("matches the x-markdown variant some agents send", () => {
-		expect(acceptsMarkdown("text/x-markdown;q=0.9, text/html;q=0.7")).toBe(
-			true,
-		);
-	});
-
-	it("rejects browser accept headers without markdown", () => {
-		expect(
-			acceptsMarkdown(
-				"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,*/*;q=0.8",
-			),
-		).toBe(false);
-		expect(acceptsMarkdown("*/*")).toBe(false);
-		expect(acceptsMarkdown("application/json")).toBe(false);
-	});
-
-	it("treats missing or empty headers as no preference", () => {
-		expect(acceptsMarkdown(null)).toBe(false);
-		expect(acceptsMarkdown("")).toBe(false);
-	});
-
-	it("respects an explicit q=0 refusal", () => {
-		expect(acceptsMarkdown("text/markdown;q=0, text/html")).toBe(false);
-	});
 });
 
 describe("markdownPreference", () => {

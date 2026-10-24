@@ -31,10 +31,6 @@ export function markdownPreference(accept: string | null): MarkdownPreference {
 	return refused ? "refused" : "absent";
 }
 
-export function acceptsMarkdown(accept: string | null): boolean {
-	return markdownPreference(accept) === "accepted";
-}
-
 export function isAgentUserAgent(userAgent: string | null): boolean {
 	return isBot(userAgent);
 }

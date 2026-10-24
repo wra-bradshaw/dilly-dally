@@ -10,10 +10,6 @@ interface CellCount {
 	names: string[];
 }
 
-export function heatmapAnnounce(signedIn: boolean): boolean {
-	return !signedIn;
-}
-
 export function heatmapFill(count: number, total: number): string {
 	if (!(count > 0)) {
 		return "border-rose-200 bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40";

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useId, useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
-import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
+import { GroupHeatmap } from "#/components/group-heatmap";
 import { PollsSection } from "#/components/polls";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -718,7 +718,7 @@ function EventPage() {
 					<CardContent>
 						<GroupHeatmap
 							allNames={allNames}
-							announce={heatmapAnnounce(signedIn)}
+							announce={!signedIn}
 							columns={columns}
 							counts={counts}
 							eventTimezone={event?.timezone}
