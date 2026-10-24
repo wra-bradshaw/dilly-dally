@@ -21,13 +21,7 @@ import {
 	nameKey,
 } from "#/lib/validation";
 import { Button } from "./ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -44,6 +38,8 @@ type PollsSectionProps = {
 function voteErrorMessage(err: unknown): string {
 	if (err instanceof HttpError && err.code === "invalid_password")
 		return "Wrong password for this name.";
+	if (err instanceof HttpError && err.code === "rate_limited")
+		return "Saving too fast — vote reverted.";
 	if (err instanceof HttpError && err.code === "invalid_option")
 		return "That selection is no longer valid. Reloading.";
 	return "Could not save vote. Try again.";
@@ -78,22 +74,28 @@ function PollCard({
 		}
 		return ids;
 	}, [poll.options, activeKey]);
-	const voteMutation = useMutation({
-		mutationFn: (optionIds: string[]) =>
+	const voteMutation = useMutation<
+		{ pollId: string },
+		unknown,
+		{ identity: string; optionIds: string[]; password?: string },
+		{ next: string[]; prev?: EventDetailResponse }
+	>({
+		mutationFn: (value) =>
 			votePoll(eventId, poll.id, {
-				name: activeName,
-				optionIds,
-				password: password === "" ? undefined : password,
+				name: value.identity,
+				optionIds: value.optionIds,
+				password: value.password,
 			}),
-		onError: (err, _next, ctx) => {
+		mutationKey: ["poll-vote", eventId, poll.id],
+		onError: (err, _variables, ctx) => {
 			setVoteError(voteErrorMessage(err));
-			const prev = (ctx as { prev?: EventDetailResponse } | undefined)?.prev;
-			if (prev) queryClient.setQueryData(["event", eventId], prev);
-			if (err instanceof HttpError && err.code === "invalid_option") {
-				void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+			if (
+				queryClient.isMutating({ mutationKey: ["poll-vote", eventId] }) <= 1
+			) {
+				if (ctx?.prev) queryClient.setQueryData(["event", eventId], ctx.prev);
 			}
 		},
-		onMutate: async (next: string[]) => {
+		onMutate: async (variables) => {
 			setVoteError("");
 			await queryClient.cancelQueries({ queryKey: ["event", eventId] });
 			const prev = queryClient.getQueryData<EventDetailResponse>([
@@ -103,13 +105,24 @@ function PollCard({
 			queryClient.setQueryData(
 				["event", eventId],
 				(old: EventDetailResponse | undefined) =>
-					old ? patchDetailForPollVote(old, poll.id, activeName, next) : old,
+					old
+						? patchDetailForPollVote(
+								old,
+								poll.id,
+								variables.identity,
+								variables.optionIds,
+							)
+						: old,
 			);
-			return { prev };
+			return { next: variables.optionIds, prev };
 		},
 		onSettled: () => {
 			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		},
+		onSuccess: () => {
+			setVoteError("");
+		},
+		scope: { id: `poll-vote-${eventId}-${poll.id}` },
 	});
 	const readOwnIds = () => {
 		const cached = queryClient.getQueryData<EventDetailResponse>([
@@ -125,7 +138,11 @@ function PollCard({
 	};
 	const commit = (next: string[]) => {
 		if (!signedIn || activeName === "") return;
-		voteMutation.mutate(next);
+		voteMutation.mutate({
+			identity: activeName,
+			optionIds: next,
+			password: password === "" ? undefined : password,
+		});
 	};
 	const toggleMulti = (optionId: string) => {
 		const next = readOwnIds();
@@ -303,14 +320,14 @@ function PollCard({
 						{voteError}
 					</p>
 				) : null}
-				{voteMutation.isPending ? (
-					<p aria-live="polite" className="mt-2 text-xs text-muted-foreground">
-						Saving…
-					</p>
-				) : null}
+				<p
+					aria-live="polite"
+					className="mt-2 min-h-4 text-xs text-muted-foreground"
+				>
+					{voteMutation.isPending ? "Saving…" : ""}
+				</p>
 				{signedIn && ownIds.size > 0 ? (
 					<Button
-						disabled={!signedIn}
 						className="mt-2 h-auto min-h-6 p-0 text-sm"
 						onClick={clearVote}
 						type="button"
