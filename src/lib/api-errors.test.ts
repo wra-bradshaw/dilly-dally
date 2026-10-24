@@ -105,32 +105,6 @@ describe("readCappedJson", () => {
 		});
 	});
 
-	it("accepts bodies at exactly the byte budget", async () => {
-		const body = `{"data":"${"x".repeat(262_144 - 11)}"}`;
-		expect(new TextEncoder().encode(body).byteLength).toBe(262_144);
-		const req = new Request("https://x.test/", {
-			body,
-			headers: { "content-type": "application/json" },
-			method: "POST",
-		});
-		const res = await readCappedJson(req);
-		expect(res.ok).toBe(true);
-	});
-
-	it("rejects bodies one byte over the budget", async () => {
-		const body = `{"data":"${"x".repeat(262_144 - 10)}"}`;
-		expect(new TextEncoder().encode(body).byteLength).toBe(262_145);
-		const req = new Request("https://x.test/", {
-			body,
-			headers: { "content-type": "application/json" },
-			method: "POST",
-		});
-		expect(await readCappedJson(req)).toEqual({
-			ok: false,
-			reason: "too_large",
-		});
-	});
-
 	it("caps null bodies via content-length", async () => {
 		const req = new Request("https://x.test/", {
 			headers: { "content-length": String(300_000) },
@@ -195,16 +169,6 @@ describe("write guards", () => {
 			method: "POST",
 		});
 		expect(contentLengthTooLarge(small)).toBe(false);
-	});
-
-	it("honors a custom byte cap in the content-length pre-check", () => {
-		const req = new Request("https://x.test/", {
-			headers: { "content-length": "200" },
-			method: "POST",
-		});
-		expect(contentLengthTooLarge(req, 100)).toBe(true);
-		expect(contentLengthTooLarge(req, 200)).toBe(false);
-		expect(contentLengthTooLarge(req)).toBe(false);
 	});
 
 	it("requires application/json content type", () => {

@@ -21,27 +21,17 @@ type EventDetailServerResult =
 			status: number;
 	  };
 
-export function readLimitContext(
-	allowed: boolean,
-	resetMs: number,
-	now: number,
-): { limited: boolean; retryAfter?: number } {
-	if (allowed) return { limited: false };
-	return {
-		limited: true,
-		retryAfter: retryAfterSeconds(resetMs, now),
-	};
-}
-
 const readRateLimit = createMiddleware({ type: "request" }).server(
 	async ({ next, request }) => {
 		const now = Date.now();
 		const rl = await doRateLimit(request, "read", RATE_LIMITS.read);
-		const decision = readLimitContext(rl.allowed, rl.resetMs, now);
+		const limited = !rl.allowed;
 		return next({
 			context: {
-				readRateLimited: decision.limited,
-				readRetryAfter: decision.retryAfter,
+				readRateLimited: limited,
+				readRetryAfter: limited
+					? retryAfterSeconds(rl.resetMs, now)
+					: undefined,
 			},
 		});
 	},

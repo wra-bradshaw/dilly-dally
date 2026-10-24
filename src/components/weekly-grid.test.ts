@@ -4,7 +4,6 @@ import {
 	buildColumns,
 	buildWeeklyColumns,
 	getDayGaps,
-	headerForWeekday,
 	summarizeWeekdays,
 } from "./grid-model";
 
@@ -23,7 +22,7 @@ describe("buildWeeklyColumns", () => {
 	it("labels cells with weekday headers and hour times", () => {
 		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:30"]);
 		expect(cols).toHaveLength(1);
-		expect(cols[0].header).toBe(headerForWeekday(1));
+		expect(cols[0].header).toBe("Mon");
 		expect(cols[0].cells[0].label).toBe(
 			new Intl.DateTimeFormat("en-US", {
 				hour: "numeric",
@@ -48,19 +47,6 @@ describe("buildWeeklyColumns", () => {
 	it("leaves date columns untouched", () => {
 		const cols = buildColumns(["2026-10-05T09:00"], "UTC", "UTC");
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05"]);
-	});
-});
-
-describe("headerForWeekday", () => {
-	it("names each weekday in the pinned locale", () => {
-		const weekday = (n: number) =>
-			new Intl.DateTimeFormat("en-US", {
-				timeZone: "UTC",
-				weekday: "short",
-			}).format(new Date(Date.UTC(2000, 0, 2 + n)));
-		expect(headerForWeekday(1)).toBe(weekday(1));
-		expect(headerForWeekday(0)).toBe(weekday(0));
-		expect(headerForWeekday(7)).toBe("Day 7");
 	});
 });
 

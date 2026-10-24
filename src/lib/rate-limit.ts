@@ -7,7 +7,7 @@ export async function rateLimitKey(ip: string, scope: string): Promise<string> {
 	return `${scope}:${hex.slice(0, 32)}`;
 }
 
-export function windowStartFor(nowMs: number, windowMs: number): number {
+function windowStartFor(nowMs: number, windowMs: number): number {
 	return Math.floor(nowMs / windowMs) * windowMs;
 }
 

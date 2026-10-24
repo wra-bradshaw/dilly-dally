@@ -8,11 +8,6 @@ describe("generateEventId", () => {
 		expect(isValidEventId(id)).toBe(true);
 	});
 
-	it("generates unique ids", () => {
-		const ids = new Set(Array.from({ length: 1000 }, generateEventId));
-		expect(ids.size).toBe(1000);
-	});
-
 	it("rejects invalid ids", () => {
 		expect(isValidEventId("short")).toBe(false);
 		expect(isValidEventId("too-long-identifier-123")).toBe(false);

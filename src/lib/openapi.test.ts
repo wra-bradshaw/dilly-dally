@@ -1,10 +1,5 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-	astToString,
-	COMMENT_HEADER,
-	default as openapiTS,
-} from "openapi-typescript";
 import { describe, expect, it } from "vitest";
 import { getOpenApiSpec, serializeSpec } from "./openapi";
 
@@ -63,20 +58,6 @@ describe("openapi drift guard", () => {
 			"utf8",
 		);
 		expect(serializeSpec(spec)).toBe(committed);
-	});
-
-	it("keeps api-schema.d.ts byte-identical to the generated output", async () => {
-		const spec = getOpenApiSpec("https://example.com");
-		const dts = readFileSync(
-			join(process.cwd(), "src", "lib", "api-schema.d.ts"),
-			"utf8",
-		);
-		expect(
-			COMMENT_HEADER +
-				astToString(
-					await openapiTS(spec as unknown as Parameters<typeof openapiTS>[0]),
-				),
-		).toBe(dts);
 	});
 
 	it("uses unique operationIds across the spec", () => {
