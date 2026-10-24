@@ -1,19 +1,5 @@
 const ITERATIONS = 210_000;
 
-function toB64(bytes: Uint8Array): string {
-	let s = "";
-	for (const b of bytes) s += String.fromCharCode(b);
-	return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function fromB64(s: string): Uint8Array {
-	const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
-	const bin = atob(b64);
-	const out = new Uint8Array(bin.length);
-	for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-	return out;
-}
-
 export async function hashPassword(password: string): Promise<string> {
 	const salt = crypto.getRandomValues(new Uint8Array(16));
 	const key = await crypto.subtle.importKey(
@@ -33,7 +19,7 @@ export async function hashPassword(password: string): Promise<string> {
 		key,
 		256,
 	);
-	return `pbkdf2$${ITERATIONS}$${toB64(salt)}$${toB64(new Uint8Array(bits))}`;
+	return `pbkdf2$${ITERATIONS}$${Buffer.from(salt).toString("base64url")}$${Buffer.from(bits).toString("base64url")}`;
 }
 
 export async function verifyPassword(
@@ -45,8 +31,8 @@ export async function verifyPassword(
 		if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
 		const iterations = Number(parts[1]);
 		if (!Number.isInteger(iterations) || iterations < 1) return false;
-		const salt = fromB64(parts[2]);
-		const expected = fromB64(parts[3]);
+		const salt = Buffer.from(parts[2], "base64url");
+		const expected = Buffer.from(parts[3], "base64url");
 		const key = await crypto.subtle.importKey(
 			"raw",
 			new TextEncoder().encode(password),

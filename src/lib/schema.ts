@@ -111,3 +111,25 @@ export const participants = sqliteTable(
 		}).onDelete("cascade"),
 	],
 );
+
+export const eventSessions = sqliteTable(
+	"event_sessions",
+	{
+		createdAt: integer("created_at").notNull(),
+		eventId: text("event_id").notNull(),
+		expiresAt: integer("expires_at").notNull(),
+		nameDisplay: text("name_display").notNull(),
+		nameKey: text("name_key").notNull(),
+		passwordHash: text("password_hash"),
+		tokenHash: text("token_hash").primaryKey(),
+	},
+	(t) => [
+		index("idx_event_sessions_event").on(t.eventId),
+		index("idx_event_sessions_expires").on(t.expiresAt),
+		foreignKey({
+			columns: [t.eventId],
+			foreignColumns: [events.id],
+			name: "event_sessions_event_id_fk",
+		}).onDelete("cascade"),
+	],
+);
