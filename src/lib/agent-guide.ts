@@ -1,20 +1,145 @@
 import { docsResponse, originOf } from "./api-errors";
+import type { EventDetailResponse } from "./client";
 
 export function agentGuideResponse(request: Request): Response {
 	const guide = AGENT_GUIDE_MARKDOWN.replaceAll("HOST", originOf(request));
-	return docsResponse(guide, "text/markdown; charset=utf-8");
+	const res = docsResponse(guide, "text/markdown; charset=utf-8");
+	res.headers.set("Cache-Control", "no-store");
+	res.headers.set("Vary", "Accept, User-Agent");
+	return res;
 }
 
 export function llmsResponse(): Response {
 	return docsResponse(LLMS_TEXT, "text/plain; charset=utf-8");
 }
 
+export function eventDetailMarkdownResponse(
+	detail: EventDetailResponse,
+	origin: string,
+	eventId: string,
+): Response {
+	return new Response(renderEventMarkdown(detail, origin, eventId), {
+		headers: {
+			...docsHeaders(),
+			"Cache-Control": "no-store",
+			"Content-Type": "text/markdown; charset=utf-8",
+		},
+	});
+}
+
+export function markdownErrorResponse(
+	title: string,
+	hint: string,
+	status: number,
+): Response {
+	return new Response(`# ${title}\n\n${hint}\n`, {
+		headers: {
+			...docsHeaders(),
+			"Cache-Control": "no-store",
+			"Content-Type": "text/markdown; charset=utf-8",
+		},
+		status,
+	});
+}
+
+function docsHeaders(): Record<string, string> {
+	return {
+		"Referrer-Policy": "strict-origin-when-cross-origin",
+		Vary: "Accept, User-Agent",
+		"X-Content-Type-Options": "nosniff",
+	};
+}
+
+export function renderEventMarkdown(
+	detail: EventDetailResponse,
+	origin: string,
+	eventId: string,
+): string {
+	const lines: string[] = [];
+	const event = detail.event;
+	const canonicalId = event.id !== "" ? event.id : eventId;
+	const inviteUrl = `${origin}/e/${canonicalId}`;
+	lines.push(`# ${oneLine(event.title)}`);
+	lines.push("");
+	lines.push(`Invite: ${inviteUrl}`);
+	lines.push(`Timezone: ${event.timezone}`);
+	lines.push(
+		`Mode: ${event.mode === "weekly" ? `weekly (${event.weekdays.join(", ")})` : "specific dates"}`,
+	);
+	lines.push(
+		`Window: ${event.startTime} no earlier, ${event.endTime} no later`,
+	);
+	lines.push("");
+	if (detail.bestTimes.length > 0) {
+		lines.push("## Best times");
+		lines.push("");
+		for (const best of detail.bestTimes) {
+			lines.push(`- ${best.slot} (${best.count})`);
+		}
+		lines.push("");
+	}
+	lines.push("## Availability");
+	lines.push("");
+	if (detail.counts.length === 0) {
+		lines.push("No availability yet.");
+	} else {
+		for (const entry of detail.counts) {
+			const names =
+				entry.names.length > 0
+					? ` (${entry.names.map(oneLine).join(", ")})`
+					: "";
+			lines.push(`- ${entry.slot}: ${entry.count}${names}`);
+		}
+	}
+	lines.push("");
+	if (detail.polls.length > 0) {
+		lines.push("## Polls");
+		lines.push("");
+		for (const poll of detail.polls) {
+			lines.push(
+				`### ${oneLine(poll.question)} (poll ${poll.id}, ${poll.totalVoters} voters${poll.allowMultiple ? ", multiple picks" : ""})`,
+			);
+			for (const option of poll.options) {
+				const names =
+					option.names.length > 0
+						? ` (${option.names.map(oneLine).join(", ")})`
+						: "";
+				lines.push(
+					`- ${oneLine(option.label)} (option ${option.id}): ${option.count}${names}`,
+				);
+			}
+			lines.push("");
+		}
+	}
+	lines.push("## For agents");
+	lines.push("");
+	lines.push(
+		"Read and write via JSON; see `GET /api/openapi.json` for schemas.",
+	);
+	lines.push(
+		`Full guide with curl flows: \`GET ${origin}/ with Accept: text/markdown\`.`,
+	);
+	lines.push(`- Read detail: \`GET ${origin}/api/events/${canonicalId}\``);
+	lines.push(
+		`- Save availability: \`PUT ${origin}/api/events/${canonicalId}/availability\``,
+	);
+	lines.push(
+		`- Vote: \`PUT ${origin}/api/events/${canonicalId}/polls/:pollId/vote\``,
+	);
+	lines.push("");
+	return lines.join("\n");
+}
+
+function oneLine(value: string): string {
+	return value.replace(/[\r\n]+/g, " ").trim();
+}
 export const LLMS_TEXT = `Dilly-Dally: agent-friendly when2meet replacement. No login.
-- Create events: POST /api/events (see /api/agent-guide for curl)
+- Pages serve Markdown to agents: send Accept: text/markdown (curl and scripts get it automatically) on / and /e/:id.
+- Full guide: GET / with Accept: text/markdown
+- Create events: POST /api/events
 - Availability: PUT /api/events/:id/availability
 - Polls: POST /api/events/:id/polls, POST /api/events/:id/polls/:pollId/options, PUT /api/events/:id/polls/:pollId/vote
 - OpenAPI 3.1: /api/openapi.json
-- Full agent guide: /api/agent-guide
 `;
 
 export const AGENT_GUIDE_MARKDOWN = `# Dilly-Dally Agent Guide
@@ -72,12 +197,12 @@ Rules:
 - \`mode\` is \`"dates"\` (default) or \`"weekly"\`.
 - \`weekdays\` 1..7 unique entries, \`0\`=Sunday through \`6\`=Saturday, so \`[1,3,5]\` means Mon/Wed/Fri.
 - Weekly events stay live 90 days from creation.
-- Weekly slots look like \`MON-09:15\`. Paint them with the same availability call, for example \`"slots": ["MON-09:00", "WED-09:15"]\`.
+- Weekly slots look like \`MON-09:30\`. Paint them with the same availability call, for example \`"slots": ["MON-09:00", "WED-09:30"]\`.
 - Date slots (\`2026-10-05T09:00\`) are rejected for weekly events with \`invalid_slot\`, and weekly slots are rejected for date events.
 
 ## 2. Add availability for a name
 
-Slots are 15-minute ids in event-timezone wall time: \`YYYY-MM-DDTHH:mm\` where minutes are \`00|15|30|45\` and inside the event range.
+Slots are 30-minute ids in event-timezone wall time: \`YYYY-MM-DDTHH:mm\` where minutes are \`00|30\` and inside the event range.
 
 \`\`\`sh
 curl -X PUT HOST/api/events/AbC123_-XyZ9/availability \\
@@ -85,7 +210,7 @@ curl -X PUT HOST/api/events/AbC123_-XyZ9/availability \\
   -d '{
     "name": "Alice",
     "password": "optional-secret-1234",
-    "slots": ["2026-10-05T09:00", "2026-10-05T09:15"]
+    "slots": ["2026-10-05T09:00", "2026-10-05T09:30"]
   }'
 \`\`\`
 
@@ -103,7 +228,7 @@ Passwords:
 curl HOST/api/events/AbC123_-XyZ9
 \`\`\`
 
-Returns the event, the full 15-minute \`slotUniverse\`, per-slot \`counts\` with names, \`participants\` (names only, no hashes), and \`bestTimes\` sorted by count then earliest, and \`polls\` with public vote counts and voter names.
+Returns the event, the full 30-minute \`slotUniverse\`, per-slot \`counts\` with names, \`participants\` (names only, no hashes), and \`bestTimes\` sorted by count then earliest, and \`polls\` with public vote counts and voter names.
 
 Fetch one person's slots for editing:
 

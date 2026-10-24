@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { DateCalendar } from "#/components/date-calendar";
-import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader } from "#/components/ui/card";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -32,10 +31,11 @@ import { MAX_OPTIONS_PER_POLL, MAX_POLLS_PER_EVENT } from "#/lib/validation";
 export const Route = createFileRoute("/")({ component: Home });
 
 function hourOptions(): string[] {
-	return Array.from(
-		{ length: 24 },
-		(_, h) => `${String(h).padStart(2, "0")}:00`,
-	);
+	return Array.from({ length: 48 }, (_, i) => {
+		const h = Math.floor(i / 2);
+		const m = i % 2 === 0 ? "00" : "30";
+		return `${String(h).padStart(2, "0")}:${m}`;
+	});
 }
 
 interface FieldErrors {
@@ -260,9 +260,7 @@ function Home() {
 		fields.timeField === "start" && fields.time !== undefined;
 
 	return (
-		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
-			<SiteHeader />
-
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pt-6 pb-16 sm:pt-8">
 			<Card className="mx-auto max-w-lg">
 				<CardHeader>
 					<h1
@@ -308,7 +306,7 @@ function Home() {
 							</span>
 							<div
 								aria-labelledby={modeGroup.labelId}
-								className="flex gap-1"
+								className="grid grid-cols-2 gap-1 sm:flex sm:w-auto"
 								onKeyDown={modeRadio.onKeyDown}
 								role="radiogroup"
 							>
@@ -320,6 +318,7 @@ function Home() {
 								).map((m) => (
 									<Button
 										{...modeRadio.getOptionProps(m.value)}
+										className="min-h-11 flex-1 sm:h-7 sm:min-h-0 sm:flex-none"
 										key={m.value}
 										onClick={() => setMode(m.value)}
 										size="sm"

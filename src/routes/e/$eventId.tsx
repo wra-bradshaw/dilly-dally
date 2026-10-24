@@ -5,7 +5,6 @@ import { AvailabilityGrid } from "#/components/availability-grid";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap, heatmapAnnounce } from "#/components/group-heatmap";
 import { PollsSection } from "#/components/polls";
-import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
@@ -365,11 +364,7 @@ function EventPage() {
 
 	const total = allNames.length;
 	const url = inviteUrl(eventId);
-	const origin = url.startsWith("http") ? new URL(url).origin : "";
-	const agentPrompt = buildAgentPrompt({
-		guideUrl: `${origin}/api/agent-guide`,
-		inviteUrl: url,
-	});
+	const agentPrompt = buildAgentPrompt({ inviteUrl: url });
 	const stale = detail.isError && detail.data !== undefined;
 	const gridDisabled =
 		restoreStatus === "restoring" ||
@@ -377,7 +372,7 @@ function EventPage() {
 		restoreStatus === "gone";
 
 	return (
-		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pt-6 pb-16 sm:pt-8">
 			{stale && (
 				<div className="mt-4 block rounded-xl border border-muted-foreground bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					<span aria-live="polite">
@@ -393,8 +388,6 @@ function EventPage() {
 					</Button>
 				</div>
 			)}
-			<SiteHeader />
-
 			<h1 className="font-heading mt-2 text-3xl font-bold" tabIndex={-1}>
 				{event?.title}
 			</h1>
@@ -465,7 +458,7 @@ function EventPage() {
 							? "Copy failed — select the link and copy it manually"
 							: promptCopied
 								? "Copied!"
-								: "Ask your agent"}
+								: "Copy agent prompt"}
 					</TooltipContent>
 				</Tooltip>
 				<span className="sr-only" id={promptHintId}>

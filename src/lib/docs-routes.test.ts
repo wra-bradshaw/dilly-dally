@@ -22,10 +22,11 @@ describe("agent guide response", () => {
 			"text/markdown; charset=utf-8",
 		);
 		expect(securityHeadersOf(res)).toEqual({
-			cache: "public, max-age=3600",
+			cache: "no-store",
 			referrer: "strict-origin-when-cross-origin",
 			sniff: "nosniff",
 		});
+		expect(res.headers.get("Vary")).toBe("Accept, User-Agent");
 		expect(await res.text()).toContain(AGENT_GUIDE_MARKDOWN.slice(0, 40));
 	});
 

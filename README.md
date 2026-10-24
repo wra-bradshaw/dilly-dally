@@ -13,7 +13,7 @@ We started by studying [when2meet](https://www.when2meet.com/), the classic grou
 ## Agent features
 
 - **OpenAPI 3.1 spec** at `/api/openapi.json`
-- **Markdown agent guide** at `/api/agent-guide` with exact `curl` examples
+- **Markdown agent guide** served from `/` itself: agents sending `Accept: text/markdown` (or a bot `User-Agent`, detected via `isbot`) get the guide as Markdown, and `/e/:id` returns live event detail as Markdown — same URLs as the human pages
 - **Type-safe client** generated from the spec via OpenAPI TypeScript
 - **Rate limiting** via Cloudflare Durable Objects to prevent abuse
 

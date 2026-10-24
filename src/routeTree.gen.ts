@@ -10,9 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AgentsDotmdRouteImport } from './routes/agents[.]md'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as ApiAgentGuideRouteImport } from './routes/api/agent-guide'
 import { Route as ApiOpenapiDotjsonRouteImport } from './routes/api/openapi[.]json'
 import { Route as EEventIdRouteImport } from './routes/e/$eventId'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
@@ -28,19 +26,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgentsDotmdRoute = AgentsDotmdRouteImport.update({
-  id: '/agents.md',
-  path: '/agents.md',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
   id: '/llms.txt',
   path: '/llms.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAgentGuideRoute = ApiAgentGuideRouteImport.update({
-  id: '/api/agent-guide',
-  path: '/api/agent-guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOpenapiDotjsonRoute = ApiOpenapiDotjsonRouteImport.update({
@@ -95,9 +83,7 @@ const ApiEventsEventIdPollsPollIdOptionsOptionIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/agents.md': typeof AgentsDotmdRoute
   '/llms.txt': typeof LlmsDottxtRoute
-  '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
@@ -110,9 +96,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/agents.md': typeof AgentsDotmdRoute
   '/llms.txt': typeof LlmsDottxtRoute
-  '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events': typeof ApiEventsIndexRoute
@@ -126,9 +110,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/agents.md': typeof AgentsDotmdRoute
   '/llms.txt': typeof LlmsDottxtRoute
-  '/api/agent-guide': typeof ApiAgentGuideRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
@@ -143,9 +125,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/agents.md'
     | '/llms.txt'
-    | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events/'
@@ -158,9 +138,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/agents.md'
     | '/llms.txt'
-    | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events'
@@ -173,9 +151,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/agents.md'
     | '/llms.txt'
-    | '/api/agent-guide'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events/'
@@ -189,9 +165,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AgentsDotmdRoute: typeof AgentsDotmdRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
-  ApiAgentGuideRoute: typeof ApiAgentGuideRoute
   ApiOpenapiDotjsonRoute: typeof ApiOpenapiDotjsonRoute
   EEventIdRoute: typeof EEventIdRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
@@ -209,25 +183,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agents.md': {
-      id: '/agents.md'
-      path: '/agents.md'
-      fullPath: '/agents.md'
-      preLoaderRoute: typeof AgentsDotmdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/llms.txt': {
       id: '/llms.txt'
       path: '/llms.txt'
       fullPath: '/llms.txt'
       preLoaderRoute: typeof LlmsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/agent-guide': {
-      id: '/api/agent-guide'
-      path: '/api/agent-guide'
-      fullPath: '/api/agent-guide'
-      preLoaderRoute: typeof ApiAgentGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/openapi.json': {
@@ -329,9 +289,7 @@ const ApiEventsEventIdPollsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AgentsDotmdRoute: AgentsDotmdRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
-  ApiAgentGuideRoute: ApiAgentGuideRoute,
   ApiOpenapiDotjsonRoute: ApiOpenapiDotjsonRoute,
   EEventIdRoute: EEventIdRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,

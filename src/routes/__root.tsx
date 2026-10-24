@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "next-themes";
-import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { TooltipProvider } from "#/components/ui/tooltip";
 import { useDocumentTitle } from "#/hooks/use-document-title";
@@ -107,7 +106,6 @@ function NotFoundPage() {
 	useDocumentTitle("Page not found");
 	return (
 		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pb-16">
-			<SiteHeader />
 			<div className="py-16 text-center">
 				<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
 					Page not found

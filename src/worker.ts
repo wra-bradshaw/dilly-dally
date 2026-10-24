@@ -1,9 +1,20 @@
 import handler from "@tanstack/react-start/server-entry";
 import { drizzle } from "drizzle-orm/d1";
-import { documentSecurityHeaders } from "./lib/api-errors";
+import {
+	agentGuideResponse,
+	eventDetailMarkdownResponse,
+	markdownErrorResponse,
+} from "./lib/agent-guide";
+import { wantsMarkdown } from "./lib/agent-negotiation";
+import { documentSecurityHeaders, originOf } from "./lib/api-errors";
 import { purgeExpired } from "./lib/db";
+import { getDb } from "./lib/db-env";
+import { HttpError } from "./lib/http-error";
+import { RATE_LIMITS } from "./lib/rate-limit";
 import { RateLimiter } from "./lib/rate-limiter-do";
 import * as schema from "./lib/schema";
+import { loadEventDetailFromDb } from "./lib/server-event-detail";
+import { guardRateLimit } from "./lib/server-rate-limit";
 
 export { RateLimiter };
 
@@ -17,6 +28,11 @@ export function withDocumentHeaders(res: Response): Response {
 	for (const [key, value] of Object.entries(documentSecurityHeaders())) {
 		headers.set(key, value);
 	}
+	const vary = headers.get("vary");
+	headers.set(
+		"vary",
+		vary ? `${vary}, Accept, User-Agent` : "Accept, User-Agent",
+	);
 	return new Response(res.body, {
 		headers,
 		status: res.status,
@@ -24,8 +40,75 @@ export function withDocumentHeaders(res: Response): Response {
 	});
 }
 
+type MarkdownRoute = { kind: "home" } | { eventId: string; kind: "event" };
+
+export function markdownRoute(url: URL): MarkdownRoute | null {
+	if (url.pathname === "/") return { kind: "home" };
+	const match = /^\/e\/([^/]+)\/?$/.exec(url.pathname);
+	if (match?.[1]) return { eventId: match[1], kind: "event" };
+	return null;
+}
+
+function withVary(res: Response): Response {
+	const headers = new Headers(res.headers);
+	const vary = headers.get("vary");
+	headers.set(
+		"vary",
+		vary ? `${vary}, Accept, User-Agent` : "Accept, User-Agent",
+	);
+	return new Response(res.body, {
+		headers,
+		status: res.status,
+		statusText: res.statusText,
+	});
+}
+
+export async function maybeServeMarkdown(
+	request: Request,
+): Promise<Response | null> {
+	if (!wantsMarkdown(request)) return null;
+	const url = new URL(request.url);
+	const route = markdownRoute(url);
+	if (!route) return null;
+	if (route.kind === "home") return agentGuideResponse(request);
+	const limited = await guardRateLimit(request, "read", RATE_LIMITS.read, {
+		noStore: true,
+	});
+	if (limited) return withVary(limited);
+	try {
+		const detail = await loadEventDetailFromDb(
+			getDb(),
+			route.eventId,
+			Date.now(),
+		);
+		return eventDetailMarkdownResponse(
+			detail,
+			originOf(request),
+			route.eventId,
+		);
+	} catch (err) {
+		if (err instanceof HttpError) {
+			const expired = err.code === "gone";
+			return markdownErrorResponse(
+				expired ? "Event expired" : err.message,
+				expired
+					? "Events are deleted after they pass to free up space."
+					: "Check the link and try again.",
+				err.status,
+			);
+		}
+		return markdownErrorResponse(
+			"Something went wrong",
+			"Try again in a moment.",
+			500,
+		);
+	}
+}
+
 export default {
 	async fetch(...args: Parameters<typeof handler.fetch>): Promise<Response> {
+		const negotiated = await maybeServeMarkdown(args[0] as Request);
+		if (negotiated) return negotiated;
 		return withDocumentHeaders(await handler.fetch(...args));
 	},
 	async scheduled(
