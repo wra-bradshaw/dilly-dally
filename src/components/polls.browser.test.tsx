@@ -1,8 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { expect, test } from "vitest";
+import type { ReactNode } from "react";
+import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
-import type { Poll } from "#/lib/client";
+import { type Poll, votePoll } from "#/lib/client";
 import { PollsSection } from "./polls";
+
+vi.mock("#/lib/client", async (importOriginal) => {
+	const mod = await importOriginal<typeof import("#/lib/client")>();
+	return { ...mod, votePoll: vi.fn().mockResolvedValue({ pollId: "p1" }) };
+});
 
 function singlePoll(): Poll[] {
 	return [
@@ -35,12 +41,12 @@ function twoPolls(): Poll[] {
 	];
 }
 
-function wrapper(children: React.ReactNode) {
+function wrapper(children: ReactNode) {
 	const client = new QueryClient();
 	return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
-test("single poll shows question, counts and voter names", async () => {
+test("single poll shows question, counts, percentages and voter names", async () => {
 	const screen = await render(
 		wrapper(
 			<PollsSection
@@ -55,15 +61,18 @@ test("single poll shows question, counts and voter names", async () => {
 	await expect
 		.element(screen.getByRole("heading", { name: "Where?" }))
 		.toBeVisible();
+	await expect.element(screen.getByText("Pizza")).toBeVisible();
+	await expect.element(screen.getByText("1 · 100%")).toBeVisible();
+	await expect.element(screen.getByText("0 · 0%")).toBeVisible();
 	await expect.element(screen.getByText("Ada")).toBeVisible();
-	await expect.element(screen.getByText("Pizza · 1")).toBeVisible();
+	await expect.element(screen.getByText("No votes yet")).toBeVisible();
 });
 
-test("multiple polls show both questions", async () => {
+test("clicking a multi-choice option row votes for that option", async () => {
 	const screen = await render(
 		wrapper(
 			<PollsSection
-				activeName="Ada"
+				activeName="Bo"
 				eventId="e1"
 				password=""
 				polls={twoPolls()}
@@ -71,12 +80,14 @@ test("multiple polls show both questions", async () => {
 			/>,
 		),
 	);
-	await expect
-		.element(screen.getByRole("heading", { name: "Where?" }))
-		.toBeVisible();
-	await expect
-		.element(screen.getByRole("heading", { name: "When?" }))
-		.toBeVisible();
+	await screen.getByText("Mon").click();
+	await vi.waitFor(() => {
+		expect(vi.mocked(votePoll)).toHaveBeenCalledWith("e1", "p2", {
+			name: "Bo",
+			optionIds: ["o3"],
+			password: undefined,
+		});
+	});
 });
 
 test("unsigned users see sign-in prompt and disabled options", async () => {
@@ -95,4 +106,29 @@ test("unsigned users see sign-in prompt and disabled options", async () => {
 	await expect
 		.element(screen.getByText("Sign in to add a poll."))
 		.toBeVisible();
+	await expect
+		.element(screen.getByRole("radio", { name: /Pizza/ }))
+		.toBeDisabled();
+});
+
+test("clicking anywhere on an option row votes for that option", async () => {
+	const screen = await render(
+		wrapper(
+			<PollsSection
+				activeName="Bo"
+				eventId="e1"
+				password=""
+				polls={singlePoll()}
+				signedIn
+			/>,
+		),
+	);
+	await screen.getByText("No votes yet").click();
+	await vi.waitFor(() => {
+		expect(vi.mocked(votePoll)).toHaveBeenCalledWith("e1", "p1", {
+			name: "Bo",
+			optionIds: ["o2"],
+			password: undefined,
+		});
+	});
 });

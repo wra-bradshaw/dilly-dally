@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "cn";
+import type { ReactNode } from "react";
 import { useId, useMemo, useRef, useState } from "react";
 import {
 	addPollOption,
@@ -43,6 +45,83 @@ function voteErrorMessage(err: unknown): string {
 	if (err instanceof HttpError && err.code === "invalid_option")
 		return "That selection is no longer valid. Reloading.";
 	return "Could not save vote. Try again.";
+}
+
+function voteShare(count: number, totalVoters: number): number {
+	if (totalVoters <= 0) return 0;
+	return Math.round((count / totalVoters) * 100);
+}
+
+function PollOptionRow({
+	control,
+	count,
+	htmlFor,
+	label,
+	names,
+	remove,
+	selected,
+	share,
+}: {
+	control: ReactNode;
+	count: number;
+	htmlFor: string;
+	label: string;
+	names: string[];
+	remove: ReactNode;
+	selected: boolean;
+	share: number;
+}) {
+	const voters = names.length > 0 ? names.join(", ") : "No votes yet";
+	return (
+		<div
+			className={cn(
+				"relative overflow-hidden rounded-none border transition-colors",
+				selected ? "border-primary/60" : "border-border",
+			)}
+		>
+			<div
+				aria-hidden="true"
+				className={cn(
+					"absolute inset-y-0 left-0 transition-[width] duration-300",
+					selected ? "bg-primary/[0.14]" : "bg-primary/[0.07]",
+				)}
+				data-testid={`poll-share-${htmlFor}`}
+				style={{ width: `${Math.min(100, share)}%` }}
+			/>
+			<div className="relative flex items-start">
+				<Label
+					className="grid min-w-0 flex-1 cursor-pointer gap-0.5 px-2.5 py-2"
+					htmlFor={htmlFor}
+				>
+					<span className="flex items-start gap-2.5">
+						<span className="shrink-0 pt-0.5">{control}</span>
+						<span className="grid min-w-0 flex-1 gap-0.5">
+							<span className="flex items-baseline justify-between gap-2">
+								<span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+									{label}
+								</span>
+								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+									{count} · {share}%
+								</span>
+							</span>
+							<span
+								className={cn(
+									"truncate text-xs select-text",
+									names.length > 0
+										? "text-muted-foreground"
+										: "text-muted-foreground/70 italic",
+								)}
+								title={names.length > 0 ? voters : undefined}
+							>
+								{voters}
+							</span>
+						</span>
+					</span>
+				</Label>
+				{remove ? <span className="shrink-0 py-2 pr-2.5">{remove}</span> : null}
+			</div>
+		</div>
+	);
 }
 
 function PollCard({
@@ -237,6 +316,20 @@ function PollCard({
 		}
 	};
 	const singleValue = poll.allowMultiple ? undefined : ([...ownIds][0] ?? "");
+	const removeButton = (o: { id: string; label: string; count: number }) =>
+		o.count === 0 && signedIn && poll.options.length > 2 ? (
+			<Button
+				aria-label={`Remove ${o.label}`}
+				className="shrink-0"
+				disabled={deletingId !== null}
+				onClick={() => void removeOption(o.id)}
+				size="xs"
+				type="button"
+				variant="ghost"
+			>
+				{deletingId === o.id ? "…" : "Remove"}
+			</Button>
+		) : null;
 	return (
 		<Card>
 			<CardHeader>
@@ -250,37 +343,25 @@ function PollCard({
 					<fieldset className="grid gap-2">
 						<legend className="sr-only">{poll.question}</legend>
 						{poll.options.map((o) => (
-							<div className="flex items-start gap-2" key={o.id}>
-								<Checkbox
-									aria-label={`${o.label}, ${o.count} votes`}
-									checked={ownIds.has(o.id)}
-									disabled={!signedIn}
-									id={`${voteGroupId}-${o.id}`}
-									onCheckedChange={() => toggleMulti(o.id)}
-								/>
-								<div className="grid flex-1 gap-0.5">
-									<Label htmlFor={`${voteGroupId}-${o.id}`}>
-										{o.label} · {o.count}
-									</Label>
-									{o.names.length > 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{o.names.join(", ")}
-										</p>
-									) : null}
-								</div>
-								{o.count === 0 && signedIn && poll.options.length > 2 ? (
-									<Button
-										aria-label={`Remove ${o.label}`}
-										disabled={deletingId !== null}
-										onClick={() => void removeOption(o.id)}
-										size="xs"
-										type="button"
-										variant="ghost"
-									>
-										{deletingId === o.id ? "…" : "Remove"}
-									</Button>
-								) : null}
-							</div>
+							<PollOptionRow
+								control={
+									<Checkbox
+										aria-label={`${o.label}, ${o.count} votes, ${voteShare(o.count, poll.totalVoters)} percent`}
+										checked={ownIds.has(o.id)}
+										disabled={!signedIn}
+										id={`${voteGroupId}-${o.id}`}
+										onCheckedChange={() => toggleMulti(o.id)}
+									/>
+								}
+								count={o.count}
+								htmlFor={`${voteGroupId}-${o.id}`}
+								key={o.id}
+								label={o.label}
+								names={o.names}
+								remove={removeButton(o)}
+								selected={ownIds.has(o.id)}
+								share={voteShare(o.count, poll.totalVoters)}
+							/>
 						))}
 					</fieldset>
 				) : (
@@ -290,36 +371,24 @@ function PollCard({
 						value={singleValue ?? ""}
 					>
 						{poll.options.map((o) => (
-							<div className="flex items-start gap-2" key={o.id}>
-								<RadioGroupItem
-									aria-label={`${o.label}, ${o.count} votes`}
-									disabled={!signedIn}
-									id={`${voteGroupId}-${o.id}`}
-									value={o.id}
-								/>
-								<div className="grid flex-1 gap-0.5">
-									<Label htmlFor={`${voteGroupId}-${o.id}`}>
-										{o.label} · {o.count}
-									</Label>
-									{o.names.length > 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{o.names.join(", ")}
-										</p>
-									) : null}
-								</div>
-								{o.count === 0 && signedIn && poll.options.length > 2 ? (
-									<Button
-										aria-label={`Remove ${o.label}`}
-										disabled={deletingId !== null}
-										onClick={() => void removeOption(o.id)}
-										size="xs"
-										type="button"
-										variant="ghost"
-									>
-										{deletingId === o.id ? "…" : "Remove"}
-									</Button>
-								) : null}
-							</div>
+							<PollOptionRow
+								control={
+									<RadioGroupItem
+										aria-label={`${o.label}, ${o.count} votes, ${voteShare(o.count, poll.totalVoters)} percent`}
+										disabled={!signedIn}
+										id={`${voteGroupId}-${o.id}`}
+										value={o.id}
+									/>
+								}
+								count={o.count}
+								htmlFor={`${voteGroupId}-${o.id}`}
+								key={o.id}
+								label={o.label}
+								names={o.names}
+								remove={removeButton(o)}
+								selected={ownIds.has(o.id)}
+								share={voteShare(o.count, poll.totalVoters)}
+							/>
 						))}
 					</RadioGroup>
 				)}
