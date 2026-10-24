@@ -194,7 +194,13 @@ export const availabilitySchema = z.object({
 	slots: z.array(z.string().refine(isSlotId)).max(2852),
 });
 
+export const sessionCreateSchema = z.object({
+	name: participantNameSchema,
+	password: z.string().min(4).max(72).optional(),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type AvailabilityInput = z.infer<typeof availabilitySchema>;
 export type CreatePollInput = z.input<typeof createPollSchema>;
 export type PollVoteInput = z.infer<typeof pollVoteSchema>;
+export type SessionCreateInput = z.infer<typeof sessionCreateSchema>;

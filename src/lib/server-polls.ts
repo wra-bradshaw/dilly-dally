@@ -216,6 +216,7 @@ export async function votePollInDb(
 		hash: typeof hashPassword;
 		verify: typeof verifyPassword;
 	} = { hash: hashPassword, verify: verifyPassword },
+	opts: { sessionNameKey?: string } = {},
 ): Promise<{ ok: true } | { code: string; ok: false }> {
 	const pollPromise = db
 		.select()
@@ -243,10 +244,14 @@ export async function votePollInDb(
 		return { code: "invalid_selection", ok: false };
 	const key = nameKey(input.name);
 	const display = input.name.trim();
+	const sessionAuthenticated =
+		opts.sessionNameKey !== undefined && opts.sessionNameKey === key;
 	if (existing?.passwordHash) {
-		if (!input.password) return { code: "invalid_password", ok: false };
-		const valid = await deps.verify(input.password, existing.passwordHash);
-		if (!valid) return { code: "invalid_password", ok: false };
+		if (!sessionAuthenticated) {
+			if (!input.password) return { code: "invalid_password", ok: false };
+			const valid = await deps.verify(input.password, existing.passwordHash);
+			if (!valid) return { code: "invalid_password", ok: false };
+		}
 	} else if (existing && !existing.passwordHash && input.password) {
 		const passwordHash = await deps.hash(input.password);
 		await db
@@ -274,9 +279,11 @@ export async function votePollInDb(
 			});
 		const raced = await getParticipantRow(db, event.id, key);
 		if (raced?.passwordHash) {
-			if (!input.password) return { code: "invalid_password", ok: false };
-			const valid = await deps.verify(input.password, raced.passwordHash);
-			if (!valid) return { code: "invalid_password", ok: false };
+			if (!sessionAuthenticated) {
+				if (!input.password) return { code: "invalid_password", ok: false };
+				const valid = await deps.verify(input.password, raced.passwordHash);
+				if (!valid) return { code: "invalid_password", ok: false };
+			}
 		}
 	}
 	await db

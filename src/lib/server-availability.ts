@@ -25,6 +25,7 @@ async function applyUpdate(
 	slots: string[],
 	now: number,
 	deps: { hash: typeof hashPassword; verify: typeof verifyPassword },
+	sessionAuthenticated = false,
 ): Promise<
 	| { ok: true; result: AvailabilityResult }
 	| { ok: false; code: "invalid_password" }
@@ -40,9 +41,11 @@ async function applyUpdate(
 		guard,
 	);
 	if (existing.passwordHash !== null) {
-		if (!input.password) return { code: "invalid_password", ok: false };
-		const valid = await deps.verify(input.password, existing.passwordHash);
-		if (!valid) return { code: "invalid_password", ok: false };
+		if (!sessionAuthenticated) {
+			if (!input.password) return { code: "invalid_password", ok: false };
+			const valid = await deps.verify(input.password, existing.passwordHash);
+			if (!valid) return { code: "invalid_password", ok: false };
+		}
 		const updated = await db
 			.update(schema.participants)
 			.set({ slotsJson: JSON.stringify(slots), updatedAt: now })
@@ -90,6 +93,7 @@ export async function upsertAvailability(
 		hash: typeof hashPassword;
 		verify: typeof verifyPassword;
 	} = { hash: hashPassword, verify: verifyPassword },
+	opts: { sessionNameKey?: string } = {},
 ): Promise<
 	| { ok: true; result: AvailabilityResult }
 	| { ok: false; code: "invalid_password" | "invalid_slot" }
@@ -100,8 +104,13 @@ export async function upsertAvailability(
 	}
 	const slots = normalizeSlots(input.slots);
 	const key = nameKey(input.name);
+	const sessionAuthenticated =
+		opts.sessionNameKey !== undefined && opts.sessionNameKey === key;
 	const existing = await getParticipantRow(db, event.id, key);
 	if (existing) {
+		if (sessionAuthenticated) {
+			return applyUpdate(db, event, existing, input, slots, now, deps, true);
+		}
 		return applyUpdate(db, event, existing, input, slots, now, deps);
 	}
 	const passwordHash = input.password ? await deps.hash(input.password) : null;
@@ -138,7 +147,16 @@ export async function upsertAvailability(
 			},
 		};
 	}
-	return applyUpdate(db, event, raced, input, slots, now, deps);
+	return applyUpdate(
+		db,
+		event,
+		raced,
+		input,
+		slots,
+		now,
+		deps,
+		sessionAuthenticated,
+	);
 }
 
 export async function getOwnAvailability(
@@ -147,6 +165,7 @@ export async function getOwnAvailability(
 	name: string,
 	password: string | null,
 	deps: { verify: typeof verifyPassword } = { verify: verifyPassword },
+	opts: { sessionNameKey?: string } = {},
 ): Promise<
 	| { ok: true; slots: string[]; name: string }
 	| { ok: false; code: "not_found" | "invalid_password" }
@@ -154,6 +173,13 @@ export async function getOwnAvailability(
 	const key = nameKey(name);
 	const existing = await getParticipantRow(db, event.id, key);
 	if (!existing) return { code: "not_found", ok: false };
+	if (opts.sessionNameKey !== undefined && opts.sessionNameKey === key) {
+		return {
+			name: existing.nameDisplay,
+			ok: true,
+			slots: parseSlotsJson(existing.slotsJson),
+		};
+	}
 	if (existing.passwordHash !== null) {
 		if (!password) return { code: "invalid_password", ok: false };
 		const valid = await deps.verify(password, existing.passwordHash);

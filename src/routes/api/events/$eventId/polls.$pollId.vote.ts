@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
+import {
+	isCrossOrigin,
+	jsonError,
+	readGuardedJson,
+	securityHeaders,
+} from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS } from "#/lib/rate-limit";
@@ -9,6 +14,7 @@ import {
 } from "#/lib/server-event-detail";
 import { votePollInDb } from "#/lib/server-polls";
 import { guardRateLimit } from "#/lib/server-rate-limit";
+import { authorizeRequestForName } from "#/lib/server-session-auth";
 import { type PollVoteInput, pollVoteSchema } from "#/lib/validation";
 
 export async function votePollHandler(
@@ -24,12 +30,29 @@ export async function votePollHandler(
 		RATE_LIMITS.availabilityWrite,
 	);
 	if (throttled) return throttled;
+	if (isCrossOrigin(request))
+		return jsonError("bad_request", "Cross-origin request rejected", 403);
 	const guarded = await readGuardedJson(request, pollVoteSchema);
 	if (!guarded.ok) return guarded.response;
 	const input: PollVoteInput = guarded.data;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) return liveEventErrorResponse(loaded);
-	const res = await votePollInDb(db, loaded.event, pollId, input, now);
+	const session = await authorizeRequestForName(
+		db,
+		eventId,
+		request.headers.get("cookie"),
+		input.name,
+		now,
+	);
+	const res = await votePollInDb(
+		db,
+		loaded.event,
+		pollId,
+		input,
+		now,
+		undefined,
+		session.ok ? { sessionNameKey: session.nameKey } : {},
+	);
 	if (!res.ok && res.code === "not_found")
 		return jsonError("not_found", "Poll not found", 404);
 	if (!res.ok && res.code === "invalid_password")

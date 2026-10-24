@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
+import {
+	isCrossOrigin,
+	jsonError,
+	readGuardedJson,
+	securityHeaders,
+} from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
 import { RATE_LIMITS } from "#/lib/rate-limit";
@@ -12,6 +17,7 @@ import {
 	loadLiveEvent,
 } from "#/lib/server-event-detail";
 import { guardRateLimit } from "#/lib/server-rate-limit";
+import { authorizeRequestForName } from "#/lib/server-session-auth";
 import { type AvailabilityInput, availabilitySchema } from "#/lib/validation";
 
 export async function saveAvailability(
@@ -26,6 +32,8 @@ export async function saveAvailability(
 		RATE_LIMITS.availabilityWrite,
 	);
 	if (throttled) return throttled;
+	if (isCrossOrigin(request))
+		return jsonError("bad_request", "Cross-origin request rejected", 403);
 	const guarded = await readGuardedJson(request, availabilitySchema);
 	if (!guarded.ok) return guarded.response;
 	const input: AvailabilityInput = guarded.data;
@@ -33,6 +41,14 @@ export async function saveAvailability(
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded);
 	}
+	const session = await authorizeRequestForName(
+		db,
+		eventId,
+		request.headers.get("cookie"),
+		input.name,
+		now,
+	);
+	const sessionNameKey = session.ok ? session.nameKey : undefined;
 	const res = await upsertAvailability(
 		db,
 		loaded.event,
@@ -42,6 +58,8 @@ export async function saveAvailability(
 			slots: input.slots,
 		},
 		now,
+		undefined,
+		sessionNameKey ? { sessionNameKey } : {},
 	);
 	if (!res.ok && res.code === "invalid_slot") {
 		return jsonError(
@@ -87,11 +105,20 @@ export async function getOwnAvailabilityResponse(
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded, noStore);
 	}
+	const session = await authorizeRequestForName(
+		db,
+		eventId,
+		request.headers.get("cookie"),
+		name,
+		now,
+	);
 	const res = await getOwnAvailability(
 		db,
 		loaded.event,
 		name,
 		request.headers.get("x-event-password"),
+		undefined,
+		session.ok ? { sessionNameKey: session.nameKey } : {},
 	);
 	if (!res.ok && res.code === "not_found") {
 		return jsonError(

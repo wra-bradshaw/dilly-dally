@@ -375,6 +375,27 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 					required: ["name", "slots"],
 					type: "object",
 				},
+				SessionRequest: {
+					properties: {
+						name: { maxLength: 40, minLength: 1, type: "string" },
+						password: {
+							description:
+								"Optional password, required when the name is password-protected. Never stored, only used to mint a short-lived session cookie.",
+							maxLength: 72,
+							minLength: 4,
+							type: "string",
+						},
+					},
+					required: ["name"],
+					type: "object",
+				},
+				SessionResponse: {
+					properties: {
+						name: { type: "string" },
+					},
+					required: ["name"],
+					type: "object",
+				},
 			},
 		},
 		info: {
@@ -1155,6 +1176,79 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						},
 					},
 					summary: "Vote in a poll (alias of PUT)",
+				},
+			},
+			"/api/events/{id}/sessions": {
+				post: {
+					operationId: "createSession",
+					parameters: [
+						{
+							in: "path",
+							name: "id",
+							required: true,
+							schema: { type: "string" },
+						},
+					],
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: { $ref: "#/components/schemas/SessionRequest" },
+							},
+						},
+						required: true,
+					},
+					responses: {
+						"201": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/SessionResponse" },
+								},
+							},
+							description: "Session created, HttpOnly session cookie set",
+						},
+						"400": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Validation error",
+						},
+						"401": {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Error" },
+								},
+							},
+							description: "Invalid password",
+						},
+					},
+					summary: "Create an event session",
+				},
+				delete: {
+					operationId: "deleteSession",
+					parameters: [
+						{
+							in: "path",
+							name: "id",
+							required: true,
+							schema: { type: "string" },
+						},
+					],
+					responses: {
+						"200": {
+							content: {
+								"application/json": {
+									schema: {
+										additionalProperties: true,
+										type: "object",
+									},
+								},
+							},
+							description: "Session cleared",
+						},
+					},
+					summary: "Clear an event session",
 				},
 			},
 		},

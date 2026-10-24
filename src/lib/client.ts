@@ -25,8 +25,11 @@ const client = createClient<paths>({
 		typeof window !== "undefined" && window.location?.origin
 			? window.location.origin
 			: "",
-	fetch: ((...args: Parameters<typeof fetch>) =>
-		globalThis.fetch(...args)) as typeof fetch,
+	fetch: ((input: RequestInfo | URL, init?: RequestInit) =>
+		globalThis.fetch(input, {
+			...init,
+			credentials: "include",
+		})) as typeof fetch,
 });
 
 interface ErrorBody {
@@ -178,4 +181,32 @@ export async function votePoll(
 		throw toHttpError(response.status, error, response.statusText);
 	}
 	return data as PollVoteResponse;
+}
+
+export interface SessionResponse {
+	name: string;
+}
+
+export async function createEventSession(
+	id: string,
+	input: { name: string; password?: string },
+): Promise<SessionResponse> {
+	const res = await globalThis.fetch(`/api/events/${id}/sessions`, {
+		body: JSON.stringify(input),
+		credentials: "include",
+		headers: { "Content-Type": "application/json" },
+		method: "POST",
+	});
+	if (!res.ok) {
+		const body = await res.json().catch(() => null);
+		throw toHttpError(res.status, body, res.statusText);
+	}
+	return (await res.json()) as SessionResponse;
+}
+
+export async function deleteEventSession(id: string): Promise<void> {
+	await globalThis.fetch(`/api/events/${id}/sessions`, {
+		credentials: "include",
+		method: "DELETE",
+	});
 }
