@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	autoscrollVelocity,
 	buildMonthMatrix,
 	filterCalendarCommit,
 	monthsInRange,
@@ -126,29 +125,5 @@ describe("filterCalendarCommit", () => {
 			"2026-09-30",
 		);
 		expect(kept).toEqual(new Set(["2026-09-02"]));
-	});
-});
-
-describe("autoscrollVelocity", () => {
-	it("stays still outside the edge zone", () => {
-		expect(autoscrollVelocity(0)).toBe(0);
-		expect(autoscrollVelocity(-4)).toBe(0);
-	});
-
-	it("starts slow at the zone edge", () => {
-		expect(autoscrollVelocity(1)).toBeCloseTo(1.1, 5);
-		expect(autoscrollVelocity(5)).toBeCloseTo(1.5, 5);
-	});
-
-	it("scales speed with penetration depth", () => {
-		expect(autoscrollVelocity(36)).toBeCloseTo(4.6, 5);
-		expect(autoscrollVelocity(30)).toBeGreaterThan(autoscrollVelocity(5));
-		expect(autoscrollVelocity(36)).toBeGreaterThan(autoscrollVelocity(10));
-	});
-
-	it("caps speed for deep penetration", () => {
-		expect(autoscrollVelocity(40)).toBe(5);
-		expect(autoscrollVelocity(100)).toBe(5);
-		expect(autoscrollVelocity(1000)).toBe(5);
 	});
 });

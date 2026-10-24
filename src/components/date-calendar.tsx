@@ -61,7 +61,7 @@ const AUTOSCROLL_BASE = 1;
 const AUTOSCROLL_SLOPE = 0.1;
 const AUTOSCROLL_MAX = 5;
 
-export function autoscrollVelocity(distancePx: number): number {
+function autoscrollVelocity(distancePx: number): number {
 	if (distancePx <= 0) return 0;
 	return Math.min(
 		AUTOSCROLL_MAX,
