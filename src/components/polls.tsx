@@ -22,6 +22,12 @@ import {
 	MAX_POLLS_PER_EVENT,
 	nameKey,
 } from "#/lib/validation";
+import {
+	ownIdsForName,
+	validateNewOptionLabel,
+	validatePollDraft,
+	voteShare,
+} from "./polls/poll-utils";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
@@ -45,11 +51,6 @@ function voteErrorMessage(err: unknown): string {
 	if (err instanceof HttpError && err.code === "invalid_option")
 		return "That selection is no longer valid. Reloading.";
 	return "Could not save vote. Try again.";
-}
-
-function voteShare(count: number, totalVoters: number): number {
-	if (totalVoters <= 0) return 0;
-	return Math.round((count / totalVoters) * 100);
 }
 
 function PollOptionRow({
@@ -145,14 +146,10 @@ function PollCard({
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const newOptionId = useId();
 	const voteGroupId = useId();
-	const activeKey = nameKey(activeName);
-	const ownIds = useMemo(() => {
-		const ids = new Set<string>();
-		for (const o of poll.options) {
-			if (o.names.some((n) => nameKey(n) === activeKey)) ids.add(o.id);
-		}
-		return ids;
-	}, [poll.options, activeKey]);
+	const ownIds = useMemo(
+		() => ownIdsForName(poll.options, activeName, nameKey),
+		[poll.options, activeName],
+	);
 	const voteMutation = useMutation<
 		{ pollId: string },
 		unknown,
@@ -217,11 +214,7 @@ function PollCard({
 			eventId,
 		]);
 		const current = cached?.polls.find((q) => q.id === poll.id) ?? poll;
-		const ids = new Set<string>();
-		for (const o of current.options) {
-			if (o.names.some((n) => nameKey(n) === activeKey)) ids.add(o.id);
-		}
-		return ids;
+		return ownIdsForName(current.options, activeName, nameKey);
 	};
 	const commit = (next: string[]) => {
 		if (!signedIn || activeName === "") return;
@@ -252,20 +245,13 @@ function PollCard({
 		}
 		const label = optionDraft.trim();
 		setOptionError("");
-		if (label === "") {
-			setOptionError("Enter an option label.");
-			return;
-		}
-		if (poll.options.length >= MAX_OPTIONS_PER_POLL) {
-			setOptionError(`This poll already has ${MAX_OPTIONS_PER_POLL} options.`);
-			return;
-		}
-		if (
-			poll.options.some(
-				(o) => o.label.trim().toLowerCase() === label.toLowerCase(),
-			)
-		) {
-			setOptionError("This option already exists.");
+		const optionProblem = validateNewOptionLabel(
+			label,
+			poll.options,
+			MAX_OPTIONS_PER_POLL,
+		);
+		if (optionProblem !== null) {
+			setOptionError(optionProblem);
 			return;
 		}
 		setOptionSaving(true);
@@ -485,26 +471,10 @@ function AddPollForm({
 		setError("");
 		const q = question.trim();
 		const labels = options.map((o) => o.value.trim()).filter((o) => o !== "");
-		if (q === "") {
-			setError("Give the poll a question.");
+		const draftProblem = validatePollDraft(q, labels, MAX_OPTIONS_PER_POLL);
+		if (draftProblem !== null) {
+			setError(draftProblem);
 			return;
-		}
-		if (labels.length < 2) {
-			setError("Add at least two options.");
-			return;
-		}
-		if (labels.length > MAX_OPTIONS_PER_POLL) {
-			setError(`Polls have at most ${MAX_OPTIONS_PER_POLL} options.`);
-			return;
-		}
-		const seen = new Set<string>();
-		for (const l of labels) {
-			const k = l.toLowerCase();
-			if (seen.has(k)) {
-				setError("Poll options must be unique.");
-				return;
-			}
-			seen.add(k);
 		}
 		setSaving(true);
 		try {
@@ -622,59 +592,40 @@ export function PollsSection({
 	signedIn,
 }: PollsSectionProps) {
 	const queryClient = useQueryClient();
-	if (polls.length === 0) {
-		return (
-			<div className="mt-4 grid gap-3">
-				<div className="flex items-center justify-between">
-					<h2 className="font-heading text-sm font-medium">Polls</h2>
-				</div>
-				<p className="text-sm text-muted-foreground">
-					No polls yet. Ask where to eat, which day, anything.
-				</p>
-				<div>
-					{signedIn ? (
-						<AddPollForm
-							eventId={eventId}
-							onCreated={() =>
-								void queryClient.invalidateQueries({
-									queryKey: ["event", eventId],
-								})
-							}
-							signedIn={signedIn}
-						/>
-					) : (
-						<p className="text-sm text-muted-foreground">
-							Sign in to add a poll.
-						</p>
-					)}
-				</div>
-			</div>
-		);
-	}
+	const onCreated = () =>
+		void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 	return (
 		<div className="mt-4 grid gap-3">
 			<div className="flex items-center justify-between">
 				<h2 className="font-heading text-sm font-medium">Polls</h2>
-				<span className="text-xs text-muted-foreground">
-					{polls.length} {polls.length === 1 ? "poll" : "polls"}
-				</span>
+				{polls.length === 0 ? null : (
+					<span className="text-xs text-muted-foreground">
+						{polls.length} {polls.length === 1 ? "poll" : "polls"}
+					</span>
+				)}
 			</div>
-			<div
-				className={
-					polls.length > 1 ? "grid gap-3 md:grid-cols-2" : "grid gap-3"
-				}
-			>
-				{polls.map((p) => (
-					<PollCard
-						activeName={activeName}
-						eventId={eventId}
-						key={p.id}
-						password={password}
-						poll={p}
-						signedIn={signedIn}
-					/>
-				))}
-			</div>
+			{polls.length === 0 ? (
+				<p className="text-sm text-muted-foreground">
+					No polls yet. Ask where to eat, which day, anything.
+				</p>
+			) : (
+				<div
+					className={
+						polls.length > 1 ? "grid gap-3 md:grid-cols-2" : "grid gap-3"
+					}
+				>
+					{polls.map((p) => (
+						<PollCard
+							activeName={activeName}
+							eventId={eventId}
+							key={p.id}
+							password={password}
+							poll={p}
+							signedIn={signedIn}
+						/>
+					))}
+				</div>
+			)}
 			<div>
 				{signedIn ? (
 					polls.length >= MAX_POLLS_PER_EVENT ? (
@@ -684,11 +635,7 @@ export function PollsSection({
 					) : (
 						<AddPollForm
 							eventId={eventId}
-							onCreated={() =>
-								void queryClient.invalidateQueries({
-									queryKey: ["event", eventId],
-								})
-							}
+							onCreated={onCreated}
 							signedIn={signedIn}
 						/>
 					)

@@ -17,7 +17,7 @@ import {
 	loadLiveEvent,
 } from "#/lib/server-event-detail";
 import { guardRateLimit } from "#/lib/server-rate-limit";
-import { authorizeRequestForName } from "#/lib/server-session-auth";
+import { trySessionNameKey } from "#/lib/server-sessions";
 import { type AvailabilityInput, availabilitySchema } from "#/lib/validation";
 
 export async function saveAvailability(
@@ -41,14 +41,13 @@ export async function saveAvailability(
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded);
 	}
-	const session = await authorizeRequestForName(
+	const sessionNameKey = await trySessionNameKey(
 		db,
 		eventId,
 		request.headers.get("cookie"),
 		input.name,
 		now,
 	);
-	const sessionNameKey = session.ok ? session.nameKey : undefined;
 	const res = await upsertAvailability(
 		db,
 		loaded.event,
@@ -105,7 +104,7 @@ export async function getOwnAvailabilityResponse(
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded, noStore);
 	}
-	const session = await authorizeRequestForName(
+	const sessionNameKey = await trySessionNameKey(
 		db,
 		eventId,
 		request.headers.get("cookie"),
@@ -118,7 +117,7 @@ export async function getOwnAvailabilityResponse(
 		name,
 		request.headers.get("x-event-password"),
 		undefined,
-		session.ok ? { sessionNameKey: session.nameKey } : {},
+		sessionNameKey ? { sessionNameKey } : {},
 	);
 	if (!res.ok && res.code === "not_found") {
 		return jsonError(

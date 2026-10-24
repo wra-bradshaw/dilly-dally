@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { type DillyEvent, type DrizzleDb, getParticipantRow } from "./db";
+import { parseSessionCookie } from "./event-cookies";
 import { DAY_MS } from "./expiry";
 import { verifyPassword } from "./password";
 import * as schema from "./schema";
@@ -109,4 +110,20 @@ export async function revokeEventSession(
 	} catch {
 		return;
 	}
+}
+
+export async function trySessionNameKey(
+	db: DrizzleDb,
+	eventId: string,
+	cookieHeader: string | null,
+	name: string,
+	now: number,
+): Promise<string | undefined> {
+	const token = parseSessionCookie(cookieHeader, eventId);
+	if (!token) return undefined;
+	const resolved = await resolveEventSession(db, token, now);
+	if (!resolved.ok) return undefined;
+	if (resolved.eventId !== eventId) return undefined;
+	if (resolved.nameKey !== nameKey(name.trim())) return undefined;
+	return resolved.nameKey;
 }

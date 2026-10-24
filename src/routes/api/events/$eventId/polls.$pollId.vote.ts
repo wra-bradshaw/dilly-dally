@@ -14,7 +14,7 @@ import {
 } from "#/lib/server-event-detail";
 import { votePollInDb } from "#/lib/server-polls";
 import { guardRateLimit } from "#/lib/server-rate-limit";
-import { authorizeRequestForName } from "#/lib/server-session-auth";
+import { trySessionNameKey } from "#/lib/server-sessions";
 import { type PollVoteInput, pollVoteSchema } from "#/lib/validation";
 
 export async function votePollHandler(
@@ -37,7 +37,7 @@ export async function votePollHandler(
 	const input: PollVoteInput = guarded.data;
 	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) return liveEventErrorResponse(loaded);
-	const session = await authorizeRequestForName(
+	const sessionNameKey = await trySessionNameKey(
 		db,
 		eventId,
 		request.headers.get("cookie"),
@@ -51,7 +51,7 @@ export async function votePollHandler(
 		input,
 		now,
 		undefined,
-		session.ok ? { sessionNameKey: session.nameKey } : {},
+		sessionNameKey ? { sessionNameKey } : {},
 	);
 	if (!res.ok && res.code === "not_found")
 		return jsonError("not_found", "Poll not found", 404);

@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useId, useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
+import { EventLoadError } from "#/components/event/event-load-error";
 import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
 import { GroupHeatmap } from "#/components/group-heatmap";
 import { PollsSection } from "#/components/polls";
@@ -87,38 +88,27 @@ function EventError({ error }: { error: unknown }) {
 	const limited = !gone && error instanceof HttpError && error.status === 429;
 	const retryAfter =
 		limited && error instanceof HttpError ? error.retryAfter : undefined;
+	if (limited) {
+		return (
+			<EventLoadError
+				action={{ label: "Retry", onClick: () => window.location.reload() }}
+				error={{ kind: "limited", retryAfter }}
+			/>
+		);
+	}
+	if (gone) {
+		return (
+			<EventLoadError
+				action={{ href: "/", label: "Plan a new event" }}
+				error={{ kind: "gone" }}
+			/>
+		);
+	}
 	return (
-		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-			<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
-				{limited
-					? "Slow down — too many requests"
-					: gone
-						? "This event has expired"
-						: "Event not found"}
-			</h1>
-			<p className="mt-2 text-muted-foreground">
-				{limited
-					? retryAfter
-						? `Wait about ${retryAfter} seconds, then try again.`
-						: "Wait a moment, then try again."
-					: gone
-						? "Events are deleted after they pass to free up space."
-						: "Check the link and try again."}
-			</p>
-			{limited ? (
-				<Button
-					className="mt-4"
-					onClick={() => window.location.reload()}
-					type="button"
-				>
-					Retry
-				</Button>
-			) : (
-				<Button asChild className="mt-4">
-					<a href="/">Plan a new event</a>
-				</Button>
-			)}
-		</div>
+		<EventLoadError
+			action={{ href: "/", label: "Plan a new event" }}
+			error={{ kind: "not-found" }}
+		/>
 	);
 }
 
@@ -383,37 +373,17 @@ function EventPage() {
 			!(err instanceof HttpError) || err.status === 429 || err.status >= 500;
 		if (retryable && !gone) {
 			return (
-				<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-					<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
-						Could not load this event
-					</h1>
-					<p className="mt-2 text-muted-foreground">
-						The server hiccuped. Your link is fine — try again.
-					</p>
-					<Button
-						className="mt-4"
-						onClick={() => void detail.refetch()}
-						type="button"
-					>
-						Retry
-					</Button>
-				</div>
+				<EventLoadError
+					action={{ label: "Retry", onClick: () => void detail.refetch() }}
+					error={{ kind: "transient" }}
+				/>
 			);
 		}
 		return (
-			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16 text-center">
-				<h1 className="font-heading text-3xl font-bold" tabIndex={-1}>
-					{gone ? "This event has expired" : "Event not found"}
-				</h1>
-				<p className="mt-2 text-muted-foreground">
-					{gone
-						? "Events are deleted after they pass to free up space."
-						: "Check the link and try again."}
-				</p>
-				<Button asChild className="mt-4">
-					<a href="/">Plan a new event</a>
-				</Button>
-			</div>
+			<EventLoadError
+				action={{ href: "/", label: "Plan a new event" }}
+				error={gone ? { kind: "gone" } : { kind: "not-found" }}
+			/>
 		);
 	}
 
