@@ -1,5 +1,6 @@
 import type { EventDetailResponse } from "./client";
 import { findBestTimes } from "./time-slots";
+import { nameKey } from "./validation";
 
 export function patchDetailForSave(
 	detail: EventDetailResponse,
@@ -25,4 +26,69 @@ export function patchDetailForSave(
 		slot,
 	}));
 	return { ...detail, bestTimes, counts, participants };
+}
+
+export function patchDetailForPollVote(
+	detail: EventDetailResponse,
+	pollId: string,
+	name: string,
+	optionIds: Set<string> | string[],
+): EventDetailResponse {
+	const set = optionIds instanceof Set ? optionIds : new Set(optionIds);
+	const key = nameKey(name);
+	const polls = (detail.polls ?? []).map((p) => {
+		if (p.id !== pollId) return p;
+		const options = p.options.map((o) => {
+			const byKey = new Map<string, string>();
+			for (const n of o.names) byKey.set(nameKey(n), n);
+			if (set.has(o.id)) byKey.set(key, name);
+			else byKey.delete(key);
+			const list = [...byKey.values()].sort((a, b) => a.localeCompare(b));
+			return { ...o, count: list.length, names: list };
+		});
+		const voters = new Set<string>();
+		for (const o of options) for (const n of o.names) voters.add(nameKey(n));
+		return { ...p, options, totalVoters: voters.size };
+	});
+	return { ...detail, polls };
+}
+
+export function patchDetailForNewPoll(
+	detail: EventDetailResponse,
+	poll: EventDetailResponse["polls"][number],
+): EventDetailResponse {
+	return { ...detail, polls: [...(detail.polls ?? []), poll] };
+}
+
+export function patchDetailForNewOption(
+	detail: EventDetailResponse,
+	pollId: string,
+	option: { id: string; label: string },
+): EventDetailResponse {
+	const polls = (detail.polls ?? []).map((p) => {
+		if (p.id !== pollId) return p;
+		return {
+			...p,
+			options: [
+				...p.options,
+				{ count: 0, id: option.id, label: option.label, names: [] },
+			],
+		};
+	});
+	return { ...detail, polls };
+}
+
+export function patchDetailForDeleteOption(
+	detail: EventDetailResponse,
+	pollId: string,
+	optionId: string,
+): EventDetailResponse {
+	const polls = (detail.polls ?? []).map((p) => {
+		if (p.id !== pollId) return p;
+		const options = p.options.filter((o) => o.id !== optionId);
+		const voters = new Set<string>();
+		for (const o of options) for (const n of o.names) voters.add(nameKey(n));
+		return { ...p, options, totalVoters: voters.size };
+	});
+	return { ...detail, polls };
 }

@@ -11,6 +11,7 @@ import { isValidEventId } from "./event-ids";
 import { isExpired } from "./expiry";
 import { HttpError } from "./http-error";
 import { toEventDto } from "./server-events";
+import { listPollsDetail } from "./server-polls";
 import { buildEventUniverse, computeCounts, findBestTimes } from "./time-slots";
 
 type LiveEventResult =
@@ -54,6 +55,7 @@ export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
 		universe,
 		parts.map((p) => ({ name: p.name, slots: p.slots })),
 	);
+	const polls = await listPollsDetail(db, event.id);
 	return {
 		bestTimes: findBestTimes(counts, 10).map((c) => ({
 			count: c.count,
@@ -65,6 +67,18 @@ export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
 			count: p.slots.length,
 			name: p.name,
 			updatedAt: new Date(p.updatedAt).toISOString(),
+		})),
+		polls: polls.map((p) => ({
+			allowMultiple: p.allowMultiple,
+			id: p.id,
+			options: p.options.map((o) => ({
+				count: o.count,
+				id: o.id,
+				label: o.label,
+				names: o.names,
+			})),
+			question: p.question,
+			totalVoters: p.totalVoters,
 		})),
 		slotUniverse: universe,
 	};

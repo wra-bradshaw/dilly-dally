@@ -1,7 +1,14 @@
 import type { components } from "./api-schema";
-import { type DillyEvent, type DrizzleDb, fetchEvent, insertEvent } from "./db";
+import {
+	type DillyEvent,
+	type DrizzleDb,
+	deleteEvent,
+	fetchEvent,
+	insertEvent,
+} from "./db";
 import { generateEventId, isValidEventId } from "./event-ids";
 import { computeExpiry } from "./expiry";
+import { createPollInDb } from "./server-polls";
 import type { CreateEventInput } from "./validation";
 
 export function toEventDto(event: DillyEvent): components["schemas"]["Event"] {
@@ -75,5 +82,23 @@ export async function createEventInDb(
 		}
 	}
 	if (!inserted) return null;
-	return fetchEvent(db, id);
+	const created = await fetchEvent(db, id);
+	if (!created) return null;
+	try {
+		for (const poll of input.polls ?? []) {
+			const res = await createPollInDb(db, id, poll, now);
+			if (!res.ok) {
+				console.error("createEventInDb poll insert failed", {
+					code: res.code,
+				});
+				await deleteEvent(db, id);
+				return null;
+			}
+		}
+	} catch (err) {
+		console.error("createEventInDb poll insert threw", { err });
+		await deleteEvent(db, id);
+		return null;
+	}
+	return created;
 }

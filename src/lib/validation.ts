@@ -61,11 +61,57 @@ const datesField = z
 	.min(1)
 	.max(31);
 
+export const MAX_POLLS_PER_EVENT = 10;
+export const MAX_OPTIONS_PER_POLL = 10;
+
+const pollQuestionSchema = z.string().trim().min(1).max(140);
+
+const pollOptionLabelSchema = z.string().trim().min(1).max(80);
+
+function hasDuplicateOptions(options: string[]): boolean {
+	const seen = new Set<string>();
+	for (const raw of options) {
+		const key = raw.trim().toLowerCase();
+		if (seen.has(key)) return true;
+		seen.add(key);
+	}
+	return false;
+}
+
+const pollDraftSchema = z
+	.object({
+		allowMultiple: z.boolean().optional().default(false),
+		options: z.array(pollOptionLabelSchema).min(2).max(MAX_OPTIONS_PER_POLL),
+		question: pollQuestionSchema,
+	})
+	.superRefine((v, ctx) => {
+		if (hasDuplicateOptions(v.options)) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Poll options must be unique",
+				path: ["options"],
+			});
+		}
+	});
+
+export const createPollSchema = pollDraftSchema;
+
+export const addPollOptionSchema = z.object({
+	label: pollOptionLabelSchema,
+});
+
+export const pollVoteSchema = z.object({
+	name: participantNameSchema,
+	optionIds: z.array(z.string().min(1).max(64)).max(MAX_OPTIONS_PER_POLL),
+	password: z.string().min(4).max(72).optional(),
+});
+
 export const createEventSchema = z
 	.object({
 		dates: datesField.optional(),
 		endTime: z.string().regex(hourRe),
 		mode: eventModeSchema.optional().default("dates"),
+		polls: z.array(createPollSchema).max(MAX_POLLS_PER_EVENT).optional(),
 		startTime: z.string().regex(hourRe),
 		timezone: z
 			.string()
@@ -86,6 +132,21 @@ export const createEventSchema = z
 		weekdays: z.array(weekdaySchema).max(7).optional(),
 	})
 	.superRefine((v, ctx) => {
+		if (v.polls !== undefined) {
+			const seen = new Set<string>();
+			for (const p of v.polls) {
+				const key = p.question.trim().toLowerCase();
+				if (seen.has(key)) {
+					ctx.addIssue({
+						code: "custom",
+						message: "Poll questions must be unique",
+						path: ["polls"],
+					});
+					break;
+				}
+				seen.add(key);
+			}
+		}
 		if (v.mode === "weekly") {
 			const days = [...new Set(v.weekdays ?? [])];
 			if (days.length === 0) {
@@ -136,3 +197,5 @@ export const availabilitySchema = z.object({
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type AvailabilityInput = z.infer<typeof availabilitySchema>;
+export type CreatePollInput = z.input<typeof createPollSchema>;
+export type PollVoteInput = z.infer<typeof pollVoteSchema>;
