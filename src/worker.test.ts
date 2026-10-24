@@ -69,7 +69,7 @@ describe("withDocumentHeaders", () => {
 				headers: { "content-type": "text/html" },
 			}),
 		);
-		expect(res.headers.get("Vary")).toBe("Accept, User-Agent");
+		expect(res.headers.get("Vary")).toBe("Accept, User-Agent, Cookie");
 	});
 
 	it("merges Vary with existing values instead of replacing them", () => {

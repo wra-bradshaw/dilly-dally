@@ -28,16 +28,22 @@ import { useFocusOnChange } from "#/hooks/use-focus-on-change";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
+import { useOwnSession } from "#/hooks/use-own-session";
 import { useSerialSaver } from "#/hooks/use-serial-saver";
 import { useTooltipOpen } from "#/hooks/use-tooltip-open";
 import { buildAgentPrompt } from "#/lib/agent-prompt";
 import {
+	createEventSession,
+	deleteEventSession,
 	type EventDetailResponse,
 	fetchOwnAvailability,
 	saveAvailability,
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
-import { fetchEventDetailServerFn } from "#/lib/event-detail-loader";
+import {
+	fetchEventDetailServerFn,
+	fetchOwnSessionServerFn,
+} from "#/lib/event-detail-loader";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { HttpError } from "#/lib/http-error";
 import { allTimezones, browserTimezone } from "#/lib/time-slots";
@@ -66,6 +72,15 @@ export const Route = createFileRoute("/e/$eventId")({
 				return result.detail;
 			},
 			queryKey: ["event", params.eventId],
+		});
+		await context.queryClient.ensureQueryData({
+			queryFn: async () => {
+				const result = await fetchOwnSessionServerFn({
+					data: params.eventId,
+				});
+				return result;
+			},
+			queryKey: ["own-session", params.eventId],
 		});
 	},
 });
@@ -118,6 +133,8 @@ function inviteUrl(eventId: string): string {
 function EventPage() {
 	const { eventId } = Route.useParams();
 	const detail = useEventDetail(eventId);
+	const ownSession = useOwnSession(eventId);
+	const sessionData = ownSession.data?.ok ? ownSession.data : null;
 	const queryClient = useQueryClient();
 	const { copied, copy, copyError } = useCopyToClipboard();
 	const copyTooltip = useTooltipOpen(copied || copyError);
@@ -130,14 +147,20 @@ function EventPage() {
 	const [storedName, setStoredName] = useLocalStorage(`dd:${eventId}:name`, "");
 	const [name, setName] = useState(storedName);
 	const [password, setPassword] = useState("");
-	const [activeName, setActiveName] = useState(storedName.trim());
-	const [signedIn, setSignedIn] = useState(storedName.trim() !== "");
-	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const [activeName, setActiveName] = useState(
+		sessionData?.name ?? storedName.trim(),
+	);
+	const [signedIn, setSignedIn] = useState(
+		sessionData !== null || storedName.trim() !== "",
+	);
+	const [selected, setSelected] = useState<Set<string>>(
+		() => new Set(sessionData?.slots ?? []),
+	);
 	const [saveState, setSaveState] = useState("");
 	const [saveFailed, setSaveFailed] = useState(false);
 	const [signError, setSignError] = useState("");
 	const [signing, setSigning] = useState(false);
-	const lastSavedRef = useRef<Set<string>>(new Set());
+	const lastSavedRef = useRef<Set<string>>(new Set(sessionData?.slots ?? []));
 	const lastSubmittedRef = useRef<{
 		password: string | undefined;
 		identity: string;
@@ -153,12 +176,14 @@ function EventPage() {
 	const tzLabelId = useId();
 	const signErrorRef = useErrorFocus<HTMLParagraphElement>(signError);
 	const signedInRef = useFocusOnChange<HTMLHeadingElement>(signedIn);
+	const restoreName = sessionData ? "" : storedName;
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
-			eventSettled: !detail.isPending,
+			eventSettled: !detail.isPending && !sessionData,
 			fetchAvailability: fetchOwnAvailability,
 			onCleared: () => {
+				if (sessionData) return;
 				lastSavedRef.current = new Set();
 				setSelected(new Set());
 			},
@@ -175,7 +200,7 @@ function EventPage() {
 				setName(own.name);
 				setSignedIn(true);
 			},
-			storedName,
+			storedName: restoreName,
 		});
 	const [view, setView] = useLocalStorage("dd:tz-view", "");
 	const hourCycle = useHourCycle();
@@ -236,25 +261,47 @@ function EventPage() {
 		}
 		setSigning(true);
 		try {
-			const own = await fetchOwnAvailability(
-				eventId,
-				name.trim(),
-				password === "" ? undefined : password,
-			);
+			const session = await createEventSession(eventId, {
+				name: name.trim(),
+				password: password === "" ? undefined : password,
+			});
+			const own = await fetchOwnAvailability(eventId, session.name, undefined);
 			lastSavedRef.current = new Set(own.slots);
 			setSelected(new Set(own.slots));
 			setActiveName(own.name);
 			setStoredName(own.name);
+			setName(own.name);
+			setPassword("");
+			await queryClient.invalidateQueries({
+				queryKey: ["own-session", eventId],
+			});
 		} catch (err) {
 			const decision = decideSignInError(err);
 			if (decision.kind === "message") {
 				setSignError(decision.text);
 				return;
 			}
-			lastSavedRef.current = new Set();
-			setSelected(new Set());
-			setActiveName(name.trim());
-			setStoredName(name.trim());
+			try {
+				const own = await fetchOwnAvailability(
+					eventId,
+					name.trim(),
+					password === "" ? undefined : password,
+				);
+				lastSavedRef.current = new Set(own.slots);
+				setSelected(new Set(own.slots));
+				setActiveName(own.name);
+				setStoredName(own.name);
+			} catch (inner) {
+				const fallback = decideSignInError(inner);
+				if (fallback.kind === "message") {
+					setSignError(fallback.text);
+					return;
+				}
+				lastSavedRef.current = new Set();
+				setSelected(new Set());
+				setActiveName(name.trim());
+				setStoredName(name.trim());
+			}
 		} finally {
 			setSigning(false);
 		}
@@ -499,6 +546,11 @@ function EventPage() {
 								setSaveState("");
 								setSaveFailed(false);
 								setSignError("");
+								void deleteEventSession(eventId).then(() =>
+									queryClient.invalidateQueries({
+										queryKey: ["own-session", eventId],
+									}),
+								);
 							}}
 							type="button"
 							variant="link"

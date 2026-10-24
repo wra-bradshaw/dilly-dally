@@ -22,17 +22,30 @@ export function needsDocumentHeaders(contentType: string | null): boolean {
 	return (contentType ?? "").toLowerCase().includes("text/html");
 }
 
+export function mergeVary(existing: string | null): string {
+	const seen = new Set(
+		(existing ?? "")
+			.split(",")
+			.map((s) => s.trim().toLowerCase())
+			.filter(Boolean),
+	);
+	const out = (existing ?? "")
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+	for (const v of ["Accept", "User-Agent", "Cookie"]) {
+		if (!seen.has(v.toLowerCase())) out.push(v);
+	}
+	return out.join(", ");
+}
+
 export function withDocumentHeaders(res: Response): Response {
 	if (!needsDocumentHeaders(res.headers.get("content-type"))) return res;
 	const headers = new Headers(res.headers);
 	for (const [key, value] of Object.entries(documentSecurityHeaders())) {
 		headers.set(key, value);
 	}
-	const vary = headers.get("vary");
-	headers.set(
-		"vary",
-		vary ? `${vary}, Accept, User-Agent` : "Accept, User-Agent",
-	);
+	headers.set("vary", mergeVary(headers.get("vary")));
 	return new Response(res.body, {
 		headers,
 		status: res.status,
@@ -51,11 +64,7 @@ export function markdownRoute(url: URL): MarkdownRoute | null {
 
 function withVary(res: Response): Response {
 	const headers = new Headers(res.headers);
-	const vary = headers.get("vary");
-	headers.set(
-		"vary",
-		vary ? `${vary}, Accept, User-Agent` : "Accept, User-Agent",
-	);
+	headers.set("vary", mergeVary(headers.get("vary")));
 	return new Response(res.body, {
 		headers,
 		status: res.status,

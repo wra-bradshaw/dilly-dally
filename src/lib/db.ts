@@ -128,6 +128,9 @@ export async function purgeExpired(
 	if (expired.length > 0) {
 		await db.delete(schema.events).where(lte(schema.events.expiresAt, now));
 	}
+	await db
+		.delete(schema.eventSessions)
+		.where(lte(schema.eventSessions.expiresAt, now));
 	return expired.length;
 }
 
