@@ -216,10 +216,6 @@ function PollCard({
 		<Card>
 			<CardHeader>
 				<CardTitle level={3}>{poll.question}</CardTitle>
-				<CardDescription>
-					{poll.allowMultiple ? "Pick any number" : "Pick one"} ·{" "}
-					{poll.totalVoters} {poll.totalVoters === 1 ? "voter" : "voters"}
-				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{signedIn ? null : (
