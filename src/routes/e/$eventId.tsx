@@ -399,7 +399,6 @@ function EventPage() {
 				{event?.title}
 			</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
-				{event?.timezone} ·{" "}
 				<a
 					aria-describedby={copyStatusId}
 					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
