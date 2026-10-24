@@ -32,6 +32,45 @@ interface TimeGridProps {
 	onPointerUp?: (e: React.PointerEvent) => void;
 }
 
+type DayGap = ReturnType<typeof getDayGaps>[number];
+
+function GapCell({
+	gap,
+	variant,
+}: {
+	gap: DayGap;
+	variant: "header" | "marker" | "body";
+}) {
+	if (variant === "header") {
+		return (
+			<th className="min-w-3 sm:min-w-4 px-0.5 pb-1" scope="col">
+				<span
+					aria-hidden="true"
+					className="inline-block rounded border border-dashed border-muted-foreground bg-muted px-1 text-[10px] text-foreground"
+				>
+					+{gap.skipped}
+				</span>
+				<span className="sr-only">
+					Skipped {gap.skipped} days between {gap.afterDate} and{" "}
+					{gap.beforeDate}
+				</span>
+			</th>
+		);
+	}
+	return (
+		<td
+			aria-hidden="true"
+			className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
+		>
+			<span
+				className={
+					variant === "marker" ? "block h-7 w-3 sm:w-4" : "block h-6 w-3 sm:w-4"
+				}
+			/>
+		</td>
+	);
+}
+
 export function TimeGrid({
 	announce = true,
 	columns,
@@ -88,38 +127,25 @@ export function TimeGrid({
 						<th className="w-12 sm:w-16" scope="col">
 							<span className="sr-only">Time</span>
 						</th>
-						{columns.map((col, i) => (
-							<Fragment key={col.key}>
-								{i > 0 && gapByAfter.get(i - 1) ? (
+						{columns.map((col, i) => {
+							const headerGap = i > 0 ? gapByAfter.get(i - 1) : undefined;
+							return (
+								<Fragment key={col.key}>
+									{headerGap ? (
+										<GapCell gap={headerGap} variant="header" />
+									) : null}
 									<th
-										className="min-w-3 sm:min-w-4 px-0.5 pb-1"
-										key={`gap-${gapByAfter.get(i - 1)?.afterDate}-${gapByAfter.get(i - 1)?.beforeDate}`}
+										className="min-w-8 px-0.5 sm:min-w-9"
+										id={`${baseId}-col-${i}`}
 										scope="col"
 									>
-										<span
-											aria-hidden="true"
-											className="inline-block rounded border border-dashed border-muted-foreground bg-muted px-1 text-[10px] text-foreground"
-										>
-											+{gapByAfter.get(i - 1)?.skipped}
-										</span>
 										<span className="sr-only">
-											Skipped {gapByAfter.get(i - 1)?.skipped} days between{" "}
-											{gapByAfter.get(i - 1)?.afterDate} and{" "}
-											{gapByAfter.get(i - 1)?.beforeDate}
+											Available times for {col.header}
 										</span>
 									</th>
-								) : null}
-								<th
-									className="min-w-8 px-0.5 sm:min-w-9"
-									id={`${baseId}-col-${i}`}
-									scope="col"
-								>
-									<span className="sr-only">
-										Available times for {col.header}
-									</span>
-								</th>
-							</Fragment>
-						))}
+								</Fragment>
+							);
+						})}
 					</tr>
 				</thead>
 				<tbody>
@@ -136,14 +162,7 @@ export function TimeGrid({
 										const marker = row.markers[i] ?? null;
 										return (
 											<Fragment key={col.key}>
-												{gap ? (
-													<td
-														aria-hidden="true"
-														className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
-													>
-														<span className="block h-7 w-3 sm:w-4" />
-													</td>
-												) : null}
+												{gap ? <GapCell gap={gap} variant="marker" /> : null}
 												{marker ? (
 													<th
 														className={cn(
@@ -204,14 +223,7 @@ export function TimeGrid({
 										.join(" ");
 									return (
 										<Fragment key={col.key}>
-											{gap ? (
-												<td
-													aria-hidden="true"
-													className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
-												>
-													<span className="block h-6 w-3 sm:w-4" />
-												</td>
-											) : null}
+											{gap ? <GapCell gap={gap} variant="body" /> : null}
 											{cell && segment ? (
 												<td
 													className="relative p-0"

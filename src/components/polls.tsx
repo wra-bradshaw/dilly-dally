@@ -10,18 +10,22 @@ import {
 	type Poll,
 	votePoll,
 } from "#/lib/client";
+import { patchDetailForPollVote } from "#/lib/detail-patch";
 import {
-	patchDetailForDeleteOption,
-	patchDetailForNewOption,
-	patchDetailForNewPoll,
-	patchDetailForPollVote,
-} from "#/lib/detail-patch";
-import { HttpError } from "#/lib/http-error";
+	pollCreateErrorMessage,
+	pollOptionErrorMessage,
+	pollVoteErrorMessage,
+} from "#/lib/event-messages";
 import {
 	MAX_OPTIONS_PER_POLL,
 	MAX_POLLS_PER_EVENT,
 	nameKey,
 } from "#/lib/validation";
+import {
+	patchDetailForDeleteOption,
+	patchDetailForNewOption,
+	patchDetailForNewPoll,
+} from "./polls/poll-patch";
 import {
 	ownIdsForName,
 	validateNewOptionLabel,
@@ -42,16 +46,6 @@ type PollsSectionProps = {
 	polls: Poll[];
 	signedIn: boolean;
 };
-
-function voteErrorMessage(err: unknown): string {
-	if (err instanceof HttpError && err.code === "invalid_password")
-		return "Wrong password for this name.";
-	if (err instanceof HttpError && err.code === "rate_limited")
-		return "Saving too fast — vote reverted.";
-	if (err instanceof HttpError && err.code === "invalid_option")
-		return "That selection is no longer valid. Reloading.";
-	return "Could not save vote. Try again.";
-}
 
 function PollOptionRow({
 	control,
@@ -164,7 +158,7 @@ function PollCard({
 			}),
 		mutationKey: ["poll-vote", eventId, poll.id],
 		onError: (err, _variables, ctx) => {
-			setVoteError(voteErrorMessage(err));
+			setVoteError(pollVoteErrorMessage(err));
 			if (
 				queryClient.isMutating({
 					mutationKey: ["poll-vote", eventId, poll.id],
@@ -265,13 +259,7 @@ function PollCard({
 			setOptionDraft("");
 			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		} catch (err) {
-			if (err instanceof HttpError && err.code === "duplicate_option")
-				setOptionError("This option already exists.");
-			else if (err instanceof HttpError && err.code === "too_many_options")
-				setOptionError(
-					`This poll already has ${MAX_OPTIONS_PER_POLL} options.`,
-				);
-			else setOptionError("Could not add option. Try again.");
+			setOptionError(pollOptionErrorMessage(err, "add"));
 		} finally {
 			setOptionSaving(false);
 		}
@@ -292,11 +280,7 @@ function PollCard({
 			);
 			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		} catch (err) {
-			if (err instanceof HttpError && err.code === "has_votes")
-				setOptionError("Cannot remove an option that already has votes.");
-			else if (err instanceof HttpError && err.code === "too_few_options")
-				setOptionError("Polls need at least two options.");
-			else setOptionError("Could not remove option. Try again.");
+			setOptionError(pollOptionErrorMessage(err, "remove"));
 		} finally {
 			setDeletingId(null);
 		}
@@ -498,11 +482,7 @@ function AddPollForm({
 			onCreated();
 			void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		} catch (err) {
-			if (err instanceof HttpError && err.code === "duplicate_poll")
-				setError("A poll with this question already exists.");
-			else if (err instanceof HttpError && err.code === "too_many_polls")
-				setError(`This event already has ${MAX_POLLS_PER_EVENT} polls.`);
-			else setError("Could not create poll. Try again.");
+			setError(pollCreateErrorMessage(err));
 		} finally {
 			setSaving(false);
 		}

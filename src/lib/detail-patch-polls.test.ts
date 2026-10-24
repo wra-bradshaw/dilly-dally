@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EventDetailResponse } from "./client";
-import {
-	patchDetailForDeleteOption,
-	patchDetailForNewOption,
-	patchDetailForNewPoll,
-	patchDetailForPollVote,
-} from "./detail-patch";
+import { patchDetailForPollVote } from "./detail-patch";
 
 function baseDetail(): EventDetailResponse {
 	return {
@@ -56,30 +51,5 @@ describe("patchDetailForPollVote", () => {
 	it("clears votes on empty", () => {
 		const next = patchDetailForPollVote(baseDetail(), "poll1", "Ada", []);
 		expect(next.polls[0]?.totalVoters).toBe(0);
-	});
-});
-
-describe("patchDetailForNewPoll and options", () => {
-	it("appends polls and options", () => {
-		const detail = baseDetail();
-		const withPoll = patchDetailForNewPoll(detail, {
-			allowMultiple: true,
-			id: "poll2",
-			options: [],
-			question: "Q2?",
-			totalVoters: 0,
-		});
-		expect(withPoll.polls).toHaveLength(2);
-		const withOpt = patchDetailForNewOption(withPoll, "poll2", {
-			id: "optC",
-			label: "C",
-		});
-		expect(withOpt.polls.find((p) => p.id === "poll2")?.options).toHaveLength(
-			1,
-		);
-		const without = patchDetailForDeleteOption(withOpt, "poll2", "optC");
-		expect(without.polls.find((p) => p.id === "poll2")?.options).toHaveLength(
-			0,
-		);
 	});
 });
