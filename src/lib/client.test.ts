@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	createEvent,
+	createEventSession,
+	deleteEventSession,
 	fetchEventDetail,
 	fetchOwnAvailability,
 	saveAvailability,
 } from "./client";
 import { HttpError } from "./http-error";
+import { getOpenApiSpec } from "./openapi";
 
 function jsonResponse(body: unknown, status = 200) {
 	return new Response(JSON.stringify(body), {
@@ -106,5 +109,86 @@ describe("api client", () => {
 
 	it("HttpError carries status and code", () => {
 		expect(new HttpError(401, "invalid_password", "nope").message).toBe("nope");
+	});
+
+	it("creates event sessions via openapi-fetch", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(jsonResponse({ name: "Ada" }, 201));
+		vi.stubGlobal("fetch", fetchMock);
+		try {
+			const res = await createEventSession("AbC123_-XyZ9", { name: "Ada" });
+			expect(res.name).toBe("Ada");
+			const req = requestOf(fetchMock);
+			expect(req.url).toContain("/api/events/AbC123_-XyZ9/sessions");
+			expect(req.method).toBe("POST");
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("propagates session creation failures as HttpError", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValue(
+					jsonResponse(
+						{ error: { code: "invalid_password", message: "Wrong password" } },
+						401,
+					),
+				),
+		);
+		try {
+			await expect(
+				createEventSession("AbC123_-XyZ9", { name: "Ada" }),
+			).rejects.toMatchObject({ code: "invalid_password", status: 401 });
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("deletes event sessions via openapi-fetch", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({}, 200));
+		vi.stubGlobal("fetch", fetchMock);
+		try {
+			await deleteEventSession("AbC123_-XyZ9");
+			const req = requestOf(fetchMock);
+			expect(req.url).toContain("/api/events/AbC123_-XyZ9/sessions");
+			expect(req.method).toBe("DELETE");
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("propagates session deletion failures instead of swallowing", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValue(
+					jsonResponse({ error: { code: "internal", message: "boom" } }, 500),
+				),
+		);
+		try {
+			await expect(deleteEventSession("AbC123_-XyZ9")).rejects.toMatchObject({
+				code: "internal",
+				status: 500,
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("exposes session paths and schemas in the OpenAPI spec", () => {
+		const spec = getOpenApiSpec("https://example.com");
+		const sessions = spec.paths["/api/events/{id}/sessions"] as Record<
+			string,
+			unknown
+		>;
+		expect(sessions?.post).toBeDefined();
+		expect(sessions?.delete).toBeDefined();
+		expect(spec.components.schemas.SessionRequest).toBeDefined();
+		expect(spec.components.schemas.SessionResponse).toBeDefined();
 	});
 });
