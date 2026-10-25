@@ -351,7 +351,7 @@ export function DateCalendar({
 				role="group"
 			>
 				<div
-					className="max-h-[60dvh] max-w-full overflow-x-hidden overflow-y-auto overscroll-contain sm:max-h-[400px]"
+					className="max-h-[60svh] max-w-full overflow-x-hidden overflow-y-auto overscroll-contain sm:max-h-[400px]"
 					data-slot="date-calendar-months"
 					ref={scrollRef}
 				>
