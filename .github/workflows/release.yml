@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: plugin zips
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Stage versioned plugins
+        run: pnpm exec tsx scripts/build-plugins.ts --version "${GITHUB_REF_NAME}"
+      - name: Zip plugin assets
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          test -n "$VERSION"
+          (cd dist/plugin-staging/chatgpt && zip -r "../../dilly-dally-chatgpt-${VERSION}.zip" .)
+          (cd dist/plugin-staging/claude && zip -r "../../dilly-dally-claude-${VERSION}.zip" .)
+          ls -la dist/*.zip
+          unzip -l "dist/dilly-dally-chatgpt-${VERSION}.zip"
+          unzip -l "dist/dilly-dally-claude-${VERSION}.zip"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes "dist/dilly-dally-chatgpt-${VERSION}.zip#Dilly Dally ChatGPT plugin" "dist/dilly-dally-claude-${VERSION}.zip#Dilly Dally Claude plugin"
