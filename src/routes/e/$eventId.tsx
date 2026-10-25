@@ -24,21 +24,14 @@ import {
 } from "#/components/ui/tooltip";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useEventDetail } from "#/hooks/use-event-detail";
+import { useEventSave } from "#/hooks/use-event-save";
+import { useEventSignIn } from "#/hooks/use-event-sign-in";
 import { useFocusOnSignal } from "#/hooks/use-focus-on-signal";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useOwnSession } from "#/hooks/use-own-session";
-import { useSerialSaver } from "#/hooks/use-serial-saver";
-import {
-	createEventSession,
-	deleteEventSession,
-	type EventDetailResponse,
-	fetchOwnAvailability,
-	saveAvailability,
-} from "#/lib/client";
-import { patchDetailForSave } from "#/lib/detail-patch";
-import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
+import { deleteEventSession, fetchOwnAvailability } from "#/lib/client";
 import { HttpError } from "#/lib/http-error";
 import { allTimezones, browserTimezone } from "#/lib/time-slots";
 
@@ -118,16 +111,30 @@ function EventPage() {
 	const [selected, setSelected] = useState<Set<string>>(
 		() => new Set(sessionData?.slots ?? []),
 	);
-	const [saveState, setSaveState] = useState("");
-	const [saveFailed, setSaveFailed] = useState(false);
-	const [signError, setSignError] = useState("");
-	const [signing, setSigning] = useState(false);
 	const lastSavedRef = useRef<Set<string>>(new Set(sessionData?.slots ?? []));
-	const lastSubmittedRef = useRef<{
-		password: string | undefined;
-		identity: string;
-		slots: Set<string>;
-	} | null>(null);
+	const { saveFailed, saveState, commit, cancel, resetSave, lastSubmittedRef } =
+		useEventSave({
+			activeName,
+			eventId,
+			lastSavedRef,
+			password,
+			setSelected,
+			signedIn,
+		});
+	const { signing, signError, setSignError, signIn } = useEventSignIn({
+		eventId,
+		invalidateOwnSession: () =>
+			queryClient.invalidateQueries({ queryKey: ["own-session", eventId] }),
+		lastSavedRef,
+		name,
+		password,
+		setActiveName,
+		setName,
+		setPassword,
+		setSelected,
+		setSignedIn,
+		setStoredName,
+	});
 	const signErrorId = useId();
 	const signInTitleId = useId();
 	const inviteHintId = useId();
@@ -212,119 +219,6 @@ function EventPage() {
 		() => detail.data?.participants.map((p) => p.name) ?? [],
 		[detail.data],
 	);
-
-	const signIn = async () => {
-		if (signing) return;
-		setSignError("");
-		if (!name.trim()) {
-			setSignError("Enter your name to continue.");
-			return;
-		}
-		if (password !== "" && password.length < 4) {
-			setSignError("Password must be at least 4 characters.");
-			return;
-		}
-		setSigning(true);
-		try {
-			const session = await createEventSession(eventId, {
-				name: name.trim(),
-				password: password === "" ? undefined : password,
-			});
-			const own = await fetchOwnAvailability(eventId, session.name, undefined);
-			lastSavedRef.current = new Set(own.slots);
-			setSelected(new Set(own.slots));
-			setActiveName(own.name);
-			setStoredName(own.name);
-			setName(own.name);
-			setPassword("");
-			await queryClient.invalidateQueries({
-				queryKey: ["own-session", eventId],
-			});
-		} catch (err) {
-			const decision = decideSignInError(err);
-			if (decision.kind === "message") {
-				setSignError(decision.text);
-				return;
-			}
-			try {
-				const own = await fetchOwnAvailability(
-					eventId,
-					name.trim(),
-					password === "" ? undefined : password,
-				);
-				lastSavedRef.current = new Set(own.slots);
-				setSelected(new Set(own.slots));
-				setActiveName(own.name);
-				setStoredName(own.name);
-			} catch (inner) {
-				const fallback = decideSignInError(inner);
-				if (fallback.kind === "message") {
-					setSignError(fallback.text);
-					return;
-				}
-				lastSavedRef.current = new Set();
-				setSelected(new Set());
-				setActiveName(name.trim());
-				setStoredName(name.trim());
-			}
-		} finally {
-			setSigning(false);
-		}
-		setSignedIn(true);
-	};
-
-	const saver = useSerialSaver<{
-		password: string | undefined;
-		identity: string;
-		slots: Set<string>;
-	}>({
-		onError: (err, value) => {
-			if (value === lastSubmittedRef.current) {
-				setSelected(new Set(lastSavedRef.current));
-			}
-			setSaveFailed(true);
-			setSaveState(saveErrorMessage(err));
-		},
-		onSuccess: (value) => {
-			lastSavedRef.current = new Set(value.slots);
-			if (value === lastSubmittedRef.current) {
-				setSelected(new Set(value.slots));
-			}
-			setSaveFailed(false);
-			setSaveState("Saved");
-			if (value.identity.trim() !== "") {
-				const stamp = new Date().toISOString();
-				queryClient.setQueryData(
-					["event", eventId],
-					(old: EventDetailResponse | undefined) =>
-						old
-							? patchDetailForSave(old, value.identity, value.slots, stamp)
-							: old,
-				);
-			}
-		},
-		save: async (value) => {
-			await saveAvailability(eventId, {
-				name: value.identity,
-				password: value.password,
-				slots: [...value.slots],
-			});
-		},
-	});
-
-	const commit = (next: Set<string>) => {
-		setSelected(next);
-		if (!signedIn || activeName === "") return;
-		setSaveFailed(false);
-		setSaveState("Saving…");
-		const tagged = {
-			identity: activeName,
-			password: password === "" ? undefined : password,
-			slots: next,
-		};
-		lastSubmittedRef.current = tagged;
-		saver.submit(tagged);
-	};
 
 	if (detail.isPending) {
 		return (
@@ -480,16 +374,15 @@ function EventPage() {
 						<Button
 							className="h-auto min-h-6 p-0 text-sm"
 							onClick={() => {
-								saver.cancel();
+								cancel();
 								lastSubmittedRef.current = null;
+								resetSave();
 								setSignedIn(false);
 								setPassword("");
 								setSelected(new Set());
 								setActiveName("");
 								setStoredName("");
 								setName("");
-								setSaveState("");
-								setSaveFailed(false);
 								setSignError("");
 								void deleteEventSession(eventId)
 									.catch(() => undefined)
