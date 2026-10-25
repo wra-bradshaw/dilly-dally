@@ -23,7 +23,7 @@
     "db:migrate:local": "wrangler d1 migrations apply dilly-dally --local",
     "db:migrate:remote": "wrangler d1 migrations apply dilly-dally --remote",
     "db:seed": "tsx scripts/seed.ts",
-    "openapi:generate": "tsx scripts/generate-openapi.ts && biome check --write src/lib/openapi.ts && tsx scripts/generate-openapi-json.ts && openapi-typescript scripts/openapi.json -o src/lib/api-schema.d.ts",
+    "openapi:generate": "tsx scripts/generate-openapi.ts && openapi-typescript scripts/openapi.json -o src/lib/api-schema.d.ts",
     "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
