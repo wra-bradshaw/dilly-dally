@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ApiOpenapiDotjsonRouteImport } from './routes/api/openapi[.]json'
 import { Route as EEventIdRouteImport } from './routes/e/$eventId'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
   id: '/llms.txt',
   path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOpenapiDotjsonRoute = ApiOpenapiDotjsonRouteImport.update({
@@ -91,6 +97,7 @@ const ApiEventsEventIdPollsPollIdOptionsOptionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/mcp': typeof McpRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/mcp': typeof McpRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events': typeof ApiEventsIndexRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/mcp': typeof McpRoute
   '/api/openapi.json': typeof ApiOpenapiDotjsonRoute
   '/e/$eventId': typeof EEventIdRoute
   '/api/events/': typeof ApiEventsIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/llms.txt'
+    | '/mcp'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/llms.txt'
+    | '/mcp'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/llms.txt'
+    | '/mcp'
     | '/api/openapi.json'
     | '/e/$eventId'
     | '/api/events/'
@@ -179,6 +191,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
+  McpRoute: typeof McpRoute
   ApiOpenapiDotjsonRoute: typeof ApiOpenapiDotjsonRoute
   EEventIdRoute: typeof EEventIdRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
@@ -202,6 +215,13 @@ declare module '@tanstack/react-router' {
       path: '/llms.txt'
       fullPath: '/llms.txt'
       preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/openapi.json': {
@@ -311,6 +331,7 @@ const ApiEventsEventIdPollsRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
+  McpRoute: McpRoute,
   ApiOpenapiDotjsonRoute: ApiOpenapiDotjsonRoute,
   EEventIdRoute: EEventIdRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,
