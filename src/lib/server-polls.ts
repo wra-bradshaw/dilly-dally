@@ -4,6 +4,11 @@ import { generateEventId } from "./event-ids";
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
 import {
+	claimUnprotectedParticipant,
+	ensureParticipantInsert,
+	verifyProtectedAccess,
+} from "./server-participant-auth";
+import {
 	type CreatePollInput,
 	MAX_OPTIONS_PER_POLL,
 	MAX_POLLS_PER_EVENT,
@@ -247,43 +252,49 @@ export async function votePollInDb(
 	const sessionAuthenticated =
 		opts.sessionNameKey !== undefined && opts.sessionNameKey === key;
 	if (existing?.passwordHash) {
-		if (!sessionAuthenticated) {
-			if (!input.password) return { code: "invalid_password", ok: false };
-			const valid = await deps.verify(input.password, existing.passwordHash);
-			if (!valid) return { code: "invalid_password", ok: false };
-		}
-	} else if (existing && !existing.passwordHash && input.password) {
-		const passwordHash = await deps.hash(input.password);
-		await db
-			.update(schema.participants)
-			.set({ passwordHash })
-			.where(
-				and(
-					eq(schema.participants.eventId, event.id),
-					eq(schema.participants.nameKey, key),
-				),
+		const checked = await verifyProtectedAccess(
+			input.password,
+			existing.passwordHash,
+			deps,
+			sessionAuthenticated,
+		);
+		if (!checked.ok) return checked;
+	} else if (existing && !existing.passwordHash) {
+		if (input.password && !sessionAuthenticated) {
+			const passwordHash = await deps.hash(input.password);
+			const claimed = await claimUnprotectedParticipant(
+				db,
+				event.id,
+				key,
+				passwordHash,
+				now,
 			);
+			if (!claimed.ok) return claimed;
+		}
 	} else if (!existing && input.password) {
-		await db
-			.insert(schema.participants)
-			.values({
-				eventId: event.id,
-				nameDisplay: display,
-				nameKey: key,
-				passwordHash: await deps.hash(input.password),
+		const ensured = await ensureParticipantInsert(
+			db,
+			event.id,
+			display,
+			key,
+			input.password,
+			{
+				deps,
+				now,
+				sessionAuthenticated,
 				slotsJson: JSON.stringify([]),
-				updatedAt: now,
-			})
-			.onConflictDoNothing({
-				target: [schema.participants.eventId, schema.participants.nameKey],
-			});
-		const raced = await getParticipantRow(db, event.id, key);
-		if (raced?.passwordHash) {
-			if (!sessionAuthenticated) {
-				if (!input.password) return { code: "invalid_password", ok: false };
-				const valid = await deps.verify(input.password, raced.passwordHash);
-				if (!valid) return { code: "invalid_password", ok: false };
-			}
+			},
+		);
+		if (!ensured.ok) return ensured;
+		if (!ensured.row.passwordHash && ensured.candidateHash) {
+			const claimed = await claimUnprotectedParticipant(
+				db,
+				event.id,
+				key,
+				ensured.candidateHash,
+				now,
+			);
+			if (!claimed.ok) return claimed;
 		}
 	}
 	await db

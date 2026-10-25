@@ -7,6 +7,11 @@ import {
 } from "./db";
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
+import {
+	claimUnprotectedParticipant,
+	ensureParticipantInsert,
+	verifyProtectedAccess,
+} from "./server-participant-auth";
 import { buildEventUniverse, normalizeSlots } from "./time-slots";
 import { type AvailabilityInput, nameKey } from "./validation";
 
@@ -41,11 +46,13 @@ async function applyUpdate(
 		guard,
 	);
 	if (existing.passwordHash !== null) {
-		if (!sessionAuthenticated) {
-			if (!input.password) return { code: "invalid_password", ok: false };
-			const valid = await deps.verify(input.password, existing.passwordHash);
-			if (!valid) return { code: "invalid_password", ok: false };
-		}
+		const checked = await verifyProtectedAccess(
+			input.password,
+			existing.passwordHash,
+			deps,
+			sessionAuthenticated,
+		);
+		if (!checked.ok) return checked;
 		const updated = await db
 			.update(schema.participants)
 			.set({ slotsJson: JSON.stringify(slots), updatedAt: now })
@@ -62,7 +69,10 @@ async function applyUpdate(
 			},
 		};
 	}
-	const passwordHash = input.password ? await deps.hash(input.password) : null;
+	const passwordHash =
+		sessionAuthenticated || !input.password
+			? null
+			: await deps.hash(input.password);
 	const updated = await db
 		.update(schema.participants)
 		.set({
@@ -113,50 +123,73 @@ export async function upsertAvailability(
 		}
 		return applyUpdate(db, event, existing, input, slots, now, deps);
 	}
-	const passwordHash = input.password ? await deps.hash(input.password) : null;
 	const nameDisplay = input.name.trim();
-	await db
-		.insert(schema.participants)
-		.values({
-			eventId: event.id,
-			nameDisplay,
-			nameKey: key,
-			passwordHash,
+	const ensured = await ensureParticipantInsert(
+		db,
+		event.id,
+		nameDisplay,
+		key,
+		input.password ?? null,
+		{
+			deps,
+			now,
+			sessionAuthenticated,
 			slotsJson: JSON.stringify(slots),
-			updatedAt: now,
-		})
-		.onConflictDoNothing({
-			target: [schema.participants.eventId, schema.participants.nameKey],
-		});
-	const raced = await getParticipantRow(db, event.id, key);
-	if (!raced) {
-		throw new Error("Availability insert failed");
-	}
-	if (
-		raced.nameDisplay === nameDisplay &&
-		raced.slotsJson === JSON.stringify(slots) &&
-		raced.passwordHash === passwordHash
-	) {
+		},
+	);
+	if (!ensured.ok) return ensured;
+	if (ensured.wonInsert) {
 		return {
 			ok: true,
 			result: {
 				count: slots.length,
 				name: nameDisplay,
-				protected: passwordHash !== null,
+				protected: ensured.candidateHash !== null,
 				updatedAt: now,
 			},
 		};
 	}
-	return applyUpdate(
+	if (ensured.row.passwordHash) {
+		const updated = await db
+			.update(schema.participants)
+			.set({ slotsJson: JSON.stringify(slots), updatedAt: now })
+			.where(
+				and(
+					eq(schema.participants.eventId, event.id),
+					eq(schema.participants.nameKey, key),
+					eq(schema.participants.passwordHash, ensured.row.passwordHash),
+				),
+			)
+			.returning({ nameKey: schema.participants.nameKey });
+		if (updated.length === 0) return { code: "invalid_password", ok: false };
+		return {
+			ok: true,
+			result: {
+				count: slots.length,
+				name: ensured.row.nameDisplay,
+				protected: true,
+				updatedAt: now,
+			},
+		};
+	}
+	const claimed = await claimUnprotectedParticipant(
 		db,
-		event,
-		raced,
-		input,
-		slots,
+		event.id,
+		key,
+		ensured.candidateHash,
 		now,
-		deps,
-		sessionAuthenticated,
+		JSON.stringify(slots),
 	);
+	if (!claimed.ok) return claimed;
+	return {
+		ok: true,
+		result: {
+			count: slots.length,
+			name: ensured.row.nameDisplay,
+			protected: ensured.candidateHash !== null,
+			updatedAt: now,
+		},
+	};
 }
 
 export async function getOwnAvailability(
