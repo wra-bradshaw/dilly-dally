@@ -51,6 +51,21 @@ export function weekdayName(
 	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
 }
 
+export function formatGroupSummary(
+	count: number,
+	singular: string,
+	plural: string,
+	groups: number,
+	skipped: number,
+): string {
+	const dayWord = count === 1 ? singular : plural;
+	if (groups === 1) {
+		return `Showing ${count} ${dayWord} in 1 group.`;
+	}
+	const skippedWord = skipped === 1 ? "day" : "days";
+	return `Showing ${count} ${dayWord} in ${groups} groups, ${skipped} ${skippedWord} skipped.`;
+}
+
 export function summarizeWeekdays(weekdays: number[]): string {
 	const uniq = [...new Set(weekdays)]
 		.filter((w) => Number.isInteger(w) && w >= 0 && w <= 6)
@@ -63,12 +78,13 @@ export function summarizeWeekdays(weekdays: number[]): string {
 		if ((uniq[i] as number) - (uniq[i - 1] as number) > 1) groups++;
 	}
 	const skipped = last - first + 1 - uniq.length;
-	const dayWord = uniq.length === 1 ? "weekday" : "weekdays";
-	if (groups === 1) {
-		return `Showing ${uniq.length} ${dayWord} in 1 group.`;
-	}
-	const skippedWord = skipped === 1 ? "day" : "days";
-	return `Showing ${uniq.length} ${dayWord} in ${groups} groups, ${skipped} ${skippedWord} skipped.`;
+	return formatGroupSummary(
+		uniq.length,
+		"weekday",
+		"weekdays",
+		groups,
+		skipped,
+	);
 }
 
 export function formatMarkerDate(date: string): string {
@@ -234,12 +250,7 @@ export function summarizeDates(
 	const gaps = getDayGaps(uniq.map((key) => ({ key })));
 	const groups = gaps.length + 1;
 	const skipped = gaps.reduce((n, g) => n + g.skipped, 0);
-	const dayWord = uniq.length === 1 ? "day" : "days";
-	if (groups === 1) {
-		return `Showing ${uniq.length} ${dayWord} in 1 group.`;
-	}
-	const skippedWord = skipped === 1 ? "day" : "days";
-	return `Showing ${uniq.length} ${dayWord} in ${groups} groups, ${skipped} ${skippedWord} skipped.`;
+	return formatGroupSummary(uniq.length, "day", "days", groups, skipped);
 }
 
 export function formatViewerSlot(
