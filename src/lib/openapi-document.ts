@@ -242,6 +242,20 @@ export function buildOpenApiDocument(origin: string): OpenApiSpec {
 			},
 		},
 		"/api/events/{id}/sessions": {
+			get: {
+				operationId: "getSession",
+				parameters: [eventIdParam],
+				responses: {
+					"200": jsonResponse(
+						"Own session name and slots",
+						ownAvailabilityResponseSchema,
+					),
+					"404": errorResponse("No session, or event not found"),
+					"410": errorResponse("Expired"),
+					"429": errorResponse("Rate limited"),
+				},
+				summary: "Get own event session",
+			},
 			post: {
 				operationId: "createSession",
 				parameters: [eventIdParam],
