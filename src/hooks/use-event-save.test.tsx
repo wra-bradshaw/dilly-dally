@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import type { AvailabilityResponse } from "#/lib/client";
 import { HttpError } from "#/lib/http-error";
 import { useEventSave } from "./use-event-save";
 
@@ -119,9 +120,16 @@ describe("useEventSave", () => {
 	it("ignores stale callbacks once a newer commit has superseded them", async () => {
 		const releases: Array<() => void> = [];
 		const saveFn = vi.fn(
-			() =>
-				new Promise<void>((res) => {
-					releases.push(res);
+			(): Promise<AvailabilityResponse> =>
+				new Promise<AvailabilityResponse>((resolve) => {
+					releases.push(() =>
+						resolve({
+							count: 1,
+							name: "Ada",
+							protected: false,
+							updatedAt: "2026-01-01T00:00:00.000Z",
+						}),
+					);
 				}),
 		);
 		const { lastSavedRef, result, setSelected } = setup({ saveFn });
