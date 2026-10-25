@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { nameKey } from "#/lib/validation";
-import { ownIdsForName, voteShare } from "./poll-utils";
+import { countUniqueVoters, ownIdsForName, voteShare } from "./poll-utils";
 
 describe("voteShare", () => {
 	it("returns 0 when there are no voters", () => {
@@ -23,5 +23,12 @@ describe("ownIdsForName", () => {
 		];
 		expect(ownIdsForName(options, "ada", nameKey)).toEqual(new Set(["a"]));
 		expect(ownIdsForName(options, "", nameKey)).toEqual(new Set());
+	});
+});
+
+describe("countUniqueVoters", () => {
+	it("dedupes voters across options case-insensitively", () => {
+		const options = [{ names: ["Ada", "Bo"] }, { names: ["ada", "Cy"] }];
+		expect(countUniqueVoters(options, nameKey)).toBe(3);
 	});
 });

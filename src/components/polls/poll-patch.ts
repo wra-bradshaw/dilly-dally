@@ -1,5 +1,6 @@
 import type { EventDetailResponse } from "#/lib/client";
 import { nameKey } from "#/lib/validation";
+import { countUniqueVoters } from "./poll-utils";
 
 export function patchDetailForNewPoll(
 	detail: EventDetailResponse,
@@ -34,9 +35,7 @@ export function patchDetailForDeleteOption(
 	const polls = (detail.polls ?? []).map((p) => {
 		if (p.id !== pollId) return p;
 		const options = p.options.filter((o) => o.id !== optionId);
-		const voters = new Set<string>();
-		for (const o of options) for (const n of o.names) voters.add(nameKey(n));
-		return { ...p, options, totalVoters: voters.size };
+		return { ...p, options, totalVoters: countUniqueVoters(options, nameKey) };
 	});
 	return { ...detail, polls };
 }

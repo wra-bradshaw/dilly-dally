@@ -1,3 +1,4 @@
+import { countUniqueVoters } from "#/components/polls/poll-utils";
 import type { EventDetailResponse } from "./client";
 import { findBestTimes } from "./time-slots";
 import { nameKey } from "./validation";
@@ -46,9 +47,7 @@ export function patchDetailForPollVote(
 			const list = [...byKey.values()].sort((a, b) => a.localeCompare(b));
 			return { ...o, count: list.length, names: list };
 		});
-		const voters = new Set<string>();
-		for (const o of options) for (const n of o.names) voters.add(nameKey(n));
-		return { ...p, options, totalVoters: voters.size };
+		return { ...p, options, totalVoters: countUniqueVoters(options, nameKey) };
 	});
 	return { ...detail, polls };
 }

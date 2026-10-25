@@ -17,6 +17,15 @@ export function ownIdsForName(
 	return ids;
 }
 
+export function countUniqueVoters(
+	options: Array<{ names: string[] }>,
+	keyOf: (name: string) => string,
+): number {
+	const voters = new Set<string>();
+	for (const o of options) for (const n of o.names) voters.add(keyOf(n));
+	return voters.size;
+}
+
 export function validateNewOptionLabel(
 	label: string,
 	existing: Array<{ label: string }>,
