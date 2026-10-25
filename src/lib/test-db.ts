@@ -5,8 +5,7 @@ import initSqlJs from "sql.js";
 import type { DrizzleDb } from "./db";
 import * as schema from "./schema";
 
-export async function createTestDb(): Promise<{ db: DrizzleDb }> {
-	const wasmPath = join(
+export async function createTestDb(): Promise<{ db: DrizzleDb }> {	const wasmPath = join(
 		process.cwd(),
 		"node_modules",
 		"sql.js",
@@ -30,4 +29,78 @@ export async function createTestDb(): Promise<{ db: DrizzleDb }> {
 	}
 	const db = drizzle(sqlDb, { schema });
 	return { db: db as unknown as DrizzleDb };
+}
+
+export interface QueryCounterState {
+	maxInFlight: number;
+	queries: number;
+}
+
+function wrapQueryBuilder(
+	target: object,
+	state: QueryCounterState & { inFlight: number },
+): unknown {
+	return new Proxy(target, {
+		get(t, p) {
+			if (p === "then") {
+				const original = Reflect.get(t, p);
+				if (typeof original !== "function") return original;
+				return (onFulfilled: unknown, onRejected: unknown) => {
+					state.queries += 1;
+					state.inFlight += 1;
+					state.maxInFlight = Math.max(state.maxInFlight, state.inFlight);
+					const settle = (fn: unknown) => (value: unknown) => {
+						state.inFlight -= 1;
+						return typeof fn === "function"
+							? (fn as (v: unknown) => unknown)(value)
+							: value;
+					};
+					return (
+						original as (...args: unknown[]) => Promise<unknown>
+					).call(t, settle(onFulfilled), settle(onRejected));
+				};
+			}
+			const value = Reflect.get(t, p);
+			if (typeof value === "function") {
+				return (...args: unknown[]) => {
+					const next = Reflect.apply(value, t, args);
+					return typeof next === "object" && next !== null
+						? wrapQueryBuilder(next, state)
+						: next;
+				};
+			}
+			if (typeof value === "object" && value !== null)
+				return wrapQueryBuilder(value, state);
+			return value;
+		},
+	});
+}
+
+export function withQueryCounter(db: DrizzleDb): {
+	db: DrizzleDb;
+	state: QueryCounterState;
+} {
+	const state: QueryCounterState & { inFlight: number } = {
+		inFlight: 0,
+		maxInFlight: 0,
+		queries: 0,
+	};
+	const proxied = new Proxy(db, {
+		get(t, p) {
+			const value = Reflect.get(t, p);
+			if (
+				(p === "select" || p === "insert" || p === "update" || p === "delete") &&
+				typeof value === "function"
+			) {
+				return (...args: unknown[]) => {
+					const builder = Reflect.apply(value, t, args);
+					return typeof builder === "object" && builder !== null
+						? wrapQueryBuilder(builder, state)
+						: builder;
+				};
+			}
+			return value;
+		},
+	});
+	return { db: proxied as DrizzleDb, state };
 }

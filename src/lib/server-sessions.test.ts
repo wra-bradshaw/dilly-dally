@@ -1,7 +1,9 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { insertEvent } from "./db";
+import * as schema from "./schema";
 import { upsertAvailability } from "./server-availability";
-import { createTestDb } from "./test-db";
+import { createTestDb, withQueryCounter } from "./test-db";
 
 const event = {
 	createdAt: 1_700_000_000_000,
@@ -111,5 +113,47 @@ describe("server sessions", () => {
 		);
 		const stale = await resolveEventSession(db, created.token, 3000);
 		expect(stale).toEqual({ code: "mismatch", ok: false });
+	});
+
+	it("resolves a session with one query when no participant exists", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		const { createEventSession, resolveEventSession } = await import(
+			"./server-sessions"
+		);
+		const created = await createEventSession(db, event, "Zed", null, 1000);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		const counted = withQueryCounter(db);
+		const resolved = await resolveEventSession(counted.db, created.token, 2000);
+		expect(resolved).toEqual({
+			eventId: event.id,
+			name: "Zed",
+			nameKey: "zed",
+			ok: true,
+		});
+		expect(counted.state.queries).toBe(1);
+	});
+
+	it("keeps the session when its participant row is deleted", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		await upsertAvailability(db, event, { name: "Ada", slots: [] }, 1000);
+		const { createEventSession, resolveEventSession } = await import(
+			"./server-sessions"
+		);
+		const created = await createEventSession(db, event, "Ada", null, 1000);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		await db
+			.delete(schema.participants)
+			.where(eq(schema.participants.eventId, event.id));
+		const resolved = await resolveEventSession(db, created.token, 2000);
+		expect(resolved).toEqual({
+			eventId: event.id,
+			name: "Ada",
+			nameKey: "ada",
+			ok: true,
+		});
 	});
 });

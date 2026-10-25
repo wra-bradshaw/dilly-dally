@@ -7,7 +7,7 @@ import {
 	listPollsDetail,
 	votePollInDb,
 } from "./server-polls";
-import { createTestDb } from "./test-db";
+import { createTestDb, withQueryCounter } from "./test-db";
 
 const event = {
 	createdAt: 1_700_000_000_000,
@@ -289,5 +289,55 @@ describe("votePollInDb", () => {
 				password: "wrong-pass-1",
 			}),
 		).toEqual({ code: "invalid_password", ok: false });
+	});
+});
+
+describe("poll read concurrency", () => {
+	it("fetches poll detail queries concurrently", async () => {
+		const { db } = await setup();
+		const created = await createPollInDb(
+			db,
+			event.id,
+			{ options: ["A", "B"], question: "Q?" },
+			1000,
+		);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		const optA = created.poll.options[0]?.id ?? "";
+		const voted = await votePollInDb(
+			db,
+			event,
+			created.poll.id,
+			{ name: "Ada", optionIds: [optA] },
+			1001,
+		);
+		expect(voted.ok).toBe(true);
+		const counted = withQueryCounter(db);
+		const detail = await listPollsDetail(counted.db, event.id);
+		expect(detail).toHaveLength(1);
+		expect(detail[0]?.options[0]).toMatchObject({ count: 1 });
+		expect(counted.state.maxInFlight).toBe(3);
+	});
+
+	it("fetches vote validation reads concurrently", async () => {
+		const { db } = await setup();
+		const created = await createPollInDb(
+			db,
+			event.id,
+			{ options: ["A", "B"], question: "Q?" },
+			1000,
+		);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		const counted = withQueryCounter(db);
+		const res = await votePollInDb(
+			counted.db,
+			event,
+			created.poll.id,
+			{ name: "Ada", optionIds: [] },
+			1001,
+		);
+		expect(res.ok).toBe(true);
+		expect(counted.state.maxInFlight).toBeGreaterThanOrEqual(3);
 	});
 });
