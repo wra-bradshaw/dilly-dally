@@ -280,10 +280,10 @@ function EventPage() {
 			<h1 className="font-heading mt-2 text-3xl font-bold" tabIndex={-1}>
 				{event?.title}
 			</h1>
-			<p className="mt-1 text-sm text-muted-foreground">
+			<p className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
 				<a
 					aria-describedby={copyStatusId}
-					className="inline-flex min-h-6 items-center text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
+					className="inline-flex min-h-6 min-w-0 items-center break-all wrap-anywhere text-primary underline underline-offset-4 hover:text-[color-mix(in_oklch,var(--primary),white_15%)]"
 					href={url}
 					suppressHydrationWarning
 				>
@@ -298,7 +298,7 @@ function EventPage() {
 						<Button
 							aria-describedby={inviteHintId}
 							aria-label="Copy invite link"
-							className="min-h-6"
+							className="min-h-6 shrink-0"
 							onClick={() => void copy(url)}
 							size="xs"
 							type="button"
@@ -333,7 +333,7 @@ function EventPage() {
 						<Button
 							aria-describedby={promptHintId}
 							aria-label="Copy agent prompt"
-							className="min-h-6"
+							className="min-h-6 shrink-0"
 							onClick={() => void copyPrompt(agentPrompt)}
 							size="xs"
 							type="button"
