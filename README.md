@@ -2,6 +2,16 @@
 
 An agent-friendly scheduling tool for finding when everyone is free.
 
+## Install the skill
+
+```shell
+pnpm dlx skills add wra-bradshaw/dilly-dally
+```
+or
+```shell
+npx skills add wra-bradshaw/dilly-dally
+```
+
 ## What it does
 
 Dilly Dally lets a group of people mark their availability on a simple grid and see which time slots work best for everyone. Create an event, share the link, and participants click and drag to show when they're free. No accounts, no friction—just a persistent URL that works until the event passes.
