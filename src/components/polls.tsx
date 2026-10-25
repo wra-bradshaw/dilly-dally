@@ -86,14 +86,14 @@ function PollOptionRow({
 			/>
 			<div className="relative flex items-start">
 				<Label
-					className="grid min-w-0 flex-1 cursor-pointer gap-0.5 px-2.5 py-2"
+					className="grid min-w-0 flex-1 cursor-pointer gap-0.5 px-3 py-2.5"
 					htmlFor={htmlFor}
 				>
 					<span className="flex items-start gap-2.5">
 						<span className="shrink-0 pt-0.5">{control}</span>
 						<span className="grid min-w-0 flex-1 gap-0.5">
 							<span className="flex items-baseline justify-between gap-2">
-								<span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+								<span className="min-w-0 flex-1 truncate text-sm font-medium">
 									{label}
 								</span>
 								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
@@ -114,7 +114,7 @@ function PollOptionRow({
 						</span>
 					</span>
 				</Label>
-				{remove ? <span className="shrink-0 py-2 pr-2.5">{remove}</span> : null}
+				{remove ? <span className="shrink-0 py-2.5 pr-3">{remove}</span> : null}
 			</div>
 		</div>
 	);
@@ -292,13 +292,15 @@ function PollCard({
 			</Button>
 		) : null;
 	return (
-		<Card className="min-w-0 max-w-full">
-			<CardHeader>
-				<CardTitle level={3}>{poll.question}</CardTitle>
+		<Card className="min-w-0 max-w-full border-border shadow-none sm:[--card-spacing:--spacing(6)]">
+			<CardHeader className="border-b border-border">
+				<CardTitle className="font-heading text-xl font-medium" level={3}>
+					{poll.question}
+				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				{signedIn ? null : (
-					<p className="mb-2 text-sm text-muted-foreground">Sign in to vote.</p>
+					<p className="mb-3 text-sm text-muted-foreground">Sign in to vote.</p>
 				)}
 				{poll.allowMultiple ? (
 					<fieldset className="grid gap-2">
@@ -374,8 +376,10 @@ function PollCard({
 						Clear my vote
 					</Button>
 				) : null}
-				<div className="mt-3 grid gap-2 border-t pt-3">
-					<Label htmlFor={newOptionId}>Add an option</Label>
+				<div className="mt-4 grid gap-2 border-t border-border pt-4">
+					<Label className="text-sm font-medium" htmlFor={newOptionId}>
+						Add an option
+					</Label>
 					<div className="flex gap-2">
 						<Input
 							id={newOptionId}
@@ -479,9 +483,11 @@ function AddPollForm({
 		}
 	};
 	return (
-		<Card className="min-w-0 max-w-full">
-			<CardHeader>
-				<CardTitle level={3}>New poll</CardTitle>
+		<Card className="min-w-0 max-w-full border-border shadow-none">
+			<CardHeader className="border-b border-border">
+				<CardTitle className="font-heading text-xl font-medium" level={3}>
+					New poll
+				</CardTitle>
 			</CardHeader>
 			<CardContent className="grid gap-3">
 				<div className="grid gap-2">
@@ -566,23 +572,25 @@ export function PollsSection({
 	const onCreated = () =>
 		void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 	return (
-		<div className="mt-4 grid gap-3">
-			<div className="flex items-center justify-between">
-				<h2 className="font-heading text-sm font-medium">Polls</h2>
+		<section aria-label="Polls" className="mt-6">
+			<div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+				<h2 className="font-heading text-2xl font-medium">Polls</h2>
 				{polls.length === 0 ? null : (
-					<span className="text-xs text-muted-foreground">
+					<span className="text-sm text-muted-foreground tabular-nums">
 						{polls.length} {polls.length === 1 ? "poll" : "polls"}
 					</span>
 				)}
 			</div>
 			{polls.length === 0 ? (
-				<p className="text-sm text-muted-foreground">
-					No polls yet. Ask where to eat, which day, anything.
+				<p className="mt-5 border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+					No polls yet.
 				</p>
 			) : (
 				<div
 					className={
-						polls.length > 1 ? "grid gap-3 md:grid-cols-2" : "grid gap-3"
+						polls.length > 1
+							? "mt-5 grid gap-4 md:grid-cols-2"
+							: "mt-5 grid gap-4"
 					}
 				>
 					{polls.map((p) => (
@@ -597,7 +605,7 @@ export function PollsSection({
 					))}
 				</div>
 			)}
-			<div>
+			<div className="mt-5">
 				{signedIn ? (
 					polls.length >= MAX_POLLS_PER_EVENT ? (
 						<p className="text-sm text-muted-foreground">
@@ -616,6 +624,6 @@ export function PollsSection({
 					</p>
 				)}
 			</div>
-		</div>
+		</section>
 	);
 }

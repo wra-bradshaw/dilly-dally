@@ -90,7 +90,7 @@ function RootComponent() {
 	return (
 		<>
 			<a
-				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:underline focus:ring-2 focus:ring-ring"
+				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-none focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:underline focus:ring-2 focus:ring-ring"
 				href="#main"
 			>
 				Skip to main content

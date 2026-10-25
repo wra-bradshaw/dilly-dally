@@ -83,7 +83,7 @@ export function GroupHeatmap({
 			: hovered;
 
 	return (
-		<div className="flex min-w-0 max-w-full flex-col gap-3 lg:flex-row">
+		<div className="flex min-w-0 max-w-full flex-col gap-5 lg:flex-row">
 			<div className="relative min-w-0 max-w-full flex-1 overflow-x-auto pb-2">
 				<TimeGrid
 					announce={announce}
@@ -94,7 +94,7 @@ export function GroupHeatmap({
 							aria-describedby={detailId}
 							aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
-								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs sm:text-[10px] leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
+								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 								heatmapFill(counts.get(cell.id)?.count ?? 0, total),
 								hovered === cell.id && "ring-2 ring-inset ring-ring",
 							)}
@@ -151,12 +151,12 @@ export function GroupHeatmap({
 				/>
 			</div>
 			<div
-				className="max-h-64 min-h-24 w-full shrink-0 overflow-y-auto rounded-md border p-3 text-sm lg:max-h-none lg:w-64"
+				className="max-h-64 min-h-24 w-full shrink-0 overflow-y-auto rounded-none border border-border bg-muted/30 p-4 text-sm lg:max-h-none lg:w-72"
 				id={detailId}
 			>
 				{info && hovered ? (
 					<div>
-						<h3 className="font-semibold">
+						<h3 className="text-sm font-semibold">
 							{info.count}/{total} available
 						</h3>
 						<p
@@ -166,11 +166,11 @@ export function GroupHeatmap({
 							{hoveredDisplay}
 						</p>
 						{info.names.length > 0 && (
-							<div className="mt-2">
-								<h4 className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
+							<div className="mt-3 border-t border-border pt-3">
+								<h4 className="text-xs font-semibold tracking-wide text-emerald-800 uppercase dark:text-emerald-300">
 									Available
 								</h4>
-								<ul className="text-xs">
+								<ul className="mt-1 text-sm">
 									{info.names.map((name) => (
 										<li key={name}>{name}</li>
 									))}
@@ -178,11 +178,11 @@ export function GroupHeatmap({
 							</div>
 						)}
 						{unavailable.length > 0 && (
-							<div className="mt-2">
-								<h4 className="text-xs font-medium text-rose-800 dark:text-rose-300">
+							<div className="mt-3 border-t border-border pt-3">
+								<h4 className="text-xs font-semibold tracking-wide text-rose-800 uppercase dark:text-rose-300">
 									Unavailable
 								</h4>
-								<ul className="text-xs">
+								<ul className="mt-1 text-sm">
 									{unavailable.map((name) => (
 										<li key={name}>{name}</li>
 									))}
@@ -191,7 +191,7 @@ export function GroupHeatmap({
 						)}
 					</div>
 				) : (
-					<p className="text-xs text-muted-foreground">
+					<p className="text-sm text-muted-foreground">
 						Hover or tap a time slot to see who is available.
 					</p>
 				)}

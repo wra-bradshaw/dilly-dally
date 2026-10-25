@@ -38,10 +38,10 @@ function GapCell({
 }) {
 	if (variant === "header") {
 		return (
-			<th className="w-3 min-w-3 px-0.5 pb-1 sm:w-4 sm:min-w-4" scope="col">
+			<th className="w-3 min-w-3 px-0.5 pb-2 sm:w-4 sm:min-w-4" scope="col">
 				<span
 					aria-hidden="true"
-					className="inline-block rounded border border-dashed border-muted-foreground bg-muted px-1 text-[10px] text-foreground"
+					className="inline-block rounded-none border border-dashed border-muted-foreground bg-muted px-1 text-xs text-foreground"
 				>
 					+{gap.skipped}
 				</span>
@@ -89,7 +89,7 @@ export function TimeGrid({
 			? `${tableLabel} Dates are non-contiguous; gaps marked ${totalSkipped} days skipped.`
 			: tableLabel;
 	const rowCount = columns.reduce((n, c) => Math.max(n, c.cells.length), 0);
-	const minTableWidth = 48 + columns.length * 48 + gaps.length * 12;
+	const minTableWidth = 80 + columns.length * 48 + gaps.length * 12;
 
 	return (
 		<>
@@ -116,7 +116,7 @@ export function TimeGrid({
 				</caption>
 				<thead>
 					<tr>
-						<th className="w-12 sm:w-16" scope="col">
+						<th className="w-20" scope="col">
 							<span className="sr-only">Time</span>
 						</th>
 						{columns.map((col, i) => {
@@ -128,7 +128,7 @@ export function TimeGrid({
 										<GapCell gap={headerGap} variant="header" />
 									) : null}
 									<th
-										className="min-w-12 px-0.5 pb-1"
+										className="min-w-12 px-0.5 pb-2"
 										id={`${baseId}-col-${i}`}
 										scope="col"
 									>
@@ -137,7 +137,7 @@ export function TimeGrid({
 										</span>
 										<div
 											aria-hidden="true"
-											className="text-xs leading-[1.15] font-semibold sm:text-[11px]"
+											className="text-xs leading-tight font-semibold"
 										>
 											<span className="block">{dayOfWeek}</span>
 											{monthDay === null ? null : (
@@ -160,7 +160,7 @@ export function TimeGrid({
 							<tr key={`row-${r}`}>
 								{gutter?.hourStart === true && gutter ? (
 									<th
-										className="h-12 pr-1 text-right align-top text-xs sm:text-[10px] leading-6 font-normal text-muted-foreground sm:h-auto"
+										className="h-12 pr-2 text-right align-top text-xs leading-6 font-normal whitespace-nowrap text-muted-foreground tabular-nums sm:h-auto"
 										id={rowId ?? undefined}
 										scope="row"
 									>
@@ -168,7 +168,7 @@ export function TimeGrid({
 									</th>
 								) : (
 									<td aria-hidden="true" className="p-0">
-										<span className="block h-12 w-12 sm:h-6 sm:w-16" />
+										<span className="block h-12 w-20 sm:h-6" />
 									</td>
 								)}
 								{columns.map((col, i) => {

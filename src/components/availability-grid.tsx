@@ -125,7 +125,7 @@ export function AvailabilityGrid({
 								<span
 									aria-hidden="true"
 									className={cn(
-										"pointer-events-none absolute inset-0 flex items-center justify-center text-xs sm:text-[10px] leading-none font-bold",
+										"pointer-events-none absolute inset-0 flex items-center justify-center text-xs leading-none font-bold",
 										isSelected
 											? "text-emerald-950 dark:text-emerald-100"
 											: "text-transparent",
