@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
+import { getDb } from "#/lib/db-env";
 import {
 	buildSessionCookie,
 	clearSessionCookie,
 	isSecureRequest,
 	parseSessionCookie,
 } from "#/lib/event-cookies";
-import { getDb } from "#/lib/db-env";
 import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
 import { getOwnAvailability } from "#/lib/server-availability";
