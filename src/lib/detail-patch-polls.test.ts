@@ -52,4 +52,54 @@ describe("patchDetailForPollVote", () => {
 		const next = patchDetailForPollVote(baseDetail(), "poll1", "Ada", []);
 		expect(next.polls[0]?.totalVoters).toBe(0);
 	});
+
+	it("counts multi-choice votes and unique voters", () => {
+		const base = baseDetail();
+		const multi = {
+			...base,
+			polls: [
+				{
+					allowMultiple: true,
+					id: "poll1",
+					options: [
+						{ count: 1, id: "optA", label: "A", names: ["Ada"] },
+						{ count: 1, id: "optB", label: "B", names: ["Bo"] },
+					],
+					question: "Q?",
+					totalVoters: 2,
+				},
+			],
+		};
+		const next = patchDetailForPollVote(multi, "poll1", "Ada", [
+			"optA",
+			"optB",
+		]);
+		expect(next.polls[0]?.options[0]).toMatchObject({
+			count: 1,
+			names: ["Ada"],
+		});
+		expect(next.polls[0]?.options[1]).toMatchObject({
+			count: 2,
+			names: ["Ada", "Bo"],
+		});
+		expect(next.polls[0]?.totalVoters).toBe(2);
+	});
+
+	it("is last-writer-wins for rapid toggles", () => {
+		const base = baseDetail();
+		const first = patchDetailForPollVote(base, "poll1", "Ada", ["optA"]);
+		const second = patchDetailForPollVote(first, "poll1", "Ada", ["optB"]);
+		const direct = patchDetailForPollVote(base, "poll1", "Ada", ["optB"]);
+		expect(second).toEqual(direct);
+	});
+
+	it("does not mutate the cached input", () => {
+		const base = baseDetail();
+		patchDetailForPollVote(base, "poll1", "Ada", ["optB"]);
+		expect(base.polls[0]?.options[0]).toMatchObject({
+			count: 1,
+			names: ["Ada"],
+		});
+		expect(base.polls[0]?.totalVoters).toBe(1);
+	});
 });

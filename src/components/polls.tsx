@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import type { ReactNode } from "react";
 import { useId, useMemo, useRef, useState } from "react";
+import { usePendingIds } from "#/hooks/use-pending-ids";
 import {
 	addPollOption,
 	createPoll,
@@ -144,11 +145,16 @@ function PollCard({
 		() => ownIdsForName(poll.options, activeName, nameKey),
 		[poll.options, activeName],
 	);
+	const pending = usePendingIds<string[]>();
+	const displayIds = useMemo(
+		() => new Set(pending.pendingIds ?? [...ownIds]),
+		[pending.pendingIds, ownIds],
+	);
 	const voteMutation = useMutation<
 		{ pollId: string },
 		unknown,
 		{ identity: string; optionIds: string[]; password?: string },
-		{ next: string[]; prev?: EventDetailResponse }
+		{ prev?: EventDetailResponse; version: number }
 	>({
 		mutationFn: (value) =>
 			votePoll(eventId, poll.id, {
@@ -159,16 +165,11 @@ function PollCard({
 		mutationKey: ["poll-vote", eventId, poll.id],
 		onError: (err, _variables, ctx) => {
 			setVoteError(pollVoteErrorMessage(err));
-			if (
-				queryClient.isMutating({
-					mutationKey: ["poll-vote", eventId, poll.id],
-				}) === 0
-			) {
-				if (ctx?.prev) queryClient.setQueryData(["event", eventId], ctx.prev);
-			}
+			if (ctx?.prev) queryClient.setQueryData(["event", eventId], ctx.prev);
 		},
 		onMutate: async (variables) => {
 			setVoteError("");
+			const version = pending.getVersion();
 			await queryClient.cancelQueries({ queryKey: ["event", eventId] });
 			const prev = queryClient.getQueryData<EventDetailResponse>([
 				"event",
@@ -186,32 +187,21 @@ function PollCard({
 							)
 						: old,
 			);
-			return { next: variables.optionIds, prev };
+			return { prev, version };
 		},
-		onSettled: () => {
-			if (
-				queryClient.isMutating({
-					mutationKey: ["poll-vote", eventId, poll.id],
-				}) === 0
-			) {
-				void queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-			}
+		onSettled: (_data, _err, _vars, ctx) => {
+			if (ctx) pending.resolve(ctx.version);
+			else pending.clear();
+			return queryClient.invalidateQueries({ queryKey: ["event", eventId] });
 		},
 		onSuccess: () => {
 			setVoteError("");
 		},
 		scope: { id: `poll-vote-${eventId}-${poll.id}` },
 	});
-	const readOwnIds = () => {
-		const cached = queryClient.getQueryData<EventDetailResponse>([
-			"event",
-			eventId,
-		]);
-		const current = cached?.polls.find((q) => q.id === poll.id) ?? poll;
-		return ownIdsForName(current.options, activeName, nameKey);
-	};
 	const commit = (next: string[]) => {
 		if (!signedIn || activeName === "") return;
+		pending.commit(next);
 		voteMutation.mutate({
 			identity: activeName,
 			optionIds: next,
@@ -219,14 +209,13 @@ function PollCard({
 		});
 	};
 	const toggleMulti = (optionId: string) => {
-		const next = readOwnIds();
+		const next = new Set(displayIds);
 		if (next.has(optionId)) next.delete(optionId);
 		else next.add(optionId);
 		commit([...next]);
 	};
 	const pickSingle = (optionId: string) => {
-		const current = readOwnIds();
-		if (current.has(optionId) && current.size === 1) return;
+		if (displayIds.has(optionId) && displayIds.size === 1) return;
 		commit([optionId]);
 	};
 	const clearVote = () => {
@@ -285,7 +274,9 @@ function PollCard({
 			setDeletingId(null);
 		}
 	};
-	const singleValue = poll.allowMultiple ? undefined : ([...ownIds][0] ?? "");
+	const singleValue = poll.allowMultiple
+		? undefined
+		: ([...displayIds][0] ?? "");
 	const removeButton = (o: { id: string; label: string; count: number }) =>
 		o.count === 0 && signedIn && poll.options.length > 2 ? (
 			<Button
@@ -317,7 +308,7 @@ function PollCard({
 								control={
 									<Checkbox
 										aria-label={`${o.label}, ${o.count} votes, ${voteShare(o.count, poll.totalVoters)} percent`}
-										checked={ownIds.has(o.id)}
+										checked={displayIds.has(o.id)}
 										disabled={!signedIn}
 										id={`${voteGroupId}-${o.id}`}
 										onCheckedChange={() => toggleMulti(o.id)}
@@ -329,7 +320,7 @@ function PollCard({
 								label={o.label}
 								names={o.names}
 								remove={removeButton(o)}
-								selected={ownIds.has(o.id)}
+								selected={displayIds.has(o.id)}
 								share={voteShare(o.count, poll.totalVoters)}
 							/>
 						))}
@@ -356,7 +347,7 @@ function PollCard({
 								label={o.label}
 								names={o.names}
 								remove={removeButton(o)}
-								selected={ownIds.has(o.id)}
+								selected={displayIds.has(o.id)}
 								share={voteShare(o.count, poll.totalVoters)}
 							/>
 						))}
@@ -373,7 +364,7 @@ function PollCard({
 				>
 					{voteMutation.isPending ? "Saving…" : ""}
 				</p>
-				{signedIn && ownIds.size > 0 ? (
+				{signedIn && displayIds.size > 0 ? (
 					<Button
 						className="mt-2 h-auto min-h-6 p-0 text-sm"
 						onClick={clearVote}
