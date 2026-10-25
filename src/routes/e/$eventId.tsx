@@ -33,8 +33,13 @@ import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useOwnSession } from "#/hooks/use-own-session";
 import { deleteEventSession, fetchOwnAvailability } from "#/lib/client";
-import { fetchEventDetailSsrFn, fetchOwnSessionSsrFn } from "#/lib/event-ssr";
+import {
+	fetchEventDetailSsrFn,
+	fetchInviteOriginSsrFn,
+	fetchOwnSessionSsrFn,
+} from "#/lib/event-ssr";
 import { HttpError } from "#/lib/http-error";
+import { inviteUrl } from "#/lib/invite-url";
 import { allTimezones, browserTimezone } from "#/lib/time-slots";
 
 export const Route = createFileRoute("/e/$eventId")({
@@ -44,7 +49,7 @@ export const Route = createFileRoute("/e/$eventId")({
 		"Cache-Control": "no-store",
 	}),
 	loader: async ({ context, params }) => {
-		await Promise.all([
+		const [, , origin] = await Promise.all([
 			context.queryClient.ensureQueryData({
 				queryFn: async () => {
 					const result = await fetchEventDetailSsrFn({
@@ -74,7 +79,9 @@ export const Route = createFileRoute("/e/$eventId")({
 				queryKey: ["own-session", params.eventId],
 				retry: false,
 			}),
+			fetchInviteOriginSsrFn().catch(() => ""),
 		]);
+		return { origin };
 	},
 });
 
@@ -107,13 +114,9 @@ function EventError({ error }: { error: unknown }) {
 	);
 }
 
-function inviteUrl(eventId: string): string {
-	if (typeof window === "undefined") return `/e/${eventId}`;
-	return `${window.location.origin}/e/${eventId}`;
-}
-
 function EventPage() {
 	const { eventId } = Route.useParams();
+	const { origin: ssrOrigin } = Route.useLoaderData();
 	const detail = useEventDetail(eventId);
 	const ownSession = useOwnSession(eventId);
 	const sessionData = ownSession.data?.ok ? ownSession.data : null;
@@ -301,7 +304,13 @@ function EventPage() {
 	}
 
 	const total = allNames.length;
-	const url = inviteUrl(eventId);
+	const origin =
+		ssrOrigin !== ""
+			? ssrOrigin
+			: typeof window !== "undefined"
+				? window.location.origin
+				: "";
+	const url = inviteUrl(eventId, origin);
 	const agentPrompt = `Fill in my availability using my calendar: ${url}\nFetch ${url} with header Accept: text/markdown for the machine-readable version.`;
 	const stale = detail.isError && detail.data !== undefined;
 	const gridDisabled =
