@@ -32,6 +32,7 @@ import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useOwnSession } from "#/hooks/use-own-session";
 import { deleteEventSession, fetchOwnAvailability } from "#/lib/client";
+import { fetchEventDetailSsrFn, fetchOwnSessionSsrFn } from "#/lib/event-ssr";
 import { HttpError } from "#/lib/http-error";
 import { allTimezones, browserTimezone } from "#/lib/time-slots";
 
@@ -41,6 +42,39 @@ export const Route = createFileRoute("/e/$eventId")({
 	headers: () => ({
 		"Cache-Control": "no-store",
 	}),
+	loader: async ({ context, params }) => {
+		await Promise.all([
+			context.queryClient.ensureQueryData({
+				queryFn: async () => {
+					const result = await fetchEventDetailSsrFn({
+						data: params.eventId,
+					});
+					if (!result.ok) {
+						throw new HttpError(
+							result.status,
+							result.code,
+							result.message,
+							undefined,
+							result.retryAfter,
+						);
+					}
+					return result.detail;
+				},
+				queryKey: ["event", params.eventId],
+				retry: false,
+			}),
+			context.queryClient.ensureQueryData({
+				queryFn: async () => {
+					const result = await fetchOwnSessionSsrFn({
+						data: params.eventId,
+					});
+					return result;
+				},
+				queryKey: ["own-session", params.eventId],
+				retry: false,
+			}),
+		]);
+	},
 });
 
 function EventError({ error }: { error: unknown }) {
