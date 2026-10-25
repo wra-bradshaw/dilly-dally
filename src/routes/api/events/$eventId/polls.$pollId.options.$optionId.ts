@@ -1,13 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { jsonError, securityHeaders } from "#/lib/api-errors";
-import { getDb } from "#/lib/db-env";
+import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
-import {
-	liveEventErrorResponse,
-	loadLiveEvent,
-} from "#/lib/server-event-detail";
 import { deletePollOptionInDb } from "#/lib/server-polls";
-import { guardRateLimit } from "#/lib/server-rate-limit";
 
 export async function deletePollOptionHandler(
 	request: Request,
@@ -15,17 +10,15 @@ export async function deletePollOptionHandler(
 	pollId: string,
 	optionId: string,
 ): Promise<Response> {
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
-	const loaded = await loadLiveEvent(db, eventId, now);
-	if (!loaded.ok) return liveEventErrorResponse(loaded);
-	const res = await deletePollOptionInDb(db, eventId, pollId, optionId);
+	if ("response" in ctx) return ctx.response;
+	const { db, event } = ctx;
+	const res = await deletePollOptionInDb(db, event.id, pollId, optionId);
 	if (!res.ok && res.code === "not_found")
 		return jsonError("not_found", "Option not found", 404);
 	if (!res.ok && res.code === "has_votes")

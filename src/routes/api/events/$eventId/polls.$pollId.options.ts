@@ -1,14 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
-import { getDb } from "#/lib/db-env";
+import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
-import {
-	liveEventErrorResponse,
-	loadLiveEvent,
-} from "#/lib/server-event-detail";
 import { addPollOptionInDb } from "#/lib/server-polls";
-import { guardRateLimit } from "#/lib/server-rate-limit";
 import { addPollOptionSchema } from "#/lib/validation";
 
 export async function addPollOptionHandler(
@@ -16,21 +11,19 @@ export async function addPollOptionHandler(
 	eventId: string,
 	pollId: string,
 ): Promise<Response> {
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
+	if ("response" in ctx) return ctx.response;
+	const { db, event, now } = ctx;
 	const guarded = await readGuardedJson(request, addPollOptionSchema);
 	if (!guarded.ok) return guarded.response;
-	const loaded = await loadLiveEvent(db, eventId, now);
-	if (!loaded.ok) return liveEventErrorResponse(loaded);
 	const res = await addPollOptionInDb(
 		db,
-		eventId,
+		event.id,
 		pollId,
 		guarded.data.label,
 		now,

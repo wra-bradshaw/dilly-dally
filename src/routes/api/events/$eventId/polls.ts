@@ -1,33 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
-import { getDb } from "#/lib/db-env";
+import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
-import {
-	liveEventErrorResponse,
-	loadLiveEvent,
-} from "#/lib/server-event-detail";
 import { createPollInDb } from "#/lib/server-polls";
-import { guardRateLimit } from "#/lib/server-rate-limit";
 import { createPollSchema } from "#/lib/validation";
 
 export async function createPollHandler(
 	request: Request,
 	eventId: string,
 ): Promise<Response> {
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
+	if ("response" in ctx) return ctx.response;
+	const { db, event, now } = ctx;
 	const guarded = await readGuardedJson(request, createPollSchema);
 	if (!guarded.ok) return guarded.response;
-	const loaded = await loadLiveEvent(db, eventId, now);
-	if (!loaded.ok) return liveEventErrorResponse(loaded);
-	const res = await createPollInDb(db, eventId, guarded.data, now);
+	const res = await createPollInDb(db, event.id, guarded.data, now);
 	if (!res.ok && res.code === "too_many_polls")
 		return jsonError("too_many_polls", "This event already has 10 polls", 409);
 	if (!res.ok && res.code === "duplicate_question")
