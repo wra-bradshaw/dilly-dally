@@ -127,7 +127,8 @@ export function usePaintSurface<T, E extends HTMLElement = HTMLElement>(
 		touchPaintingRef.current = true;
 		pending.target?.focus({ preventScroll: true });
 		try {
-			pending.el?.setPointerCapture?.(pending.pointerId);
+			if (pending.pointerId !== undefined)
+				pending.el?.setPointerCapture?.(pending.pointerId);
 		} catch {}
 		navigator.vibrate?.(10);
 		drag.onPointerDown(pending.value);

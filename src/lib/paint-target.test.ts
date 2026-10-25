@@ -72,7 +72,7 @@ describe("nearestOverflowAncestor", () => {
 
 	it("returns null when nothing overflows", () => {
 		const leaf = sized("td", 0, 0);
-		sized("div", 0, 0).append(leaf);
+		sized("div", 0, 0).appendChild(leaf);
 		expect(nearestOverflowAncestor(leaf)).toBeNull();
 		expect(nearestOverflowAncestor(null)).toBeNull();
 	});
@@ -81,8 +81,8 @@ describe("nearestOverflowAncestor", () => {
 		const outer = sized("div", 300, 100);
 		const inner = sized("div", 300, 100);
 		const leaf = sized("table", 50, 50);
-		outer.append(inner);
-		inner.append(leaf);
+		outer.appendChild(inner);
+		inner.appendChild(leaf);
 		expect(nearestOverflowAncestor(leaf)).toBe(inner);
 	});
 
@@ -93,7 +93,7 @@ describe("nearestOverflowAncestor", () => {
 			value: 400,
 		});
 		const leaf = sized("table", 50, 50);
-		outer.append(leaf);
+		outer.appendChild(leaf);
 		expect(nearestOverflowAncestor(leaf, "x")).toBeNull();
 		expect(nearestOverflowAncestor(leaf, "y")).toBe(outer);
 	});
@@ -101,7 +101,7 @@ describe("nearestOverflowAncestor", () => {
 	it("ignores ancestors that cannot scroll", () => {
 		const outer = sized("div", 300, 100, "visible", "visible");
 		const leaf = sized("table", 50, 50);
-		outer.append(leaf);
+		outer.appendChild(leaf);
 		expect(nearestOverflowAncestor(leaf)).toBeNull();
 		expect(nearestOverflowAncestor(leaf, "y")).toBeNull();
 	});

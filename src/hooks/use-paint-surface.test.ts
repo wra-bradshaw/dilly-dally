@@ -252,7 +252,7 @@ function touchDownWithId(x: number, y: number, pointerId: number) {
 
 function elementHook(onCommit: (next: Set<string>) => void) {
 	const el = document.createElement("table");
-	document.body.append(el);
+	document.body.appendChild(el);
 	onTestFinished(() => {
 		el.remove();
 	});

@@ -10,6 +10,8 @@ function detailFixture(): EventDetailResponse {
 			{ count: 0, names: [], slot: "2026-10-05T09:30" },
 		],
 		event: {
+			createdAt: new Date(1000).toISOString(),
+			dates: ["2026-10-05"],
 			expiresAt: "2027-01-01T00:00:00.000Z",
 			id: "AbC123_-XyZ9",
 			mode: "dates",
@@ -94,7 +96,7 @@ describe("renderEventMarkdown", () => {
 	});
 
 	it("renders weekly mode with weekdays and no best-times section", () => {
-		const weekly = {
+		const weekly: EventDetailResponse = {
 			...detailFixture(),
 			bestTimes: [],
 			counts: [{ count: 1, names: ["Ada"], slot: "MON-09:00" }],
