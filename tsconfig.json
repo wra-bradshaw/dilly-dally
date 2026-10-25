@@ -1,5 +1,28 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "vitest.cloudflare-stub.ts",
+    "drizzle.config.ts",
+    "worker-configuration.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-ssr",
+    ".direnv",
+    ".wrangler",
+    ".tanstack",
+    ".vitest",
+    ".nitro",
+    ".output",
+    ".vinxi",
+    "test-results",
+    "playwright-report"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

@@ -8,6 +8,21 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true, dedupe: ["react", "react-dom"] },
+	server: {
+		watch: {
+			ignored: [
+				"**/.direnv/**",
+				"**/.wrangler/**",
+				"**/.tanstack/**",
+				"**/.vitest/**",
+				"**/dist-ssr/**",
+				"**/.nitro/**",
+				"**/.output/**",
+				"**/.vinxi/**",
+				"**/playwright-report/**",
+			],
+		},
+	},
 	environments: {
 		ssr: {
 			optimizeDeps: {
