@@ -3,15 +3,13 @@ import { buildSlotUniverse } from "#/lib/time-slots";
 import {
 	buildColumns,
 	buildGridPos,
-	buildTimeRows,
-	buildWeeklyColumns,
+	cellDateLabel,
 	formatMarkerDate,
 	formatViewerSlot,
-	getDateBreaks,
 	getDayGaps,
 	gridRectangleIdsFromPos,
-	segmentForCell,
 	summarizeDates,
+	weekdayName,
 } from "./grid-model";
 
 function rectIds(
@@ -41,9 +39,23 @@ function expectedMarker(date: string): string {
 	}).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
-describe("buildColumns", () => {
+function datesMode(
+	universe: string[],
+	eventTimezone = "UTC",
+	viewTimezone = "UTC",
+	hourCycle: "h11" | "h12" | "h23" | "h24" = "h12",
+) {
+	return buildColumns(universe, {
+		eventTimezone,
+		hourCycle,
+		mode: "dates",
+		viewTimezone,
+	});
+}
+
+describe("buildColumns dates mode", () => {
 	it("groups slots by date with labels", () => {
-		const cols = buildColumns(
+		const cols = datesMode(
 			["2026-10-05T09:00", "2026-10-05T09:30", "2026-10-06T09:00"],
 			"America/New_York",
 			"America/New_York",
@@ -59,7 +71,7 @@ describe("buildColumns", () => {
 	});
 
 	it("uses single-line headers with no annotations", () => {
-		const cols = buildColumns(
+		const cols = datesMode(
 			["2026-10-05T09:00", "2026-10-05T09:30"],
 			"America/New_York",
 			"America/New_York",
@@ -72,7 +84,7 @@ describe("buildColumns", () => {
 	});
 
 	it("keys columns by event date and relabels cells in viewer time", () => {
-		const cols = buildColumns(
+		const cols = datesMode(
 			["2026-10-05T09:00"],
 			"America/New_York",
 			"Australia/Sydney",
@@ -88,11 +100,7 @@ describe("buildColumns", () => {
 			endTime: "17:00",
 			startTime: "09:00",
 		});
-		const cols = buildColumns(
-			universe,
-			"America/New_York",
-			"Australia/Melbourne",
-		);
+		const cols = datesMode(universe, "America/New_York", "Australia/Melbourne");
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		const lengths = cols.map((c) => c.cells.length);
 		expect(lengths).toEqual([16, 16]);
@@ -114,7 +122,7 @@ describe("buildColumns", () => {
 			endTime: "17:00",
 			startTime: "09:00",
 		});
-		const cols = buildColumns(universe, "America/New_York", "Asia/Tokyo");
+		const cols = datesMode(universe, "America/New_York", "Asia/Tokyo");
 		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
 		expect(cols.map((c) => c.cells.length)).toEqual([16, 16]);
 		expect(cols.flatMap((c) => c.cells.map((cell) => cell.id)).sort()).toEqual(
@@ -122,21 +130,54 @@ describe("buildColumns", () => {
 		);
 	});
 
+	it("sorts lexicographically by ISO event date", () => {
+		const cols = datesMode(
+			["2026-10-06T09:00", "2026-10-05T09:00"],
+			"America/New_York",
+			"America/New_York",
+		);
+		expect(cols.map((c) => c.key)).toEqual(["2026-10-05", "2026-10-06"]);
+		expect(cols[0].header).toBe(formatMarkerDate("2026-10-05"));
+	});
+
+	it("keeps viewer dates correct across the NY to UTC midnight edge", () => {
+		const cols = datesMode(
+			[
+				"2026-10-05T19:00",
+				"2026-10-05T20:00",
+				"2026-10-05T21:00",
+				"2026-10-05T22:00",
+			],
+			"America/New_York",
+			"UTC",
+		);
+		expect(cols).toHaveLength(1);
+		expect(cols[0].key).toBe("2026-10-05");
+		expect(cols[0].cells.map((c) => c.display)).toEqual([
+			"2026-10-05T23:00",
+			"2026-10-06T00:00",
+			"2026-10-06T01:00",
+			"2026-10-06T02:00",
+		]);
+		expect(cellDateLabel(cols[0].cells[0], cols[0])).toBe(
+			formatMarkerDate("2026-10-05"),
+		);
+		expect(cellDateLabel(cols[0].cells[1], cols[0])).toBe(
+			formatMarkerDate("2026-10-06"),
+		);
+	});
+
 	it("returns empty for empty universe", () => {
-		expect(buildColumns([], "UTC", "UTC")).toEqual([]);
+		expect(datesMode([])).toEqual([]);
 	});
 
 	it("selects the rectangle between two cells", () => {
-		const cols = buildColumns(
-			[
-				"2026-10-05T09:00",
-				"2026-10-05T09:30",
-				"2026-10-06T09:00",
-				"2026-10-06T09:30",
-			],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode([
+			"2026-10-05T09:00",
+			"2026-10-05T09:30",
+			"2026-10-06T09:00",
+			"2026-10-06T09:30",
+		]);
 		expect(
 			rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:30").sort(),
 		).toEqual([
@@ -156,16 +197,12 @@ describe("buildColumns", () => {
 	});
 
 	it("selects a single row across columns", () => {
-		const cols = buildColumns(
-			[
-				"2026-10-05T09:00",
-				"2026-10-05T09:30",
-				"2026-10-06T09:00",
-				"2026-10-06T09:30",
-			],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode([
+			"2026-10-05T09:00",
+			"2026-10-05T09:30",
+			"2026-10-06T09:00",
+			"2026-10-06T09:30",
+		]);
 		expect(rectIds(cols, "2026-10-05T09:00", "2026-10-06T09:00")).toEqual([
 			"2026-10-05T09:00",
 			"2026-10-06T09:00",
@@ -173,16 +210,12 @@ describe("buildColumns", () => {
 	});
 
 	it("paints only real columns when a gap sits inside the rectangle", () => {
-		const cols = buildColumns(
-			[
-				"2026-10-05T09:00",
-				"2026-10-05T09:30",
-				"2026-10-08T09:00",
-				"2026-10-08T09:30",
-			],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode([
+			"2026-10-05T09:00",
+			"2026-10-05T09:30",
+			"2026-10-08T09:00",
+			"2026-10-08T09:30",
+		]);
 		expect(
 			rectIds(cols, "2026-10-05T09:00", "2026-10-08T09:30").sort(),
 		).toEqual([
@@ -194,22 +227,50 @@ describe("buildColumns", () => {
 	});
 });
 
+describe("buildColumns weekly mode", () => {
+	it("groups slots by weekday code with numeric sort", () => {
+		const cols = buildColumns(["FRI-09:00", "MON-09:00", "WED-09:30"], {
+			hourCycle: "h12",
+			mode: "weekly",
+		});
+		expect(cols.map((c) => c.key)).toEqual(["MON", "WED", "FRI"]);
+		expect(cols[0].header).toBe(weekdayName(1));
+		expect(cols[2].header).toBe(weekdayName(5));
+	});
+
+	it("labels cells without timezone conversion", () => {
+		const cols = buildColumns(["MON-09:00", "MON-09:30"], {
+			mode: "weekly",
+		});
+		expect(cols).toHaveLength(1);
+		expect(cols[0].cells[0].display).toBe("MON-09:00");
+		expect(cols[0].cells[0].label).toBe(expectedTime("09:00"));
+		expect(cols[0].cells[0].hourStart).toBe(true);
+		expect(cols[0].cells[1].hourStart).toBe(false);
+		expect(cellDateLabel(cols[0].cells[0], cols[0])).toBe(cols[0].header);
+	});
+
+	it("returns empty for empty universe", () => {
+		expect(buildColumns([], { mode: "weekly" })).toEqual([]);
+	});
+
+	it("labels weekly midnight across hour cycles", () => {
+		const weekly = buildColumns(["MON-00:00"], {
+			hourCycle: "h24",
+			mode: "weekly",
+		});
+		expect(weekly[0].cells[0].label).toBe("24:00");
+	});
+});
+
 describe("getDayGaps", () => {
 	it("returns none for contiguous days", () => {
-		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-06T09:00"],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode(["2026-10-05T09:00", "2026-10-06T09:00"]);
 		expect(getDayGaps(cols)).toEqual([]);
 	});
 
 	it("marks a single skipped day", () => {
-		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-07T09:00"],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode(["2026-10-05T09:00", "2026-10-07T09:00"]);
 		expect(getDayGaps(cols)).toEqual([
 			{
 				afterDate: "2026-10-05",
@@ -221,11 +282,11 @@ describe("getDayGaps", () => {
 	});
 
 	it("marks multi-day skips across several gaps", () => {
-		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-08T09:00", "2026-10-10T09:00"],
-			"UTC",
-			"UTC",
-		);
+		const cols = datesMode([
+			"2026-10-05T09:00",
+			"2026-10-08T09:00",
+			"2026-10-10T09:00",
+		]);
 		expect(getDayGaps(cols)).toEqual([
 			{
 				afterDate: "2026-10-05",
@@ -272,128 +333,23 @@ describe("formatMarkerDate", () => {
 	});
 });
 
-describe("getDateBreaks", () => {
-	it("marks a single date above the top cell in event time", () => {
-		const cols = buildColumns(
-			["2026-10-05T09:00", "2026-10-05T09:30"],
-			"America/New_York",
-			"America/New_York",
+describe("cellDateLabel", () => {
+	it("returns the viewer date for converted date cells", () => {
+		const cols = datesMode(["2026-10-05T09:00"], "America/New_York", "UTC");
+		expect(cellDateLabel(cols[0].cells[0], cols[0])).toBe(
+			formatMarkerDate(cols[0].cells[0].display.slice(0, 10)),
 		);
-		expect(getDateBreaks(cols[0])).toEqual([
-			{
-				label: expectedMarker("2026-10-05"),
-				rowIndex: 0,
-				viewerDate: "2026-10-05",
-			},
-		]);
 	});
 
-	it("marks the midnight cell when viewer time crosses days", () => {
-		const cols = buildColumns(
-			[
-				"2026-10-05T19:00",
-				"2026-10-05T20:00",
-				"2026-10-05T21:00",
-				"2026-10-05T22:00",
-			],
-			"America/New_York",
-			"UTC",
-		);
-		expect(getDateBreaks(cols[0])).toEqual([
-			{
-				label: expectedMarker("2026-10-05"),
-				rowIndex: 0,
-				viewerDate: "2026-10-05",
-			},
-			{
-				label: expectedMarker("2026-10-06"),
-				rowIndex: 1,
-				viewerDate: "2026-10-06",
-			},
-		]);
-	});
-
-	it("resolves the active segment for each cell", () => {
-		const cols = buildColumns(
-			["2026-10-05T19:00", "2026-10-05T20:00"],
-			"America/New_York",
-			"UTC",
-		);
-		const breaks = getDateBreaks(cols[0]);
-		expect(segmentForCell(breaks, 0)?.viewerDate).toBe("2026-10-05");
-		expect(segmentForCell(breaks, 1)?.viewerDate).toBe("2026-10-06");
-	});
-
-	it("marks weekly columns once above the top cell", () => {
-		const cols = buildWeeklyColumns(["MON-09:00", "MON-09:30"]);
-		expect(cols[0].header).toBe(
-			new Intl.DateTimeFormat(undefined, {
-				timeZone: "UTC",
-				weekday: "short",
-			}).format(new Date(Date.UTC(2000, 0, 3))),
-		);
-		expect(getDateBreaks(cols[0])).toEqual([
-			{ label: cols[0].header, rowIndex: 0, viewerDate: "MON" },
-		]);
-		expect(buildTimeRows(cols)).toEqual([
-			{
-				kind: "markers",
-				markers: [{ label: cols[0].header, rowIndex: 0, viewerDate: "MON" }],
-			},
-			{ kind: "cells", rowIndex: 0 },
-			{ kind: "cells", rowIndex: 1 },
-		]);
-	});
-
-	it("returns no rows for empty columns", () => {
-		expect(buildTimeRows([])).toEqual([]);
-	});
-});
-
-describe("buildTimeRows", () => {
-	it("inserts one marker row per column in event time", () => {
-		const cols = buildColumns(
-			["2026-09-28T09:00", "2026-09-29T09:00"],
-			"UTC",
-			"UTC",
-		);
-		const rows = buildTimeRows(cols);
-		expect(rows.filter((r) => r.kind === "markers")).toHaveLength(1);
-		expect(rows[0].kind).toBe("markers");
-		expect(rows[1]).toEqual({ kind: "cells", rowIndex: 0 });
-	});
-
-	it("inserts a mid-column marker while keeping rows aligned", () => {
-		const cols = buildColumns(
-			[
-				"2026-10-05T19:00",
-				"2026-10-05T20:00",
-				"2026-10-05T21:00",
-				"2026-10-05T22:00",
-				"2026-10-06T19:00",
-				"2026-10-06T20:00",
-				"2026-10-06T21:00",
-				"2026-10-06T22:00",
-			],
-			"America/New_York",
-			"UTC",
-		);
-		const rows = buildTimeRows(cols);
-		const cellRows = rows.filter((r) => r.kind === "cells");
-		expect(cellRows).toHaveLength(4);
-		const markerRows = rows.filter((r) => r.kind === "markers");
-		expect(markerRows).toHaveLength(2);
-		for (const row of rows) {
-			if (row.kind === "markers") {
-				expect(row.markers).toHaveLength(cols.length);
-			}
-		}
+	it("falls back to the column header for weekly cells", () => {
+		const cols = buildColumns(["MON-09:00"], { mode: "weekly" });
+		expect(cellDateLabel(cols[0].cells[0], cols[0])).toBe(cols[0].header);
 	});
 });
 
 describe("hourCycle", () => {
 	it("labels date columns in 24-hour time", () => {
-		const cols = buildColumns(
+		const cols = datesMode(
 			["2026-10-05T13:00"],
 			"America/New_York",
 			"America/New_York",
@@ -403,7 +359,7 @@ describe("hourCycle", () => {
 	});
 
 	it("labels date columns in 12-hour time by default", () => {
-		const cols = buildColumns(
+		const cols = datesMode(
 			["2026-10-05T13:00"],
 			"America/New_York",
 			"America/New_York",
@@ -412,7 +368,10 @@ describe("hourCycle", () => {
 	});
 
 	it("labels weekly columns in 24-hour time", () => {
-		const cols = buildWeeklyColumns(["MON-13:00"], "h23");
+		const cols = buildColumns(["MON-13:00"], {
+			hourCycle: "h23",
+			mode: "weekly",
+		});
 		expect(cols[0].cells[0].label).toBe("13:00");
 	});
 
@@ -430,7 +389,7 @@ describe("hourCycle", () => {
 
 describe("hourCycle variants", () => {
 	it("labels weekly columns in 12-hour time by default", () => {
-		const cols = buildWeeklyColumns(["MON-13:00"]);
+		const cols = buildColumns(["MON-13:00"], { mode: "weekly" });
 		expect(cols[0].cells[0].label).toBe("1:00 PM");
 	});
 
@@ -441,14 +400,17 @@ describe("hourCycle variants", () => {
 	});
 
 	it("labels midnight across cycles", () => {
-		const date = buildColumns(
+		const date = datesMode(
 			["2026-10-05T00:00"],
 			"America/New_York",
 			"America/New_York",
 			"h11",
 		);
 		expect(date[0].cells[0].label).toBe("0:00 AM");
-		const weekly = buildWeeklyColumns(["MON-00:00"], "h24");
+		const weekly = buildColumns(["MON-00:00"], {
+			hourCycle: "h24",
+			mode: "weekly",
+		});
 		expect(weekly[0].cells[0].label).toBe("24:00");
 	});
 });

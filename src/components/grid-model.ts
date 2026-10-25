@@ -21,22 +21,21 @@ export interface GridColumn {
 	cells: GridCell[];
 }
 
+export type BuildColumnsOptions =
+	| {
+			mode: "dates";
+			eventTimezone: string;
+			viewTimezone: string;
+			hourCycle?: HourCycle;
+	  }
+	| { mode: "weekly"; hourCycle?: HourCycle };
+
 interface DayGap {
 	afterIndex: number;
 	afterDate: string;
 	beforeDate: string;
 	skipped: number;
 }
-
-export interface DateMarker {
-	rowIndex: number;
-	viewerDate: string;
-	label: string;
-}
-
-type TimeRow =
-	| { kind: "cells"; rowIndex: number }
-	| { kind: "markers"; markers: (DateMarker | null)[] };
 
 export function weekdayName(
 	weekday: number,
@@ -100,72 +99,14 @@ export function formatMarkerDate(date: string): string {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function segmentDateFor(column: GridColumn, cell: GridCell): string {
+function isHourStart(minutes: string): boolean {
+	return minutes === "00";
+}
+
+export function cellDateLabel(cell: GridCell, column: GridColumn): string {
 	const candidate = cell.display.slice(0, 10);
-	if (DATE_RE.test(candidate)) return candidate;
-	return column.key;
-}
-
-function markerLabelFor(column: GridColumn, viewerDate: string): string {
-	if (DATE_RE.test(viewerDate)) return formatMarkerDate(viewerDate);
+	if (DATE_RE.test(candidate)) return formatMarkerDate(candidate);
 	return column.header;
-}
-
-export function getDateBreaks(column: GridColumn): DateMarker[] {
-	const breaks: DateMarker[] = [];
-	let prev: string | null = null;
-	column.cells.forEach((cell, rowIndex) => {
-		const viewerDate = segmentDateFor(column, cell);
-		if (viewerDate !== prev) {
-			breaks.push({
-				label: markerLabelFor(column, viewerDate),
-				rowIndex,
-				viewerDate,
-			});
-			prev = viewerDate;
-		}
-	});
-	return breaks;
-}
-
-export function segmentForCell(
-	breaks: DateMarker[],
-	rowIndex: number,
-): DateMarker | null {
-	let current: DateMarker | null = null;
-	for (const b of breaks) {
-		if (b.rowIndex <= rowIndex) current = b;
-		else break;
-	}
-	return current;
-}
-
-export function buildTimeRows(columns: GridColumn[]): TimeRow[] {
-	const breaksByCol = columns.map((c) => getDateBreaks(c));
-	const breakRows = new Map<number, Map<number, DateMarker>>();
-	breaksByCol.forEach((breaks, colIndex) => {
-		for (const b of breaks) {
-			let at = breakRows.get(b.rowIndex);
-			if (!at) {
-				at = new Map();
-				breakRows.set(b.rowIndex, at);
-			}
-			at.set(colIndex, b);
-		}
-	});
-	const rowCount = columns.reduce((n, c) => Math.max(n, c.cells.length), 0);
-	const rows: TimeRow[] = [];
-	for (let r = 0; r < rowCount; r++) {
-		const at = breakRows.get(r);
-		if (at) {
-			rows.push({
-				kind: "markers",
-				markers: columns.map((_, c) => at.get(c) ?? null),
-			});
-		}
-		rows.push({ kind: "cells", rowIndex: r });
-	}
-	return rows;
 }
 
 function dateToMs(date: string): number {
@@ -266,9 +207,9 @@ export function formatViewerSlot(
 	);
 }
 
-export function buildWeeklyColumns(
+function buildWeeklyMode(
 	universe: string[],
-	hourCycle: HourCycle = "h12",
+	hourCycle: HourCycle,
 ): GridColumn[] {
 	const byWeekday = new Map<number, GridCell[]>();
 	for (const id of universe) {
@@ -277,11 +218,10 @@ export function buildWeeklyColumns(
 		const weekday = weekdayForCode(id.slice(0, dash));
 		if (weekday === null) continue;
 		const time = id.slice(dash + 1);
-		const minutes = time.slice(3, 5);
 		const list = byWeekday.get(weekday) ?? [];
 		list.push({
 			display: id,
-			hourStart: minutes === "00",
+			hourStart: isHourStart(time.slice(3, 5)),
 			id,
 			label: formatSlotLabel(`2000-01-01T${time}`, hourCycle),
 		});
@@ -299,22 +239,21 @@ export function buildWeeklyColumns(
 		});
 }
 
-export function buildColumns(
+function buildDatesMode(
 	universe: string[],
 	eventTimezone: string,
 	viewTimezone: string,
-	hourCycle: HourCycle = "h12",
+	hourCycle: HourCycle,
 ): GridColumn[] {
 	const byEventDate = new Map<string, GridCell[]>();
 	for (const id of universe) {
 		const eventDate = id.slice(0, 10);
 		const display = convertSlotZone(id, eventTimezone, viewTimezone);
 		const label = formatSlotLabel(display, hourCycle);
-		const minutes = display.slice(14, 16);
 		const list = byEventDate.get(eventDate) ?? [];
 		list.push({
 			display,
-			hourStart: minutes === "00",
+			hourStart: isHourStart(display.slice(14, 16)),
 			id,
 			label,
 		});
@@ -327,4 +266,19 @@ export function buildColumns(
 			key: date,
 			header: formatMarkerDate(date),
 		}));
+}
+
+export function buildColumns(
+	universe: string[],
+	options: BuildColumnsOptions,
+): GridColumn[] {
+	if (options.mode === "weekly") {
+		return buildWeeklyMode(universe, options.hourCycle ?? "h12");
+	}
+	return buildDatesMode(
+		universe,
+		options.eventTimezone,
+		options.viewTimezone,
+		options.hourCycle ?? "h12",
+	);
 }
