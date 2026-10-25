@@ -171,6 +171,54 @@ export function formatSlotLabel(
 	);
 }
 
+function addThirtyMinutes(time: string): string {
+	const [hStr, mStr] = time.split(":");
+	const h = Number(hStr);
+	const m = Number(mStr);
+	if (
+		!Number.isInteger(h) ||
+		!Number.isInteger(m) ||
+		h < 0 ||
+		h > 23 ||
+		m < 0 ||
+		m > 59
+	) {
+		return time;
+	}
+	const total = h * 60 + m + 30;
+	const wrapped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+	const nh = Math.floor(wrapped / 60);
+	const nm = wrapped % 60;
+	return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
+}
+
+export function formatTimeRange(
+	time: string,
+	hourCycle: HourCycle = "h12",
+): string {
+	if (!/^\d{2}:\d{2}$/.test(time)) return time;
+	const end = addThirtyMinutes(time);
+	const startLabel = formatSlotLabel(`2000-01-01T${time}`, hourCycle);
+	const endLabel = formatSlotLabel(`2000-01-01T${end}`, hourCycle);
+	const suffixRe = /\s([AP]M)$/;
+	const startMatch = startLabel.match(suffixRe);
+	const endMatch = endLabel.match(suffixRe);
+	if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
+		const startWithout = startLabel.slice(0, -startMatch[0].length);
+		return `${startWithout}-${endLabel}`;
+	}
+	return `${startLabel}-${endLabel}`;
+}
+
+export function formatSlotRange(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
+	const [, time] = slot.split("T");
+	if (!time || !/^\d{2}:\d{2}$/.test(time)) return slot;
+	return formatTimeRange(time, hourCycle);
+}
+
 function weekdayShortForCode(code: string): string {
 	const idx = weekdayForCode(code);
 	if (idx === null) return code;
@@ -186,6 +234,17 @@ export function formatWeeklySlot(
 	const code = slot.slice(0, dash);
 	const time = slot.slice(dash + 1);
 	return `${weekdayShortForCode(code)}, ${formatSlotLabel(`2000-01-01T${time}`, hourCycle)}`;
+}
+
+export function formatWeeklySlotRange(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
+	const dash = slot.indexOf("-");
+	if (dash === -1 || !isWeeklySlotId(slot)) return slot;
+	const code = slot.slice(0, dash);
+	const time = slot.slice(dash + 1);
+	return `${weekdayShortForCode(code)}, ${formatTimeRange(time, hourCycle)}`;
 }
 
 function weeklySlotRank(slot: string): number | null {
@@ -209,6 +268,34 @@ export function formatSlotWithDate(
 	const dt = new Date(Date.UTC(y, m - 1, d));
 	const monthDay = monthDayFormatter.format(dt);
 	return `${monthDay}, ${formatSlotLabel(slot, hourCycle)}`;
+}
+
+export function formatSlotWithDateRange(
+	slot: string,
+	hourCycle: HourCycle = "h12",
+): string {
+	const [date, time] = slot.split("T");
+	if (!date || !time || !/^\d{2}:\d{2}$/.test(time)) return slot;
+	const [y, m, d] = date.split("-").map(Number);
+	if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) {
+		return slot;
+	}
+	const dt = new Date(Date.UTC(y, m - 1, d));
+	const monthDay = monthDayFormatter.format(dt);
+	return `${monthDay}, ${formatTimeRange(time, hourCycle)}`;
+}
+
+export function formatViewerSlotRange(
+	slot: string,
+	eventTimezone: string,
+	viewTimezone: string,
+	hourCycle: HourCycle = "h12",
+): string {
+	if (isWeeklySlotId(slot)) return formatWeeklySlotRange(slot, hourCycle);
+	return formatSlotWithDateRange(
+		convertSlotZone(slot, eventTimezone, viewTimezone),
+		hourCycle,
+	);
 }
 
 interface SlotUniverseInput {

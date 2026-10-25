@@ -202,6 +202,26 @@ describe("TimeGrid announcements", () => {
 });
 
 describe("GroupHeatmap hover focus", () => {
+	it("exposes each cell span as a native title", () => {
+		render(ui());
+		const buttons = screen.getAllByRole("button");
+		expect(buttons.length).toBeGreaterThan(0);
+		for (const button of buttons) {
+			expect(button).toHaveAttribute("title");
+			expect((button as HTMLElement).getAttribute("title")).toMatch(/\d.*-\d/);
+		}
+	});
+
+	it("shows the hovered span in the detail panel", () => {
+		render(ui());
+		const [first] = screen.getAllByRole("button");
+		fireEvent.mouseEnter(first as HTMLElement);
+		expect(screen.getByText("1/1 available")).toBeVisible();
+		expect(
+			screen.getByText(/\d.*-\d.*(AM|PM)?/, { selector: "p" }),
+		).toBeVisible();
+	});
+
 	it("keeps the keyboard-focused panel when the mouse leaves another cell", () => {
 		render(ui());
 		const [first, second] = screen.getAllByRole("button");

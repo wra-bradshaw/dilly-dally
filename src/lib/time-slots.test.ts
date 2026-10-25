@@ -7,8 +7,13 @@ import {
 	computeCounts,
 	findBestTimes,
 	formatSlotLabel,
+	formatSlotRange,
 	formatSlotWithDate,
+	formatSlotWithDateRange,
+	formatTimeRange,
+	formatViewerSlotRange,
 	formatWeeklySlot,
+	formatWeeklySlotRange,
 	normalizeSlots,
 	systemHourCycle,
 } from "./time-slots";
@@ -54,6 +59,68 @@ describe("formatWeeklySlot", () => {
 	it("respects the hour cycle", () => {
 		expect(formatWeeklySlot("MON-13:00", "h23")).toBe("Mon, 13:00");
 		expect(formatWeeklySlot("MON-13:00", "h12")).toBe("Mon, 1:00 PM");
+	});
+});
+
+describe("formatTimeRange", () => {
+	it("joins 24-hour start and end with a hyphen", () => {
+		expect(formatTimeRange("17:00", "h23")).toBe("17:00-17:30");
+		expect(formatTimeRange("00:00", "h23")).toBe("00:00-00:30");
+		expect(formatTimeRange("23:30", "h23")).toBe("23:30-00:00");
+	});
+
+	it("collapses the meridiem when start and end share it", () => {
+		expect(formatTimeRange("17:00", "h12")).toBe("5:00-5:30 PM");
+		expect(formatTimeRange("09:00", "h12")).toBe("9:00-9:30 AM");
+	});
+
+	it("keeps both meridiems when the range crosses AM/PM", () => {
+		expect(formatTimeRange("11:30", "h12")).toBe("11:30 AM-12:00 PM");
+		expect(formatTimeRange("23:30", "h12")).toBe("11:30 PM-12:00 AM");
+	});
+});
+
+describe("formatSlotRange", () => {
+	it("formats a date slot as a time-only range", () => {
+		expect(formatSlotRange("2026-10-05T17:00", "h23")).toBe("17:00-17:30");
+		expect(formatSlotRange("2026-10-05T17:00", "h12")).toBe("5:00-5:30 PM");
+	});
+});
+
+describe("formatWeeklySlotRange", () => {
+	it("respects the hour cycle", () => {
+		expect(formatWeeklySlotRange("MON-13:00", "h23")).toBe("Mon, 13:00-13:30");
+		expect(formatWeeklySlotRange("MON-13:00", "h12")).toBe("Mon, 1:00-1:30 PM");
+	});
+});
+
+describe("formatSlotWithDateRange", () => {
+	it("respects the hour cycle", () => {
+		expect(formatSlotWithDateRange("2026-01-01T13:00", "h23")).toBe(
+			"Jan 1, 13:00-13:30",
+		);
+		expect(formatSlotWithDateRange("2026-01-01T13:00", "h12")).toBe(
+			"Jan 1, 1:00-1:30 PM",
+		);
+	});
+});
+
+describe("formatViewerSlotRange", () => {
+	it("formats weekly slots without timezone conversion", () => {
+		expect(formatViewerSlotRange("MON-13:00", "UTC", "UTC", "h23")).toBe(
+			"Mon, 13:00-13:30",
+		);
+	});
+
+	it("converts date slots to the viewer timezone", () => {
+		expect(
+			formatViewerSlotRange(
+				"2026-10-05T09:00",
+				"America/New_York",
+				"Australia/Sydney",
+				"h23",
+			),
+		).toBe("Oct 6, 00:00-00:30");
 	});
 });
 

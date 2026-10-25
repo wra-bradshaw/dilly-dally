@@ -78,6 +78,22 @@ describe("TimeGrid table semantics", () => {
 });
 
 describe("grid cell focus and selection cues", () => {
+	it("gives paint cells a native title with the time span", () => {
+		const columns = cols();
+		const { container } = render(
+			<AvailabilityGrid
+				columns={columns}
+				onCommit={() => {}}
+				selected={new Set()}
+			/>,
+		);
+		const buttons = [...container.querySelectorAll("button[data-cell]")];
+		expect(buttons.length).toBeGreaterThan(0);
+		for (const button of buttons) {
+			expect(button.getAttribute("title")).toMatch(/\d.*-\d/);
+		}
+	});
+
 	it("gives paint cells a visible focus ring and a non-color selected cue", () => {
 		const columns = cols();
 		const { container } = render(

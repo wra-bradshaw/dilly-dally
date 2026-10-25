@@ -425,3 +425,32 @@ describe("hourCycle variants", () => {
 		expect(weekly[0].cells[0].label).toBe("24:00");
 	});
 });
+
+describe("cell range labels", () => {
+	it("stores a 12-hour span for date cells", () => {
+		const cols = datesMode(
+			["2026-10-05T17:00"],
+			"America/New_York",
+			"America/New_York",
+		);
+		expect(cols[0].cells[0].rangeLabel).toBe("5:00-5:30 PM");
+	});
+
+	it("stores a 24-hour span for date cells", () => {
+		const cols = datesMode(
+			["2026-10-05T17:00"],
+			"America/New_York",
+			"America/New_York",
+			"h23",
+		);
+		expect(cols[0].cells[0].rangeLabel).toBe("17:00-17:30");
+	});
+
+	it("stores a span for weekly cells", () => {
+		const cols = buildColumns(["MON-13:00"], {
+			hourCycle: "h23",
+			mode: "weekly",
+		});
+		expect(cols[0].cells[0].rangeLabel).toBe("13:00-13:30");
+	});
+});

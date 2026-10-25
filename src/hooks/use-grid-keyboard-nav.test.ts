@@ -6,16 +6,40 @@ import { useGridKeyboardNav } from "./use-grid-keyboard-nav";
 const columns: GridColumn[] = [
 	{
 		cells: [
-			{ display: "a0", hourStart: true, id: "a0", label: "a0" },
-			{ display: "a1", hourStart: false, id: "a1", label: "a1" },
+			{
+				display: "a0",
+				hourStart: true,
+				id: "a0",
+				label: "a0",
+				rangeLabel: "a0",
+			},
+			{
+				display: "a1",
+				hourStart: false,
+				id: "a1",
+				label: "a1",
+				rangeLabel: "a1",
+			},
 		],
 		header: "A",
 		key: "a",
 	},
 	{
 		cells: [
-			{ display: "b0", hourStart: true, id: "b0", label: "b0" },
-			{ display: "b1", hourStart: false, id: "b1", label: "b1" },
+			{
+				display: "b0",
+				hourStart: true,
+				id: "b0",
+				label: "b0",
+				rangeLabel: "b0",
+			},
+			{
+				display: "b1",
+				hourStart: false,
+				id: "b1",
+				label: "b1",
+				rangeLabel: "b1",
+			},
 		],
 		header: "B",
 		key: "b",

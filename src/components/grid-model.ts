@@ -2,6 +2,7 @@ import {
 	convertSlotZone,
 	formatSlotLabel,
 	formatSlotWithDate,
+	formatTimeRange,
 	formatWeeklySlot,
 	type HourCycle,
 	isWeeklySlotId,
@@ -11,6 +12,7 @@ import {
 export interface GridCell {
 	id: string;
 	label: string;
+	rangeLabel: string;
 	hourStart: boolean;
 	display: string;
 }
@@ -230,6 +232,7 @@ function buildWeeklyMode(
 			hourStart: isHourStart(time.slice(3, 5)),
 			id,
 			label: formatSlotLabel(`2000-01-01T${time}`, hourCycle),
+			rangeLabel: formatTimeRange(time, hourCycle),
 		});
 		byWeekday.set(weekday, list);
 	}
@@ -262,6 +265,7 @@ function buildDatesMode(
 			hourStart: isHourStart(display.slice(14, 16)),
 			id,
 			label,
+			rangeLabel: formatTimeRange(display.slice(11, 16), hourCycle),
 		});
 		byEventDate.set(eventDate, list);
 	}

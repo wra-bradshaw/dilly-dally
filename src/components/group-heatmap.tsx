@@ -3,11 +3,12 @@ import { useId, useMemo, useRef, useState } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import {
-	buildGridPos,
-	cellDateLabel,
-	formatViewerSlot,
-	type GridColumn,
-} from "./grid-model";
+	formatSlotWithDateRange,
+	formatViewerSlotRange,
+	formatWeeklySlotRange,
+	isWeeklySlotId,
+} from "#/lib/time-slots";
+import { buildGridPos, cellDateLabel, type GridColumn } from "./grid-model";
 import { TimeGrid } from "./time-grid";
 
 interface CellCount {
@@ -77,10 +78,13 @@ export function GroupHeatmap({
 		() => (info ? allNames.filter((n) => !info.names.includes(n)) : []),
 		[allNames, info],
 	);
-	const hoveredDisplay =
-		hovered && eventTimezone && viewTimezone
-			? formatViewerSlot(hovered, eventTimezone, viewTimezone, hourCycle)
-			: hovered;
+	const hoveredDisplay = hovered
+		? eventTimezone && viewTimezone
+			? formatViewerSlotRange(hovered, eventTimezone, viewTimezone, hourCycle)
+			: isWeeklySlotId(hovered)
+				? formatWeeklySlotRange(hovered, hourCycle)
+				: formatSlotWithDateRange(hovered, hourCycle)
+		: null;
 
 	return (
 		<div className="flex min-w-0 max-w-full flex-col gap-5 lg:flex-row">
@@ -93,6 +97,7 @@ export function GroupHeatmap({
 						<button
 							aria-describedby={detailId}
 							aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
+							title={cell.rangeLabel}
 							className={cn(
 								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 								heatmapFill(counts.get(cell.id)?.count ?? 0, total),
@@ -161,7 +166,7 @@ export function GroupHeatmap({
 						</h3>
 						<p
 							className="mt-1 line-clamp-2 text-xs break-all text-muted-foreground"
-							title={hovered}
+							title={hoveredDisplay ?? hovered ?? undefined}
 						>
 							{hoveredDisplay}
 						</p>

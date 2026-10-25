@@ -97,6 +97,7 @@ export function AvailabilityGrid({
 								aria-disabled={disabled}
 								aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}`}
 								aria-pressed={isSelected}
+								title={cell.rangeLabel}
 								className={cn(
 									"absolute inset-0 w-full border-r border-b border-l transition-colors motion-reduce:transition-none first:border-t hover:ring-2 hover:ring-inset hover:ring-ring active:ring-2 active:ring-inset active:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 									isSelected
