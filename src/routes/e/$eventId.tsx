@@ -428,7 +428,7 @@ function EventPage() {
 
 			<div className="contents" suppressHydrationWarning>
 				{signedIn ? (
-					<div className="mt-6 flex min-h-6 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pb-4 text-sm">
+					<div className="mt-4 flex min-h-6 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pb-4 text-sm">
 						<span className="text-muted-foreground">
 							Signed in as{" "}
 							<strong className="font-semibold text-foreground">
