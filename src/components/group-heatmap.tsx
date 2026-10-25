@@ -83,8 +83,8 @@ export function GroupHeatmap({
 			: hovered;
 
 	return (
-		<div className="flex flex-col gap-3 lg:flex-row">
-			<div className="overflow-x-auto pb-2">
+		<div className="flex min-w-0 max-w-full flex-col gap-3 lg:flex-row">
+			<div className="min-w-0 max-w-full overflow-x-auto pb-2">
 				<TimeGrid
 					announce={announce}
 					columns={columns}

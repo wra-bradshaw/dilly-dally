@@ -37,7 +37,7 @@ function GapCell({
 }) {
 	if (variant === "header") {
 		return (
-			<th className="min-w-3 sm:min-w-4 px-0.5 pb-1" scope="col">
+			<th className="w-3 min-w-3 px-0.5 pb-1 sm:w-4 sm:min-w-4" scope="col">
 				<span
 					aria-hidden="true"
 					className="inline-block rounded border border-dashed border-muted-foreground bg-muted px-1 text-[10px] text-foreground"
@@ -98,7 +98,10 @@ export function TimeGrid({
 			) : null}
 			<table
 				aria-labelledby={captionId}
-				className={cn("w-full border-collapse select-none", tableClassName)}
+				className={cn(
+					"w-full table-fixed border-collapse select-none",
+					tableClassName,
+				)}
 				onKeyDown={onKeyDown}
 				onPointerCancel={onPointerCancel}
 				onPointerMove={onPointerMove}

@@ -222,7 +222,7 @@ function EventPage() {
 
 	if (detail.isPending) {
 		return (
-			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] py-16">
+			<div className="mx-auto w-[min(1080px,calc(100%-2rem))] min-w-0 max-w-full py-16">
 				<p aria-live="polite" className="text-muted-foreground">
 					Loading event…
 				</p>
@@ -261,7 +261,7 @@ function EventPage() {
 		restoreStatus === "gone";
 
 	return (
-		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] pt-6 pb-16 sm:pt-8">
+		<div className="mx-auto w-[min(1080px,calc(100%-2rem))] min-w-0 max-w-full overflow-x-hidden pt-6 pb-16 sm:pt-8">
 			{stale && (
 				<div className="mt-4 block rounded-xl border border-muted-foreground bg-card px-3 py-2 text-center text-sm text-muted-foreground">
 					<span aria-live="polite">
@@ -407,7 +407,7 @@ function EventPage() {
 					<Select onValueChange={setView} value={viewTimezone}>
 						<SelectTrigger
 							aria-labelledby={tzLabelId}
-							className="w-80"
+							className="w-80 max-w-full"
 							id="tz-view"
 							type="button"
 						>
@@ -424,7 +424,7 @@ function EventPage() {
 				</div>
 
 				{!signedIn ? (
-					<Card className="mt-4">
+					<Card className="mt-4 min-w-0 max-w-full">
 						<CardHeader>
 							<CardTitle id={signInTitleId}>
 								Sign in to add your availability
@@ -497,7 +497,7 @@ function EventPage() {
 						</CardContent>
 					</Card>
 				) : (
-					<Card className="mt-4">
+					<Card className="mt-4 min-w-0 max-w-full">
 						<CardHeader>
 							<CardTitle ref={signedInRef} tabIndex={-1}>
 								Your availability{" "}
@@ -546,7 +546,7 @@ function EventPage() {
 					</Card>
 				)}
 
-				<Card className="mt-4">
+				<Card className="mt-4 min-w-0 max-w-full">
 					<CardHeader>
 						<CardTitle>Group&apos;s availability</CardTitle>
 					</CardHeader>

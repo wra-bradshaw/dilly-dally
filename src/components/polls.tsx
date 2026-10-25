@@ -292,7 +292,7 @@ function PollCard({
 			</Button>
 		) : null;
 	return (
-		<Card>
+		<Card className="min-w-0 max-w-full">
 			<CardHeader>
 				<CardTitle level={3}>{poll.question}</CardTitle>
 			</CardHeader>
@@ -479,7 +479,7 @@ function AddPollForm({
 		}
 	};
 	return (
-		<Card>
+		<Card className="min-w-0 max-w-full">
 			<CardHeader>
 				<CardTitle level={3}>New poll</CardTitle>
 			</CardHeader>
