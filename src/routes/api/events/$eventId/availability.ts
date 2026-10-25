@@ -1,12 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	isCrossOrigin,
-	jsonError,
-	readGuardedJson,
-	securityHeaders,
-} from "#/lib/api-errors";
+import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
 import type { components } from "#/lib/api-schema";
 import { getDb } from "#/lib/db-env";
+import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
 import {
 	getOwnAvailability,
@@ -24,23 +20,17 @@ export async function saveAvailability(
 	request: Request,
 	eventId: string,
 ): Promise<Response> {
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
-	if (isCrossOrigin(request))
-		return jsonError("bad_request", "Cross-origin request rejected", 403);
+	if ("response" in ctx) return ctx.response;
+	const { db, event, now } = ctx;
 	const guarded = await readGuardedJson(request, availabilitySchema);
 	if (!guarded.ok) return guarded.response;
 	const input: AvailabilityInput = guarded.data;
-	const loaded = await loadLiveEvent(db, eventId, now);
-	if (!loaded.ok) {
-		return liveEventErrorResponse(loaded);
-	}
 	const sessionNameKey = await trySessionNameKey(
 		db,
 		eventId,
@@ -50,7 +40,7 @@ export async function saveAvailability(
 	);
 	const res = await upsertAvailability(
 		db,
-		loaded.event,
+		event,
 		{
 			name: input.name,
 			password: input.password,

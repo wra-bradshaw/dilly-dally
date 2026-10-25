@@ -1,23 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	isCrossOrigin,
-	jsonError,
-	readGuardedJson,
-	securityHeaders,
-} from "#/lib/api-errors";
-import { getDb } from "#/lib/db-env";
+import { jsonError, readGuardedJson, securityHeaders } from "#/lib/api-errors";
 import {
 	buildSessionCookie,
 	clearSessionCookie,
 	isSecureRequest,
 	parseSessionCookie,
 } from "#/lib/event-cookies";
+import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
-import {
-	liveEventErrorResponse,
-	loadLiveEvent,
-} from "#/lib/server-event-detail";
-import { guardRateLimit } from "#/lib/server-rate-limit";
 import {
 	createEventSession,
 	revokeEventSession,
@@ -29,24 +19,20 @@ export async function createSessionResponse(
 	eventId: string,
 	request: Request,
 ): Promise<Response> {
-	const db = getDb();
-	const now = Date.now();
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
-	if (isCrossOrigin(request))
-		return jsonError("bad_request", "Cross-origin request rejected", 403);
+	if ("response" in ctx) return ctx.response;
+	const { db, event, now } = ctx;
 	const guarded = await readGuardedJson(request, sessionCreateSchema);
 	if (!guarded.ok) return guarded.response;
 	const input: SessionCreateInput = guarded.data;
-	const loaded = await loadLiveEvent(db, eventId, now);
-	if (!loaded.ok) return liveEventErrorResponse(loaded);
 	const res = await createEventSession(
 		db,
-		loaded.event,
+		event,
 		input.name,
 		input.password ?? null,
 		now,
@@ -72,15 +58,14 @@ export async function deleteSessionResponse(
 	eventId: string,
 	request: Request,
 ): Promise<Response> {
-	const throttled = await guardRateLimit(
+	const ctx = await withLiveEvent(
 		request,
+		eventId,
 		"availability_write",
 		RATE_LIMITS.availabilityWrite,
 	);
-	if (throttled) return throttled;
-	if (isCrossOrigin(request))
-		return jsonError("bad_request", "Cross-origin request rejected", 403);
-	const db = getDb();
+	if ("response" in ctx) return ctx.response;
+	const { db } = ctx;
 	const token = parseSessionCookie(request.headers.get("cookie"), eventId);
 	if (token) await revokeEventSession(db, token);
 	const secure = isSecureRequest(request);
