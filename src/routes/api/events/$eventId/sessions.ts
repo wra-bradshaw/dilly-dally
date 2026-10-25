@@ -8,8 +8,10 @@ import {
 } from "#/lib/event-cookies";
 import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
+import { getOwnAvailability } from "#/lib/server-availability";
 import {
 	createEventSession,
+	resolveEventSession,
 	revokeEventSession,
 	SESSION_TTL_MS,
 } from "#/lib/server-sessions";
@@ -54,6 +56,66 @@ export async function createSessionResponse(
 	return Response.json({ name: res.name }, { headers, status: 201 });
 }
 
+export async function getOwnSessionResponse(
+	eventId: string,
+	request: Request,
+): Promise<Response> {
+	const noStore = { noStore: true } as const;
+	const db = getDb();
+	const now = Date.now();
+	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
+		noStore: true,
+	});
+	if (throttled) return throttled;
+	const token = parseSessionCookie(request.headers.get("cookie"), eventId);
+	if (!token)
+		return jsonError(
+			"not_found",
+			"No session for this event",
+			404,
+			undefined,
+			noStore,
+		);
+	const resolved = await resolveEventSession(db, token, now);
+	if (!resolved.ok || resolved.eventId !== eventId)
+		return jsonError(
+			"not_found",
+			"No session for this event",
+			404,
+			undefined,
+			noStore,
+		);
+	const loaded = await loadLiveEvent(db, eventId, now);
+	if (!loaded.ok) return liveEventErrorResponse(loaded, noStore);
+	const own = await getOwnAvailability(
+		db,
+		loaded.event,
+		resolved.name,
+		null,
+		undefined,
+		{
+			sessionNameKey: resolved.nameKey,
+		},
+	);
+	if (!own.ok)
+		return jsonError(
+			"not_found",
+			"No session for this event",
+			404,
+			undefined,
+			noStore,
+		);
+	return Response.json(
+		{ name: own.name, slots: own.slots },
+		{
+			headers: {
+				...securityHeaders(),
+				"Cache-Control": "no-store",
+			},
+		},
+	);
+}
+
 export async function deleteSessionResponse(
 	eventId: string,
 	request: Request,
@@ -86,6 +148,8 @@ export const Route = createFileRoute("/api/events/$eventId/sessions")({
 		handlers: {
 			DELETE: ({ params, request }) =>
 				deleteSessionResponse(params.eventId, request),
+			GET: ({ params, request }) =>
+				getOwnSessionResponse(params.eventId, request),
 			POST: ({ params, request }) =>
 				createSessionResponse(params.eventId, request),
 		},

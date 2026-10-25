@@ -44,6 +44,7 @@ function toHttpError(
 	status: number,
 	body: unknown,
 	fallback: string,
+	retryAfter?: number,
 ): HttpError {
 	const err = (body ?? {}) as ErrorBody;
 	return new HttpError(
@@ -51,7 +52,15 @@ function toHttpError(
 		err.error?.code ?? "error",
 		err.error?.message ?? fallback,
 		err.error?.fields,
+		retryAfter,
 	);
+}
+
+function retryAfterFrom(response: Response): number | undefined {
+	const raw = response.headers.get("Retry-After");
+	if (!raw) return undefined;
+	const n = Number(raw);
+	return Number.isFinite(n) ? n : undefined;
 }
 
 function unwrap<T>(result: {
@@ -64,6 +73,7 @@ function unwrap<T>(result: {
 			result.response.status,
 			result.error,
 			result.response.statusText,
+			retryAfterFrom(result.response),
 		);
 	}
 	return result.data as T;
@@ -110,6 +120,16 @@ export async function fetchOwnAvailability(
 		await client.GET("/api/events/{id}/availability", {
 			headers: password ? { "x-event-password": password } : undefined,
 			params: { path: { id }, query: { name } },
+		}),
+	);
+}
+
+export async function fetchOwnSession(
+	id: string,
+): Promise<OwnAvailabilityResponse> {
+	return unwrap<OwnAvailabilityResponse>(
+		await client.GET("/api/events/{id}/sessions", {
+			params: { path: { id } },
 		}),
 	);
 }
