@@ -5,9 +5,9 @@ import { insertEvent } from "#/lib/db";
 import { createTestDb, withQueryCounter } from "#/lib/test-db";
 import { availabilitySchema } from "#/lib/validation";
 import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
+	allowRateLimit,
+	denyRateLimit,
+	stubRateLimiters,
 } from "./-rate-limit-test-stub";
 import {
 	getOwnAvailabilityResponse,
@@ -43,11 +43,14 @@ beforeAll(async () => {
 			weekdays: [],
 		},
 	);
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	delete (env as unknown as Record<string, unknown>).RATE_LIMITER;
+	const record = env as unknown as Record<string, unknown>;
+	delete record.READ_LIMITER;
+	delete record.AVAIL_WRITE_LIMITER;
+	delete record.CREATE_EVENT_LIMITER;
 });
 
 function postRequest(body: unknown, contentType = "application/json") {
@@ -60,13 +63,13 @@ function postRequest(body: unknown, contentType = "application/json") {
 
 describe("create guards", () => {
 	it("checks the rate limit before parsing or validating", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await handleCreate(postRequest({ title: "x" }, "text/plain"));
 		expect(res.status).toBe(429);
 	});
 
 	it("rejects oversized content-length with 413", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await handleCreate(
 			new Request("https://x.test/api/events", {
 				body: "{}",
@@ -81,13 +84,13 @@ describe("create guards", () => {
 	});
 
 	it("rejects non-JSON content with 415", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await handleCreate(postRequest("{}", "text/plain"));
 		expect(res.status).toBe(415);
 	});
 
 	it("caps chunked bodies without content-length at 256KB", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const big = new ReadableStream({
 			start(controller) {
 				controller.enqueue(new TextEncoder().encode('{"title":"'));
@@ -111,7 +114,7 @@ describe("availability write guards", () => {
 	const eventId = "AbC123_-XyZ9";
 
 	it("checks the rate limit before parsing or validating", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await saveAvailability(
 			postRequest({ name: "Ada" }, "text/plain"),
 			eventId,
@@ -120,7 +123,7 @@ describe("availability write guards", () => {
 	});
 
 	it("burns write budget on blank bodies to throttle floods", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await saveAvailability(
 			postRequest({ name: "   ", slots: [] }, "application/json"),
 			eventId,
@@ -129,7 +132,7 @@ describe("availability write guards", () => {
 	});
 
 	it("rejects oversized content-length with 413", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await saveAvailability(
 			new Request("https://x.test/api/events/x/availability", {
 				body: "{}",
@@ -145,7 +148,7 @@ describe("availability write guards", () => {
 	});
 
 	it("rejects non-JSON content with 415", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await saveAvailability(
 			postRequest("{}", "text/plain"),
 			eventId,
@@ -154,7 +157,7 @@ describe("availability write guards", () => {
 	});
 
 	it("rejects cross-origin writes without loading the event", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const holder = globalThis as unknown as {
 			__testDb: Parameters<typeof insertEvent>[0];
 		};
@@ -181,7 +184,7 @@ describe("availability write guards", () => {
 	});
 
 	it("reports rate limits before cross-origin rejections", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await saveAvailability(
 			new Request(`https://x.test/api/events/${eventId}/availability`, {
 				body: JSON.stringify({ name: "Ada", slots: [] }),
@@ -250,7 +253,7 @@ describe("guarded JSON adapter", () => {
 
 describe("detail GET errors", () => {
 	it("returns no-store on terminal error responses", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await handleGetDetail(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/!!!not-an-id!!!"),
@@ -260,7 +263,7 @@ describe("detail GET errors", () => {
 	});
 
 	it("serves error JSON without leaking stack traces", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await handleGetDetail(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/!!!not-an-id!!!"),
@@ -273,7 +276,7 @@ describe("detail GET errors", () => {
 	});
 
 	it("marks own-availability errors no-store", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await getOwnAvailabilityResponse(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/x/availability?name=Ada"),
@@ -283,7 +286,7 @@ describe("detail GET errors", () => {
 	});
 
 	it("marks GET throttles no-store", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const detail = await handleGetDetail(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/!!!not-an-id!!!"),
@@ -299,12 +302,10 @@ describe("detail GET errors", () => {
 	});
 
 	it("rejects blank names before the rate limit so junk burns no budget", async () => {
-		stubRateLimiter({
-			getByName: (_key: string) => ({
-				check: async () => {
-					throw new Error("rate limiter must not run for blank names");
-				},
-			}),
+		stubRateLimiters({
+			limit: async () => {
+				throw new Error("rate limiter must not run for blank names");
+			},
 		});
 		for (const url of [
 			"https://x.test/api/events/x/availability",
@@ -321,7 +322,7 @@ describe("detail GET errors", () => {
 
 describe("guard response headers", () => {
 	it("sends nosniff and referrer on POST guard errors", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const bad = [
 			await handleCreate(
 				new Request("https://x.test/api/events", {
@@ -346,7 +347,7 @@ describe("guard response headers", () => {
 	});
 
 	it("sends nosniff and referrer on write guard errors", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await saveAvailability(
 			postRequest({ name: "Ada" }, "text/plain"),
 			"AbC123_-XyZ9",
@@ -361,7 +362,7 @@ describe("guard response headers", () => {
 
 describe("live-event precedence", () => {
 	it("reports missing events before malformed availability bodies", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await saveAvailability(
 			postRequest({ name: "Ada" }, "text/plain"),
 			"!!!not-an-id!!!",
@@ -370,7 +371,7 @@ describe("live-event precedence", () => {
 	});
 
 	it("reports missing events before malformed session bodies", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await createSessionResponse(
 			"!!!not-an-id!!!",
 			postRequest({ name: "Ada" }, "text/plain"),
@@ -379,7 +380,7 @@ describe("live-event precedence", () => {
 	});
 
 	it("reports missing events on session logout before clearing cookies", async () => {
-		stubRateLimiter(allowNamespace());
+		stubRateLimiters(allowRateLimit());
 		const res = await deleteSessionResponse(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/!!!not-an-id!!!/sessions", {

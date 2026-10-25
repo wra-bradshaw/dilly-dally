@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { insertEvent } from "#/lib/db";
 import { upsertAvailability } from "#/lib/server-availability";
 import { createTestDb } from "#/lib/test-db";
-import { allowNamespace, stubRateLimiter } from "./-rate-limit-test-stub";
+import { allowRateLimit, stubRateLimiters } from "./-rate-limit-test-stub";
 import { getOwnAvailabilityResponse } from "./$eventId/availability";
 import {
 	createSessionResponse,
@@ -45,11 +45,11 @@ beforeAll(async () => {
 			.__testDb,
 		event,
 	);
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 describe("session flow", () => {

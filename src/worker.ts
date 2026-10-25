@@ -11,12 +11,9 @@ import { purgeExpired } from "./lib/db";
 import { getDb } from "./lib/db-env";
 import { HttpError } from "./lib/http-error";
 import { RATE_LIMITS } from "./lib/rate-limit";
-import { RateLimiter } from "./lib/rate-limiter-do";
 import * as schema from "./lib/schema";
 import { loadEventDetailFromDb } from "./lib/server-event-detail";
 import { guardRateLimit } from "./lib/server-rate-limit";
-
-export { RateLimiter };
 
 export function needsDocumentHeaders(contentType: string | null): boolean {
 	return (contentType ?? "").toLowerCase().includes("text/html");

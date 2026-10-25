@@ -1,29 +1,31 @@
 import { env } from "cloudflare:workers";
 
-export function allowNamespace() {
+export function allowRateLimit() {
 	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: true,
-				remaining: 1,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
+		limit: async () => ({ success: true }),
 	};
 }
 
-export function denyNamespace() {
+export function denyRateLimit() {
 	return {
-		getByName: (_key: string) => ({
-			check: async () => ({
-				allowed: false,
-				remaining: 0,
-				resetMs: Date.now() + 1000,
-			}),
-		}),
+		limit: async () => ({ success: false }),
 	};
 }
 
-export function stubRateLimiter(namespace: unknown) {
-	(env as unknown as Record<string, unknown>).RATE_LIMITER = namespace;
+export function stubRateLimiters(
+	binding: unknown,
+	scopes: Array<"read" | "write" | "create"> = ["read", "write", "create"],
+) {
+	const record = env as unknown as Record<string, unknown>;
+	const targets =
+		scopes.length === 3
+			? ["READ_LIMITER", "AVAIL_WRITE_LIMITER", "CREATE_EVENT_LIMITER"]
+			: scopes.map((scope) =>
+					scope === "read"
+						? "READ_LIMITER"
+						: scope === "create"
+							? "CREATE_EVENT_LIMITER"
+							: "AVAIL_WRITE_LIMITER",
+				);
+	for (const name of targets) record[name] = binding;
 }

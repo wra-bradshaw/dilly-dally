@@ -3,9 +3,9 @@ import { insertEvent } from "#/lib/db";
 import { upsertAvailability } from "#/lib/server-availability";
 import { createTestDb } from "#/lib/test-db";
 import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
+	allowRateLimit,
+	denyRateLimit,
+	stubRateLimiters,
 } from "./-rate-limit-test-stub";
 import {
 	createSessionResponse,
@@ -48,11 +48,11 @@ beforeAll(async () => {
 			.__testDb,
 		event,
 	);
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 describe("own session GET", () => {
@@ -100,7 +100,7 @@ describe("own session GET", () => {
 	});
 
 	it("marks GET throttles no-store", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await getOwnSessionResponse(
 			event.id,
 			new Request(`https://example.com/api/events/${event.id}/sessions`),

@@ -15,10 +15,27 @@
 			"migrations_dir": "migrations/drizzle"
 		}
 	],
-	"durable_objects": {
-		"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
-	},
-	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }],
+	"ratelimits": [
+		{
+			"name": "AVAIL_WRITE_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 30, "period": 60 }
+		},
+		{
+			"name": "READ_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 120, "period": 60 }
+		},
+		{
+			"name": "CREATE_EVENT_LIMITER",
+			"namespace_id": "1003",
+			"simple": { "limit": 10, "period": 60 }
+		}
+	],
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] },
+		{ "tag": "v2", "deleted_classes": ["RateLimiter"] }
+	],
 	"observability": {
 		"enabled": true,
 		"logs": { "enabled": true },

@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestDb } from "#/lib/test-db";
-import { allowNamespace, stubRateLimiter } from "./-rate-limit-test-stub";
+import { allowRateLimit, stubRateLimiters } from "./-rate-limit-test-stub";
 import { createPollHandler } from "./$eventId/polls";
 import { addPollOptionHandler } from "./$eventId/polls.$pollId.options";
 import { deletePollOptionHandler } from "./$eventId/polls.$pollId.options.$optionId";
@@ -42,11 +42,11 @@ function jsonPut(url: string, body: unknown) {
 beforeAll(async () => {
 	const { db } = await createTestDb();
 	(globalThis as unknown as Record<string, unknown>).__testDb = db;
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 describe("poll flow", () => {

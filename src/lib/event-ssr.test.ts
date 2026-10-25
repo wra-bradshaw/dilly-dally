@@ -1,8 +1,8 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
+	allowRateLimit,
+	denyRateLimit,
+	stubRateLimiters,
 } from "../routes/api/events/-rate-limit-test-stub";
 import { createSessionResponse } from "../routes/api/events/$eventId/sessions";
 import { insertEvent } from "./db";
@@ -63,11 +63,11 @@ beforeAll(async () => {
 			.__testDb,
 		event,
 	);
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 describe("toEventDetailSsrResult", () => {
@@ -179,7 +179,7 @@ describe("readEventDetailSsr", () => {
 	});
 
 	it("maps throttles with retryAfter", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await readEventDetailSsr(
 			event.id,
 			new Request(`https://x.test/e/${event.id}`),
@@ -240,7 +240,7 @@ describe("readOwnSessionSsr", () => {
 	});
 
 	it("maps throttles to ok:false", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await readOwnSessionSsr(
 			event.id,
 			new Request(`https://x.test/e/${event.id}`),

@@ -2,9 +2,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { insertEvent } from "#/lib/db";
 import { createTestDb } from "#/lib/test-db";
 import {
-	allowNamespace,
-	denyNamespace,
-	stubRateLimiter,
+	allowRateLimit,
+	denyRateLimit,
+	stubRateLimiters,
 } from "./-rate-limit-test-stub";
 import {
 	getOwnAvailabilityResponse,
@@ -50,11 +50,11 @@ function jsonPost(url: string, body: unknown) {
 beforeAll(async () => {
 	const { db } = await createTestDb();
 	(globalThis as unknown as Record<string, unknown>).__testDb = db;
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 afterEach(() => {
-	stubRateLimiter(allowNamespace());
+	stubRateLimiters(allowRateLimit());
 });
 
 describe("event flow", () => {
@@ -110,7 +110,7 @@ describe("event flow", () => {
 	});
 
 	it("rejects blank names without spending rate-limit budget", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await getOwnAvailabilityResponse(
 			"AbC123_-XyZ9",
 			new Request("https://x.test/api/events/x/availability"),
@@ -152,7 +152,7 @@ describe("event flow", () => {
 	});
 
 	it("checks GET detail rate limit before lookup", async () => {
-		stubRateLimiter(denyNamespace());
+		stubRateLimiters(denyRateLimit());
 		const res = await handleGetDetail(
 			"!!!not-an-id!!!",
 			new Request("https://x.test/api/events/!!!not-an-id!!!"),
