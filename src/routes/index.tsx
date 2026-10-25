@@ -27,7 +27,11 @@ import {
 	formatSlotLabel,
 	todayPlusInTimezone,
 } from "#/lib/time-slots";
-import { MAX_OPTIONS_PER_POLL, MAX_POLLS_PER_EVENT } from "#/lib/validation";
+import {
+	eventFormSchema,
+	MAX_OPTIONS_PER_POLL,
+	MAX_POLLS_PER_EVENT,
+} from "#/lib/validation";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -54,15 +58,6 @@ interface PollDraft {
 	key: number;
 	options: Array<{ key: number; value: string }>;
 	question: string;
-}
-
-function isValidTimezone(tz: string): boolean {
-	try {
-		Intl.DateTimeFormat(undefined, { timeZone: tz });
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 function Home() {
@@ -112,56 +107,80 @@ function Home() {
 	const submit = async () => {
 		setError("");
 		setFields({});
+		const parsed = eventFormSchema.safeParse({
+			dates: [...dates].sort(),
+			endTime,
+			mode,
+			polls: pollDrafts.map((d) => ({
+				allowMultiple: d.allowMultiple,
+				options: d.options.map((o) => o.value),
+				question: d.question,
+			})),
+			startTime,
+			timezone,
+			title,
+			weekdays: [...weekdays].sort((a, b) => a - b),
+		});
 		const nextFields: FieldErrors = {};
-		if (!title.trim()) {
-			nextFields.title = "Give your event a name.";
-		}
-		if (mode === "dates" && dates.size === 0) {
-			nextFields.dates = "Pick at least one date that might work.";
-		}
-		if (mode === "weekly" && weekdays.size === 0) {
-			nextFields.weekdays = "Pick at least one weekday that might work.";
-		}
-		if (startTime >= endTime) {
-			nextFields.time =
-				"The end time must be after the start time. The “No later than” time must be later than the “No earlier than” time.";
-			nextFields.timeField = "end";
-		}
-		if (timezoneOverride !== "" && !isValidTimezone(timezoneOverride)) {
-			nextFields.timezone =
-				"Enter a valid time zone, for example America/New_York.";
-		}
-		if (pollDrafts.length > MAX_POLLS_PER_EVENT) {
-			nextFields.polls = "Events have at most 10 polls.";
-		} else {
-			for (const [idx, draft] of pollDrafts.entries()) {
-				const q = draft.question.trim();
-				const labels = draft.options
-					.map((o) => o.value.trim())
-					.filter((o) => o !== "");
-				if (q === "" || labels.length < 2) {
-					nextFields.polls = `Poll ${idx + 1} needs a question and at least two options.`;
-					break;
-				}
-				if (q.length > 140 || labels.some((l) => l.length > 80)) {
-					nextFields.polls = `Poll ${idx + 1} has text that is too long.`;
-					break;
-				}
-				if (
-					new Set(labels.map((l) => l.toLowerCase())).size !== labels.length
-				) {
-					nextFields.polls = `Poll ${idx + 1} options must be unique.`;
-					break;
-				}
+		if (!parsed.success) {
+			const issues = parsed.error.issues;
+			if (issues.some((i) => i.path[0] === "title")) {
+				nextFields.title = "Give your event a name.";
 			}
-			const seenQuestions = new Set<string>();
-			for (const draft of pollDrafts) {
-				const k = draft.question.trim().toLowerCase();
-				if (seenQuestions.has(k)) {
+			if (issues.some((i) => i.path[0] === "dates")) {
+				nextFields.dates = "Pick at least one date that might work.";
+			}
+			if (issues.some((i) => i.path[0] === "weekdays")) {
+				nextFields.weekdays = "Pick at least one weekday that might work.";
+			}
+			const timeIssue = issues.find(
+				(i) => i.path[0] === "endTime" || i.path[0] === "startTime",
+			);
+			if (timeIssue) {
+				nextFields.time =
+					"The end time must be after the start time. The “No later than” time must be later than the “No earlier than” time.";
+				nextFields.timeField =
+					timeIssue.path[0] === "startTime" ? "start" : "end";
+			}
+			if (issues.some((i) => i.path[0] === "timezone")) {
+				nextFields.timezone =
+					"Enter a valid time zone, for example America/New_York.";
+			}
+			const pollsIssues = issues.filter((i) => i.path[0] === "polls");
+			if (pollsIssues.length > 0) {
+				const tooMany = pollsIssues.some(
+					(i) => i.path.length === 1 && i.code === "too_big",
+				);
+				const duplicateQuestions = pollsIssues.some(
+					(i) =>
+						i.path.length === 1 &&
+						i.message === "Poll questions must be unique",
+				);
+				if (tooMany) {
+					nextFields.polls = "Events have at most 10 polls.";
+				} else if (duplicateQuestions) {
 					nextFields.polls = "Poll questions must be unique.";
-					break;
+				} else {
+					const perPoll = pollsIssues.filter(
+						(i): i is typeof i & { path: [string, number, ...unknown[]] } =>
+							typeof i.path[1] === "number",
+					);
+					if (perPoll.length > 0) {
+						const idx = Math.min(...perPoll.map((i) => i.path[1] as number));
+						const forIdx = perPoll.filter((i) => i.path[1] === idx);
+						if (
+							forIdx.some((i) => i.message === "Poll options must be unique")
+						) {
+							nextFields.polls = `Poll ${idx + 1} options must be unique.`;
+						} else if (forIdx.some((i) => i.code === "too_big")) {
+							nextFields.polls = `Poll ${idx + 1} has text that is too long.`;
+						} else {
+							nextFields.polls = `Poll ${idx + 1} needs a question and at least two options.`;
+						}
+					} else {
+						nextFields.polls = "Poll questions must be unique.";
+					}
 				}
-				seenQuestions.add(k);
 			}
 		}
 		if (Object.keys(nextFields).length > 0) {
