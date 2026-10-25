@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
 	clientIp,
 	contentLengthTooLarge,
@@ -6,6 +7,7 @@ import {
 	jsonError,
 	rateLimited,
 	readCappedJson,
+	readGuardedJson,
 	zodFields,
 } from "./api-errors";
 import type { components } from "./api-schema";
@@ -154,6 +156,72 @@ describe("clientIp", () => {
 
 	it("falls back to unknown", () => {
 		expect(clientIp(new Request("https://x.test/"))).toBe("unknown");
+	});
+});
+
+describe("readGuardedJson bounded runtime json", () => {
+	const nameSchema = z.object({ name: z.string().min(1) });
+
+	function chunkedRequest(text: string): Request {
+		const bytes = new TextEncoder().encode(text);
+		const half = Math.floor(bytes.length / 2);
+		const stream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(bytes.slice(0, half));
+				controller.enqueue(bytes.slice(half));
+				controller.close();
+			},
+		});
+		return new Request("https://x.test/", {
+			body: stream,
+			duplex: "half",
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		} as RequestInit);
+	}
+
+	it("parses normal JSON through the guarded path", async () => {
+		const req = new Request("https://x.test/", {
+			body: JSON.stringify({ name: "Ada" }),
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
+		const res = await readGuardedJson(req, nameSchema);
+		expect(res).toEqual({ data: { name: "Ada" }, ok: true });
+	});
+
+	it("rejects oversized content-length with 413", async () => {
+		const req = new Request("https://x.test/", {
+			body: "{}",
+			headers: {
+				"content-length": String(300_000),
+				"content-type": "application/json",
+			},
+			method: "POST",
+		});
+		const res = await readGuardedJson(req, nameSchema);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(413);
+	});
+
+	it("caps chunked bodies without content-length at 256KB", async () => {
+		const res = await readGuardedJson(
+			chunkedRequest(`{"name":"${"x".repeat(300_000)}"}`),
+			nameSchema,
+		);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(413);
+	});
+
+	it("maps malformed JSON to 400", async () => {
+		const req = new Request("https://x.test/", {
+			body: "{nope",
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		});
+		const res = await readGuardedJson(req, nameSchema);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.response.status).toBe(400);
 	});
 });
 
