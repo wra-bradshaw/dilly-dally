@@ -1,5 +1,6 @@
 allowBuilds:
   better-sqlite3: false
+  core-js-pure: true
   esbuild: true
   lightningcss: true
   sharp: true
