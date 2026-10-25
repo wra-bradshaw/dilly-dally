@@ -86,11 +86,13 @@ export async function getOwnAvailabilityResponse(
 	}
 	const db = getDb();
 	const now = Date.now();
-	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
-		noStore: true,
-	});
+	const [throttled, loaded] = await Promise.all([
+		guardRateLimit(request, "read", RATE_LIMITS.read, {
+			noStore: true,
+		}),
+		loadLiveEvent(db, eventId, now),
+	]);
 	if (throttled) return throttled;
-	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) {
 		return liveEventErrorResponse(loaded, noStore);
 	}

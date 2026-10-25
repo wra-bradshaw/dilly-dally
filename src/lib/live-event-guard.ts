@@ -10,10 +10,13 @@ export type LiveEventContext = {
 	now: number;
 };
 
-// Guard order: rate-limit (429) → cross-origin (403) → event load (404/410).
-// Body parsing (400) happens in callers after this returns, so missing
-// events report 404 before malformed bodies report 400. Cross-origin writes
-// are rejected on all routes using this helper.
+// Response precedence: rate-limit (429) → cross-origin (403) → event load
+// (404/410). Body parsing (400) happens in callers after this returns, so
+// missing events report 404 before malformed bodies report 400.
+// Cross-origin requests skip the event load entirely: the sync origin check
+// runs first and only the rate limit still executes, preserving 429
+// precedence without spending a D1 round-trip on a rejected request.
+// Allowed requests run the rate check and the event load concurrently.
 export async function withLiveEvent(
 	request: Request,
 	eventId: string,
@@ -22,13 +25,18 @@ export async function withLiveEvent(
 ): Promise<LiveEventContext | { response: Response }> {
 	const db = getDb();
 	const now = Date.now();
-	const throttled = await guardRateLimit(request, scope, budget);
-	if (throttled) return { response: throttled };
-	if (isCrossOrigin(request))
+	if (isCrossOrigin(request)) {
+		const throttled = await guardRateLimit(request, scope, budget);
+		if (throttled) return { response: throttled };
 		return {
 			response: jsonError("bad_request", "Cross-origin request rejected", 403),
 		};
-	const loaded = await loadLiveEvent(db, eventId, now);
+	}
+	const [throttled, loaded] = await Promise.all([
+		guardRateLimit(request, scope, budget),
+		loadLiveEvent(db, eventId, now),
+	]);
+	if (throttled) return { response: throttled };
 	if (!loaded.ok) return { response: liveEventErrorResponse(loaded) };
 	return { db, event: loaded.event, now };
 }

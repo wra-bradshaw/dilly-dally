@@ -1,5 +1,10 @@
 import { and, asc, eq } from "drizzle-orm";
-import { type DillyEvent, type DrizzleDb, getParticipantRow } from "./db";
+import {
+	type DillyEvent,
+	type DrizzleDb,
+	getParticipantRow,
+	runAsBatch,
+} from "./db";
 import { generateEventId } from "./event-ids";
 import { hashPassword, verifyPassword } from "./password";
 import * as schema from "./schema";
@@ -35,21 +40,23 @@ export async function listPollsDetail(
 	db: DrizzleDb,
 	eventId: string,
 ): Promise<PollDetail[]> {
-	const pollRows = await db
-		.select()
-		.from(schema.polls)
-		.where(eq(schema.polls.eventId, eventId))
-		.orderBy(asc(schema.polls.position));
+	const [pollRows, optionRows, voteRows] = await Promise.all([
+		db
+			.select()
+			.from(schema.polls)
+			.where(eq(schema.polls.eventId, eventId))
+			.orderBy(asc(schema.polls.position)),
+		db
+			.select()
+			.from(schema.pollOptions)
+			.where(eq(schema.pollOptions.eventId, eventId))
+			.orderBy(asc(schema.pollOptions.position)),
+		db
+			.select()
+			.from(schema.pollVotes)
+			.where(eq(schema.pollVotes.eventId, eventId)),
+	]);
 	if (pollRows.length === 0) return [];
-	const optionRows = await db
-		.select()
-		.from(schema.pollOptions)
-		.where(eq(schema.pollOptions.eventId, eventId))
-		.orderBy(asc(schema.pollOptions.position));
-	const voteRows = await db
-		.select()
-		.from(schema.pollVotes)
-		.where(eq(schema.pollVotes.eventId, eventId));
 	const optionsByPoll = new Map<string, typeof optionRows>();
 	for (const o of optionRows) {
 		const list = optionsByPoll.get(o.pollId);
@@ -113,25 +120,27 @@ export async function createPollInDb(
 			? 0
 			: Math.max(...existing.map((p) => p.position)) + 1;
 	try {
-		await db.insert(schema.polls).values({
-			allowMultiple: input.allowMultiple ? 1 : 0,
-			createdAt: now,
-			eventId,
-			id: pollId,
-			position,
-			question: input.question.trim(),
-		});
 		const labels = input.options.map((o) => o.trim());
-		await db.insert(schema.pollOptions).values(
-			labels.map((label, i) => ({
+		await runAsBatch(db, [
+			db.insert(schema.polls).values({
+				allowMultiple: input.allowMultiple ? 1 : 0,
 				createdAt: now,
 				eventId,
-				id: generateEventId(),
-				label,
-				pollId,
-				position: i,
-			})),
-		);
+				id: pollId,
+				position,
+				question: input.question.trim(),
+			}),
+			db.insert(schema.pollOptions).values(
+				labels.map((label, i) => ({
+					createdAt: now,
+					eventId,
+					id: generateEventId(),
+					label,
+					pollId,
+					position: i,
+				})),
+			),
+		]);
 	} catch (err) {
 		await db.delete(schema.polls).where(eq(schema.polls.id, pollId));
 		throw err;
@@ -149,16 +158,20 @@ export async function addPollOptionInDb(
 	label: string,
 	now: number,
 ): Promise<{ ok: true; optionId: string } | { code: string; ok: false }> {
-	const pollRows = await db
+	const pollRowsPromise = db
 		.select()
 		.from(schema.polls)
 		.where(and(eq(schema.polls.id, pollId), eq(schema.polls.eventId, eventId)));
-	const poll = pollRows[0];
-	if (!poll) return { code: "not_found", ok: false };
-	const options = await db
+	const optionsPromise = db
 		.select()
 		.from(schema.pollOptions)
 		.where(eq(schema.pollOptions.pollId, pollId));
+	const [pollRows, options] = await Promise.all([
+		pollRowsPromise,
+		optionsPromise,
+	]);
+	const poll = pollRows[0];
+	if (!poll) return { code: "not_found", ok: false };
 	if (options.length >= MAX_OPTIONS_PER_POLL)
 		return { code: "too_many_options", ok: false };
 	const key = label.trim().toLowerCase();
@@ -184,26 +197,28 @@ export async function deletePollOptionInDb(
 	pollId: string,
 	optionId: string,
 ): Promise<{ ok: true } | { code: string; ok: false }> {
-	const optionRows = await db
-		.select()
-		.from(schema.pollOptions)
-		.where(
-			and(
-				eq(schema.pollOptions.id, optionId),
-				eq(schema.pollOptions.pollId, pollId),
-				eq(schema.pollOptions.eventId, eventId),
+	const [optionRows, allOptions, votes] = await Promise.all([
+		db
+			.select()
+			.from(schema.pollOptions)
+			.where(
+				and(
+					eq(schema.pollOptions.id, optionId),
+					eq(schema.pollOptions.pollId, pollId),
+					eq(schema.pollOptions.eventId, eventId),
+				),
 			),
-		);
+		db
+			.select({ id: schema.pollOptions.id })
+			.from(schema.pollOptions)
+			.where(eq(schema.pollOptions.pollId, pollId)),
+		db
+			.select({ optionId: schema.pollVotes.optionId })
+			.from(schema.pollVotes)
+			.where(eq(schema.pollVotes.optionId, optionId)),
+	]);
 	if (optionRows.length === 0) return { code: "not_found", ok: false };
-	const allOptions = await db
-		.select({ id: schema.pollOptions.id })
-		.from(schema.pollOptions)
-		.where(eq(schema.pollOptions.pollId, pollId));
 	if (allOptions.length <= 2) return { code: "too_few_options", ok: false };
-	const votes = await db
-		.select({ optionId: schema.pollVotes.optionId })
-		.from(schema.pollVotes)
-		.where(eq(schema.pollVotes.optionId, optionId));
 	if (votes.length > 0) return { code: "has_votes", ok: false };
 	await db
 		.delete(schema.pollOptions)
@@ -223,23 +238,23 @@ export async function votePollInDb(
 	} = { hash: hashPassword, verify: verifyPassword },
 	opts: { sessionNameKey?: string } = {},
 ): Promise<{ ok: true } | { code: string; ok: false }> {
-	const pollPromise = db
-		.select()
-		.from(schema.polls)
-		.where(
-			and(eq(schema.polls.id, pollId), eq(schema.polls.eventId, event.id)),
-		);
-	const existingPromise = getParticipantRow(db, event.id, nameKey(input.name));
-	const [pollRows, existing] = await Promise.all([
-		pollPromise,
-		existingPromise,
+	const key = nameKey(input.name);
+	const display = input.name.trim();
+	const [pollRows, existing, options] = await Promise.all([
+		db
+			.select()
+			.from(schema.polls)
+			.where(
+				and(eq(schema.polls.id, pollId), eq(schema.polls.eventId, event.id)),
+			),
+		getParticipantRow(db, event.id, key),
+		db
+			.select()
+			.from(schema.pollOptions)
+			.where(eq(schema.pollOptions.pollId, pollId)),
 	]);
 	const poll = pollRows[0];
 	if (!poll) return { code: "not_found", ok: false };
-	const options = await db
-		.select()
-		.from(schema.pollOptions)
-		.where(eq(schema.pollOptions.pollId, pollId));
 	const validIds = new Set(options.map((o) => o.id));
 	const uniqueIds = [...new Set(input.optionIds)];
 	for (const id of uniqueIds) {
@@ -247,8 +262,6 @@ export async function votePollInDb(
 	}
 	if (!poll.allowMultiple && uniqueIds.length > 1)
 		return { code: "invalid_selection", ok: false };
-	const key = nameKey(input.name);
-	const display = input.name.trim();
 	const sessionAuthenticated =
 		opts.sessionNameKey !== undefined && opts.sessionNameKey === key;
 	if (existing?.passwordHash) {
@@ -297,7 +310,7 @@ export async function votePollInDb(
 			if (!claimed.ok) return claimed;
 		}
 	}
-	await db
+	const remove = db
 		.delete(schema.pollVotes)
 		.where(
 			and(
@@ -306,16 +319,21 @@ export async function votePollInDb(
 			),
 		);
 	if (uniqueIds.length > 0) {
-		await db.insert(schema.pollVotes).values(
-			uniqueIds.map((optionId) => ({
-				eventId: event.id,
-				nameDisplay: display,
-				nameKey: key,
-				optionId,
-				pollId,
-				updatedAt: now,
-			})),
-		);
+		await runAsBatch(db, [
+			remove,
+			db.insert(schema.pollVotes).values(
+				uniqueIds.map((optionId) => ({
+					eventId: event.id,
+					nameDisplay: display,
+					nameKey: key,
+					optionId,
+					pollId,
+					updatedAt: now,
+				})),
+			),
+		]);
+	} else {
+		await remove;
 	}
 	return { ok: true };
 }

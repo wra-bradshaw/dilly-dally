@@ -50,12 +50,14 @@ export function liveEventErrorResponse(
 
 export async function getEventDetail(db: DrizzleDb, event: DillyEvent) {
 	const universe = buildEventUniverse(event);
-	const parts = await listParticipants(db, event.id);
+	const [parts, polls] = await Promise.all([
+		listParticipants(db, event.id),
+		listPollsDetail(db, event.id),
+	]);
 	const counts = computeCounts(
 		universe,
 		parts.map((p) => ({ name: p.name, slots: p.slots })),
 	);
-	const polls = await listPollsDetail(db, event.id);
 	return {
 		bestTimes: findBestTimes(counts, 10).map((c) => ({
 			count: c.count,

@@ -80,22 +80,18 @@ export async function maybeServeMarkdown(
 	const route = markdownRoute(url);
 	if (!route) return null;
 	if (route.kind === "home") return agentGuideResponse(request);
-	const limited = await guardRateLimit(request, "read", RATE_LIMITS.read, {
-		noStore: true,
-	});
+	const [limited, detail] = await Promise.all([
+		guardRateLimit(request, "read", RATE_LIMITS.read, {
+			noStore: true,
+		}),
+		loadEventDetailFromDb(getDb(), route.eventId, Date.now()).then(
+			(value) => ({ ok: true as const, value }),
+			(error: unknown) => ({ error, ok: false as const }),
+		),
+	]);
 	if (limited) return withVary(limited);
-	try {
-		const detail = await loadEventDetailFromDb(
-			getDb(),
-			route.eventId,
-			Date.now(),
-		);
-		return eventDetailMarkdownResponse(
-			detail,
-			originOf(request),
-			route.eventId,
-		);
-	} catch (err) {
+	if (!detail.ok) {
+		const err = detail.error;
 		if (err instanceof HttpError) {
 			const expired = err.code === "gone";
 			return markdownErrorResponse(
@@ -112,6 +108,11 @@ export async function maybeServeMarkdown(
 			500,
 		);
 	}
+	return eventDetailMarkdownResponse(
+		detail.value,
+		originOf(request),
+		route.eventId,
+	);
 }
 
 export default {

@@ -82,7 +82,10 @@ export async function getOwnSessionResponse(
 			undefined,
 			noStore,
 		);
-	const resolved = await resolveEventSession(db, token, now);
+	const [resolved, loaded] = await Promise.all([
+		resolveEventSession(db, token, now),
+		loadLiveEvent(db, eventId, now),
+	]);
 	if (!resolved.ok || resolved.eventId !== eventId)
 		return jsonError(
 			"not_found",
@@ -91,7 +94,6 @@ export async function getOwnSessionResponse(
 			undefined,
 			noStore,
 		);
-	const loaded = await loadLiveEvent(db, eventId, now);
 	if (!loaded.ok) return liveEventErrorResponse(loaded, noStore);
 	const own = await getOwnAvailability(
 		db,

@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { readGuardedJson } from "#/lib/api-errors";
 import { insertEvent } from "#/lib/db";
-import { createTestDb } from "#/lib/test-db";
+import { createTestDb, withQueryCounter } from "#/lib/test-db";
 import { availabilitySchema } from "#/lib/validation";
 import {
 	allowNamespace,
@@ -151,6 +151,49 @@ describe("availability write guards", () => {
 			eventId,
 		);
 		expect(res.status).toBe(415);
+	});
+
+	it("rejects cross-origin writes without loading the event", async () => {
+		stubRateLimiter(allowNamespace());
+		const holder = globalThis as unknown as {
+			__testDb: Parameters<typeof insertEvent>[0];
+		};
+		const raw = holder.__testDb;
+		const counted = withQueryCounter(raw);
+		holder.__testDb = counted.db;
+		try {
+			const res = await saveAvailability(
+				new Request(`https://x.test/api/events/${eventId}/availability`, {
+					body: JSON.stringify({ name: "Ada", slots: [] }),
+					headers: {
+						"content-type": "application/json",
+						origin: "https://evil.test",
+					},
+					method: "PUT",
+				}),
+				eventId,
+			);
+			expect(res.status).toBe(403);
+			expect(counted.state.queries).toBe(0);
+		} finally {
+			holder.__testDb = raw;
+		}
+	});
+
+	it("reports rate limits before cross-origin rejections", async () => {
+		stubRateLimiter(denyNamespace());
+		const res = await saveAvailability(
+			new Request(`https://x.test/api/events/${eventId}/availability`, {
+				body: JSON.stringify({ name: "Ada", slots: [] }),
+				headers: {
+					"content-type": "application/json",
+					origin: "https://evil.test",
+				},
+				method: "PUT",
+			}),
+			eventId,
+		);
+		expect(res.status).toBe(429);
 	});
 });
 

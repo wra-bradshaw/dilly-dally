@@ -12,19 +12,18 @@ export async function handleGetDetail(
 ): Promise<Response> {
 	const db = getDb();
 	const now = Date.now();
-	const throttled = await guardRateLimit(request, "read", RATE_LIMITS.read, {
-		noStore: true,
-	});
+	const [throttled, detail] = await Promise.all([
+		guardRateLimit(request, "read", RATE_LIMITS.read, {
+			noStore: true,
+		}),
+		loadEventDetailFromDb(db, eventId, now).then(
+			(value) => ({ ok: true as const, value }),
+			(error: unknown) => ({ error, ok: false as const }),
+		),
+	]);
 	if (throttled) return throttled;
-	try {
-		const detail = await loadEventDetailFromDb(db, eventId, now);
-		return Response.json(detail, {
-			headers: {
-				...securityHeaders(),
-				"Cache-Control": "no-store",
-			},
-		});
-	} catch (err) {
+	if (!detail.ok) {
+		const err = detail.error;
 		if (err instanceof HttpError) {
 			return jsonError(err.code, err.message, err.status, undefined, {
 				noStore: true,
@@ -32,6 +31,12 @@ export async function handleGetDetail(
 		}
 		throw err;
 	}
+	return Response.json(detail.value, {
+		headers: {
+			...securityHeaders(),
+			"Cache-Control": "no-store",
+		},
+	});
 }
 
 export const Route = createFileRoute("/api/events/$eventId/")({

@@ -244,6 +244,16 @@ describe("votePollInDb", () => {
 		expect((await listPollsDetail(db, event.id))[0]?.totalVoters).toBe(0);
 	});
 
+	it("reports not_found before validating options", async () => {
+		const { db } = await setup();
+		expect(
+			await votePollInDb(db, event, "missingpoll1", {
+				name: "Ada",
+				optionIds: ["nope", "nah"],
+			}),
+		).toEqual({ code: "not_found", ok: false });
+	});
+
 	it("rejects multi-select on single-choice polls", async () => {
 		const { db } = await setup();
 		const created = await createPollInDb(
@@ -339,5 +349,33 @@ describe("poll read concurrency", () => {
 		);
 		expect(res.ok).toBe(true);
 		expect(counted.state.maxInFlight).toBeGreaterThanOrEqual(3);
+	});
+
+	it("writes votes in one batch when supported", async () => {
+		const { db } = await setup();
+		const created = await createPollInDb(
+			db,
+			event.id,
+			{ options: ["A", "B"], question: "Q?" },
+			1000,
+		);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		(db as unknown as { batch: unknown }).batch = async (items: unknown[]) => {
+			const out: unknown[] = [];
+			for (const item of items) out.push(await item);
+			return out;
+		};
+		const counted = withQueryCounter(db);
+		const res = await votePollInDb(
+			counted.db,
+			event,
+			created.poll.id,
+			{ name: "Ada", optionIds: [created.poll.options[0]?.id ?? ""] },
+			1001,
+		);
+		expect(res.ok).toBe(true);
+		expect(counted.state.batches).toBe(1);
+		expect(counted.state.queries).toBe(5);
 	});
 });

@@ -169,7 +169,7 @@ export async function getParticipantRow(
 
 export async function runAsBatch(
 	db: DrizzleDb,
-	queries: unknown[],
+	queries: [unknown, ...unknown[]],
 ): Promise<void> {
 	const candidate = (db as unknown as { batch?: unknown }).batch;
 	if (typeof candidate === "function") {

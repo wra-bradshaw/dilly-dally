@@ -156,4 +156,58 @@ describe("server sessions", () => {
 			ok: true,
 		});
 	});
+
+	it("reports expired before mismatch when both apply", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		await upsertAvailability(db, event, { name: "Mallory", slots: [] }, 1000);
+		const { createEventSession, resolveEventSession } = await import(
+			"./server-sessions"
+		);
+		const created = await createEventSession(db, event, "Mallory", null, 1000);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		await upsertAvailability(
+			db,
+			event,
+			{ name: "mallory", password: "victim-secret-1", slots: [] },
+			2000,
+		);
+		const resolved = await resolveEventSession(
+			db,
+			created.token,
+			1000 + 31 * 24 * 60 * 60 * 1000,
+		);
+		expect(resolved).toEqual({ code: "expired", ok: false });
+	});
+
+	it("invalidates a protected session when its participant row is deleted", async () => {
+		const { db } = await createTestDb();
+		await insertEvent(db, event);
+		await upsertAvailability(
+			db,
+			event,
+			{ name: "Bob", password: "s3cret-pw12", slots: [] },
+			1000,
+		);
+		const { createEventSession, resolveEventSession } = await import(
+			"./server-sessions"
+		);
+		const created = await createEventSession(
+			db,
+			event,
+			"Bob",
+			"s3cret-pw12",
+			1000,
+		);
+		expect(created.ok).toBe(true);
+		if (!created.ok) return;
+		await db
+			.delete(schema.participants)
+			.where(eq(schema.participants.eventId, event.id));
+		const stale = await resolveEventSession(db, created.token, 2000);
+		expect(stale).toEqual({ code: "mismatch", ok: false });
+		const gone = await resolveEventSession(db, created.token, 3000);
+		expect(gone).toEqual({ code: "not_found", ok: false });
+	});
 });

@@ -5,7 +5,8 @@ import initSqlJs from "sql.js";
 import type { DrizzleDb } from "./db";
 import * as schema from "./schema";
 
-export async function createTestDb(): Promise<{ db: DrizzleDb }> {	const wasmPath = join(
+export async function createTestDb(): Promise<{ db: DrizzleDb }> {
+	const wasmPath = join(
 		process.cwd(),
 		"node_modules",
 		"sql.js",
@@ -32,6 +33,7 @@ export async function createTestDb(): Promise<{ db: DrizzleDb }> {	const wasmPat
 }
 
 export interface QueryCounterState {
+	batches: number;
 	maxInFlight: number;
 	queries: number;
 }
@@ -55,9 +57,11 @@ function wrapQueryBuilder(
 							? (fn as (v: unknown) => unknown)(value)
 							: value;
 					};
-					return (
-						original as (...args: unknown[]) => Promise<unknown>
-					).call(t, settle(onFulfilled), settle(onRejected));
+					return (original as (...args: unknown[]) => Promise<unknown>).call(
+						t,
+						settle(onFulfilled),
+						settle(onRejected),
+					);
 				};
 			}
 			const value = Reflect.get(t, p);
@@ -81,6 +85,7 @@ export function withQueryCounter(db: DrizzleDb): {
 	state: QueryCounterState;
 } {
 	const state: QueryCounterState & { inFlight: number } = {
+		batches: 0,
 		inFlight: 0,
 		maxInFlight: 0,
 		queries: 0,
@@ -88,16 +93,32 @@ export function withQueryCounter(db: DrizzleDb): {
 	const proxied = new Proxy(db, {
 		get(t, p) {
 			const value = Reflect.get(t, p);
-			if (
-				(p === "select" || p === "insert" || p === "update" || p === "delete") &&
-				typeof value === "function"
-			) {
-				return (...args: unknown[]) => {
-					const builder = Reflect.apply(value, t, args);
-					return typeof builder === "object" && builder !== null
-						? wrapQueryBuilder(builder, state)
-						: builder;
-				};
+			if (typeof value === "function") {
+				if (p === "batch") {
+					return async (...args: unknown[]) => {
+						state.batches += 1;
+						state.inFlight += 1;
+						state.maxInFlight = Math.max(state.maxInFlight, state.inFlight);
+						try {
+							return await Reflect.apply(value, t, args);
+						} finally {
+							state.inFlight -= 1;
+						}
+					};
+				}
+				if (
+					p === "select" ||
+					p === "insert" ||
+					p === "update" ||
+					p === "delete"
+				) {
+					return (...args: unknown[]) => {
+						const builder = Reflect.apply(value, t, args);
+						return typeof builder === "object" && builder !== null
+							? wrapQueryBuilder(builder, state)
+							: builder;
+					};
+				}
 			}
 			return value;
 		},

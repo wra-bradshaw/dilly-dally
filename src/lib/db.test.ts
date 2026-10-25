@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+	type DrizzleDb,
 	deleteEvent,
 	fetchEvent,
 	insertEvent,
@@ -7,7 +8,6 @@ import {
 	parseSlotsJson,
 	purgeExpired,
 	runAsBatch,
-	type DrizzleDb,
 	toPublicEvent,
 } from "./db";
 import { events, participants } from "./schema";
@@ -136,6 +136,7 @@ describe("runAsBatch", () => {
 		const db = {} as unknown as DrizzleDb;
 		const order: string[] = [];
 		const query = (name: string) => ({
+			// biome-ignore lint/suspicious/noThenProperty: thenable stub for runAsBatch
 			then: (onFulfilled: (value: string) => unknown) => {
 				order.push(name);
 				return Promise.resolve(name).then(onFulfilled);
@@ -156,6 +157,7 @@ describe("runAsBatch", () => {
 	it("propagates sequential failures", async () => {
 		const db = {} as unknown as DrizzleDb;
 		const failing = {
+			// biome-ignore lint/suspicious/noThenProperty: thenable stub for runAsBatch
 			then: () => {
 				throw new Error("query blew up");
 			},

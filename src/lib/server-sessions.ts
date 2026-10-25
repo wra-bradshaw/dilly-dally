@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { type DillyEvent, type DrizzleDb, getParticipantRow } from "./db";
 import { parseSessionCookie } from "./event-cookies";
 import { DAY_MS } from "./expiry";
@@ -71,29 +71,38 @@ export async function resolveEventSession(
 		return { code: "not_found", ok: false };
 	}
 	const rows = await db
-		.select()
+		.select({
+			currentHash: schema.participants.passwordHash,
+			session: schema.eventSessions,
+		})
 		.from(schema.eventSessions)
+		.leftJoin(
+			schema.participants,
+			and(
+				eq(schema.participants.eventId, schema.eventSessions.eventId),
+				eq(schema.participants.nameKey, schema.eventSessions.nameKey),
+			),
+		)
 		.where(eq(schema.eventSessions.tokenHash, tokenHash));
 	const row = rows[0];
 	if (!row) return { code: "not_found", ok: false };
-	if (row.expiresAt <= now) {
+	if (row.session.expiresAt <= now) {
 		await db
 			.delete(schema.eventSessions)
 			.where(eq(schema.eventSessions.tokenHash, tokenHash));
 		return { code: "expired", ok: false };
 	}
-	const participant = await getParticipantRow(db, row.eventId, row.nameKey);
-	const current = participant?.passwordHash ?? null;
-	if ((row.passwordHash ?? null) !== current) {
+	const current = row.currentHash ?? null;
+	if ((row.session.passwordHash ?? null) !== current) {
 		await db
 			.delete(schema.eventSessions)
 			.where(eq(schema.eventSessions.tokenHash, tokenHash));
 		return { code: "mismatch", ok: false };
 	}
 	return {
-		eventId: row.eventId,
-		name: row.nameDisplay,
-		nameKey: row.nameKey,
+		eventId: row.session.eventId,
+		name: row.session.nameDisplay,
+		nameKey: row.session.nameKey,
 		ok: true,
 	};
 }
