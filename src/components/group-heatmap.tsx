@@ -84,7 +84,7 @@ export function GroupHeatmap({
 
 	return (
 		<div className="flex min-w-0 max-w-full flex-col gap-3 lg:flex-row">
-			<div className="min-w-0 max-w-full overflow-x-auto pb-2">
+			<div className="relative min-w-0 max-w-full flex-1 overflow-x-auto pb-2">
 				<TimeGrid
 					announce={announce}
 					columns={columns}

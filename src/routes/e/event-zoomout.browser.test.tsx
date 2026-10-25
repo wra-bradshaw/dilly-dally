@@ -237,5 +237,15 @@ test("non-contiguous 12-day grid renders gap markers and scrolls inside the card
 	expect(
 		(scroller as HTMLElement).scrollWidth,
 		"wide grid should scroll inside its card",
-	).toBeGreaterThanOrEqual((scroller as HTMLElement).clientWidth);
+	).toBeGreaterThan((scroller as HTMLElement).clientWidth);
+	const dateHeaders = [
+		...screen.container.querySelectorAll<HTMLElement>('th[id*="-col-"]'),
+	];
+	expect(dateHeaders.length, "date columns rendered").toBeGreaterThan(0);
+	for (const th of dateHeaders) {
+		expect(
+			th.getBoundingClientRect().width,
+			"date columns must not cram into the viewport",
+		).toBeGreaterThanOrEqual(44);
+	}
 });

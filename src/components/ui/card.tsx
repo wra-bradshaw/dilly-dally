@@ -77,7 +77,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
 			data-slot="card-content"
-			className={cn("px-(--card-spacing)", className)}
+			className={cn("min-w-0 max-w-full px-(--card-spacing)", className)}
 			{...props}
 		/>
 	);

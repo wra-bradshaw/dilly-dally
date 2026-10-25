@@ -69,10 +69,10 @@ export function AvailabilityGrid({
 	};
 
 	return (
-		<div>
+		<div className="min-w-0 max-w-full">
 			<div
 				className={cn(
-					"min-w-0 max-w-full touch-pan-x touch-pan-y overflow-x-auto overscroll-x-contain pb-2",
+					"relative min-w-0 max-w-full touch-pan-x touch-pan-y overflow-x-auto overscroll-x-contain pb-2",
 					disabled && "opacity-60",
 				)}
 			>

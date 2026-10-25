@@ -88,6 +88,7 @@ export function TimeGrid({
 			? `${tableLabel} Dates are non-contiguous; gaps marked ${totalSkipped} days skipped.`
 			: tableLabel;
 	const rowCount = columns.reduce((n, c) => Math.max(n, c.cells.length), 0);
+	const minTableWidth = 48 + columns.length * 48 + gaps.length * 12;
 
 	return (
 		<>
@@ -102,6 +103,7 @@ export function TimeGrid({
 					"w-full table-fixed border-collapse select-none",
 					tableClassName,
 				)}
+				style={{ minWidth: `max(100%, ${minTableWidth}px)` }}
 				onKeyDown={onKeyDown}
 				onPointerCancel={onPointerCancel}
 				onPointerMove={onPointerMove}
@@ -124,7 +126,7 @@ export function TimeGrid({
 										<GapCell gap={headerGap} variant="header" />
 									) : null}
 									<th
-										className="min-w-8 px-0.5 pb-1 sm:min-w-9"
+										className="min-w-12 px-0.5 pb-1"
 										id={`${baseId}-col-${i}`}
 										scope="col"
 									>
@@ -171,7 +173,7 @@ export function TimeGrid({
 											{gap ? <GapCell gap={gap} variant="body" /> : null}
 											{cell ? (
 												<td
-													className="relative p-0"
+													className="relative min-w-12 p-0"
 													headers={headers}
 													key={cell.id}
 												>
@@ -182,7 +184,7 @@ export function TimeGrid({
 													})}
 												</td>
 											) : (
-												<td className="p-0">
+												<td className="min-w-12 p-0">
 													<span className="block h-12 w-full sm:h-6" />
 												</td>
 											)}
