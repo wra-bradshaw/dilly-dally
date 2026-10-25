@@ -442,7 +442,7 @@ function Home() {
 										aria-describedby={timeDescribedBy}
 										aria-invalid={startInvalid}
 										aria-label="No earlier than"
-										className="w-28"
+										className="w-36 shrink-0"
 										id="start-time"
 										type="button"
 									>
@@ -464,7 +464,7 @@ function Home() {
 										aria-describedby={timeDescribedBy}
 										aria-invalid={endInvalid}
 										aria-label="No later than"
-										className="w-28"
+										className="w-36 shrink-0"
 										id="end-time"
 										type="button"
 									>
