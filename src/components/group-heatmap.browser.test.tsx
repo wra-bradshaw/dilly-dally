@@ -39,7 +39,8 @@ test("heatmap shares the single date header with the paint grid", async () => {
 			viewTimezone="UTC"
 		/>,
 	);
-	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
+	await expect.element(screen.getByText("Mon")).toBeVisible();
+	await expect.element(screen.getByText("10/5")).toBeVisible();
 	expect(screen.getByText("Shows as").all()).toHaveLength(0);
 });
 

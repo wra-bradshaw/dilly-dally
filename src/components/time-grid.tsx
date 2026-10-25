@@ -4,6 +4,7 @@ import {
 	type GridCell,
 	type GridColumn,
 	getDayGaps,
+	splitDateHeader,
 	summarizeDates,
 } from "./grid-model";
 
@@ -120,6 +121,7 @@ export function TimeGrid({
 						</th>
 						{columns.map((col, i) => {
 							const headerGap = i > 0 ? gapByAfter.get(i - 1) : undefined;
+							const [dayOfWeek, monthDay] = splitDateHeader(col.header);
 							return (
 								<Fragment key={col.key}>
 									{headerGap ? (
@@ -130,9 +132,17 @@ export function TimeGrid({
 										id={`${baseId}-col-${i}`}
 										scope="col"
 									>
-										<span className="sr-only">Available times for </span>
-										<div className="text-xs font-semibold sm:text-[11px]">
-											{col.header}
+										<span className="sr-only">
+											Available times for {col.header}
+										</span>
+										<div
+											aria-hidden="true"
+											className="text-xs leading-[1.15] font-semibold sm:text-[11px]"
+										>
+											<span className="block">{dayOfWeek}</span>
+											{monthDay === null ? null : (
+												<span className="block">{monthDay}</span>
+											)}
 										</div>
 									</th>
 								</Fragment>

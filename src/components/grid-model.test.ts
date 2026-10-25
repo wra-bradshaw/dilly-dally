@@ -8,6 +8,7 @@ import {
 	formatViewerSlot,
 	getDayGaps,
 	gridRectangleIdsFromPos,
+	splitDateHeader,
 	summarizeDates,
 	weekdayName,
 } from "./grid-model";
@@ -330,6 +331,16 @@ describe("formatMarkerDate", () => {
 
 	it("pins en-US output so server and client render identically", () => {
 		expect(formatMarkerDate("2026-09-28")).toBe("Mon, 9/28");
+	});
+});
+
+describe("splitDateHeader", () => {
+	it("splits weekday from date", () => {
+		expect(splitDateHeader("Mon, 9/28")).toEqual(["Mon", "9/28"]);
+	});
+
+	it("returns weekly headers as a single line", () => {
+		expect(splitDateHeader("Mon")).toEqual(["Mon", null]);
 	});
 });
 

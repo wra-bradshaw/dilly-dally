@@ -97,6 +97,12 @@ export function formatMarkerDate(date: string): string {
 	}).format(dt);
 }
 
+export function splitDateHeader(header: string): [string, string | null] {
+	const comma = header.indexOf(",");
+	if (comma < 0) return [header, null];
+	return [header.slice(0, comma), header.slice(comma + 1).trimStart()];
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function isHourStart(minutes: string): boolean {

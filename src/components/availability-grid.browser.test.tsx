@@ -383,7 +383,8 @@ test("shows a single inline date with no annotations", async () => {
 			selected={new Set()}
 		/>,
 	);
-	await expect.element(screen.getByText("Mon, 9/28")).toBeVisible();
+	await expect.element(screen.getByText("Mon")).toBeVisible();
+	await expect.element(screen.getByText("9/28")).toBeVisible();
 	expect(screen.getByText("Sep 28").all()).toHaveLength(0);
 	expect(screen.getByText("Shows as").all()).toHaveLength(0);
 	expect(screen.getByText("+1d").all()).toHaveLength(0);
@@ -397,7 +398,8 @@ test("marks the day crossing with viewer-correct labels under one header", async
 			selected={new Set()}
 		/>,
 	);
-	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
+	await expect.element(screen.getByText("Mon")).toBeVisible();
+	await expect.element(screen.getByText("10/5")).toBeVisible();
 	const before = screen.getByRole("button", { name: "Mon, 10/5 11:00 PM" });
 	const after = screen.getByRole("button", { name: "Tue, 10/6 12:00 AM" });
 	await expect.element(before).toBeVisible();
