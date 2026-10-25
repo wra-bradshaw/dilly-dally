@@ -1,6 +1,8 @@
 ---
 name: wrangler
 description: Run or troubleshoot Wrangler CLI commands and configure Worker projects for local development, Previews, deployment, and Cloudflare resource management.
+metadata:
+  internal: true
 ---
 
 # Wrangler CLI

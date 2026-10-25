@@ -1,6 +1,8 @@
 ---
 name: cloudflare-email-service
 description: Implement or troubleshoot Cloudflare Email Sending and Email Routing integrations and their delivery configuration.
+metadata:
+  internal: true
 ---
 
 # Cloudflare Email Service

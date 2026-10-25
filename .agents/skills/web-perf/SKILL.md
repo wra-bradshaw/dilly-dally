@@ -1,6 +1,8 @@
 ---
 name: web-perf
 description: Audit, diagnose, or optimize website loading and interaction performance, Core Web Vitals, and Lighthouse performance scores.
+metadata:
+  internal: true
 ---
 
 # Web Performance Audit
