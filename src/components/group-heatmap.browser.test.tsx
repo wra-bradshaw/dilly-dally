@@ -11,15 +11,18 @@ function crossingColumns() {
 			"2026-10-05T21:00",
 			"2026-10-05T22:00",
 		],
-		"America/New_York",
-		"UTC",
+		{ eventTimezone: "America/New_York", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 
 function singleColumn() {
-	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], "UTC", "UTC");
+	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], {
+		eventTimezone: "UTC",
+		mode: "dates",
+		viewTimezone: "UTC",
+	});
 }
-test("heatmap shares inline date markers with the paint grid", async () => {
+test("heatmap shares the single date header with the paint grid", async () => {
 	const cols = crossingColumns();
 	const counts = new Map(
 		cols.flatMap((c) =>
@@ -37,7 +40,6 @@ test("heatmap shares inline date markers with the paint grid", async () => {
 		/>,
 	);
 	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
-	await expect.element(screen.getByText("Tue, 10/6")).toBeVisible();
 	expect(screen.getByText("Shows as").all()).toHaveLength(0);
 });
 
@@ -81,8 +83,7 @@ function twoColumns() {
 			"2026-09-29T09:00",
 			"2026-09-29T09:30",
 		],
-		"UTC",
-		"UTC",
+		{ eventTimezone: "UTC", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 

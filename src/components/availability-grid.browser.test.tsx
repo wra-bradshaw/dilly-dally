@@ -6,7 +6,11 @@ import { AvailabilityGrid } from "./availability-grid";
 import { buildColumns } from "./grid-model";
 
 function columns() {
-	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], "UTC", "UTC");
+	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], {
+		eventTimezone: "UTC",
+		mode: "dates",
+		viewTimezone: "UTC",
+	});
 }
 
 function twoColumns() {
@@ -17,8 +21,7 @@ function twoColumns() {
 			"2026-09-29T09:00",
 			"2026-09-29T09:30",
 		],
-		"UTC",
-		"UTC",
+		{ eventTimezone: "UTC", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 
@@ -30,8 +33,7 @@ function gapColumns() {
 			"2026-10-01T09:00",
 			"2026-10-01T09:30",
 		],
-		"UTC",
-		"UTC",
+		{ eventTimezone: "UTC", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 
@@ -43,8 +45,7 @@ function midnightCrossingColumns() {
 			"2026-10-05T21:00",
 			"2026-10-05T22:00",
 		],
-		"America/New_York",
-		"UTC",
+		{ eventTimezone: "America/New_York", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 
@@ -388,7 +389,7 @@ test("shows a single inline date with no annotations", async () => {
 	expect(screen.getByText("+1d").all()).toHaveLength(0);
 });
 
-test("marks the day crossing inline above the midnight cell", async () => {
+test("marks the day crossing with viewer-correct labels under one header", async () => {
 	const screen = await render(
 		<AvailabilityGrid
 			columns={midnightCrossingColumns()}
@@ -397,16 +398,11 @@ test("marks the day crossing inline above the midnight cell", async () => {
 		/>,
 	);
 	await expect.element(screen.getByText("Mon, 10/5")).toBeVisible();
-	await expect.element(screen.getByText("Tue, 10/6")).toBeVisible();
 	const before = screen.getByRole("button", { name: "Mon, 10/5 11:00 PM" });
 	const after = screen.getByRole("button", { name: "Tue, 10/6 12:00 AM" });
 	await expect.element(before).toBeVisible();
 	await expect.element(after).toBeVisible();
-	const afterRow = after.element().closest("tr");
-	const beforeRow = before.element().closest("tr");
-	expect(afterRow?.previousElementSibling?.textContent).toContain("Tue, 10/6");
-	expect(beforeRow?.nextElementSibling?.textContent).toContain("Tue, 10/6");
-	expect(after.element().className).toContain("border-t-2");
+	expect(after.element().className).not.toContain("border-t-2");
 });
 
 test("paint surface allows touch scroll so page pans on mobile", async () => {
@@ -454,12 +450,12 @@ test("renders 24-hour labels when the system uses 24-hour time", async () => {
 	const onCommit = vi.fn();
 	const screen = await render(
 		<AvailabilityGrid
-			columns={buildColumns(
-				["2026-09-28T13:00", "2026-09-28T13:30"],
-				"UTC",
-				"UTC",
-				"h23",
-			)}
+			columns={buildColumns(["2026-09-28T13:00", "2026-09-28T13:30"], {
+				eventTimezone: "UTC",
+				hourCycle: "h23",
+				mode: "dates",
+				viewTimezone: "UTC",
+			})}
 			onCommit={onCommit}
 			selected={new Set()}
 		/>,

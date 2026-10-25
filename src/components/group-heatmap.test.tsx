@@ -12,8 +12,7 @@ function cols() {
 			"2026-09-29T09:00",
 			"2026-09-29T09:30",
 		],
-		"UTC",
-		"UTC",
+		{ eventTimezone: "UTC", mode: "dates", viewTimezone: "UTC" },
 	);
 }
 

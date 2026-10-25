@@ -17,7 +17,11 @@ type FetchAvailability = (
 ) => Promise<{ name: string; slots: string[] }>;
 
 function columns() {
-	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], "UTC", "UTC");
+	return buildColumns(["2026-09-28T09:00", "2026-09-28T09:30"], {
+		eventTimezone: "UTC",
+		mode: "dates",
+		viewTimezone: "UTC",
+	});
 }
 
 function Harness({
