@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 const ITERATIONS = 210_000;
 
 export async function hashPassword(password: string): Promise<string> {
@@ -50,11 +52,12 @@ export async function verifyPassword(
 			key,
 			expected.length * 8,
 		);
-		const actual = new Uint8Array(bits);
-		if (actual.length !== expected.length) return false;
-		let diff = 0;
-		for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
-		return diff === 0;
+		const actual = Buffer.from(bits);
+		if (actual.length !== expected.length) {
+			timingSafeEqual(expected, expected);
+			return false;
+		}
+		return timingSafeEqual(actual, expected);
 	} catch {
 		return false;
 	}
