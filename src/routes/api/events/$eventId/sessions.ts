@@ -6,9 +6,15 @@ import {
 	isSecureRequest,
 	parseSessionCookie,
 } from "#/lib/event-cookies";
+import { getDb } from "#/lib/db-env";
 import { withLiveEvent } from "#/lib/live-event-guard";
 import { RATE_LIMITS } from "#/lib/rate-limit";
 import { getOwnAvailability } from "#/lib/server-availability";
+import {
+	liveEventErrorResponse,
+	loadLiveEvent,
+} from "#/lib/server-event-detail";
+import { guardRateLimit } from "#/lib/server-rate-limit";
 import {
 	createEventSession,
 	resolveEventSession,
