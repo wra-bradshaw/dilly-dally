@@ -89,14 +89,14 @@ function PollOptionRow({
 					className="grid min-w-0 flex-1 cursor-pointer gap-0.5 px-3 py-2.5"
 					htmlFor={htmlFor}
 				>
-					<span className="flex items-start gap-2.5">
+					<span className="flex min-w-0 items-start gap-2.5">
 						<span className="shrink-0 pt-0.5">{control}</span>
 						<span className="grid min-w-0 flex-1 gap-0.5">
-							<span className="flex items-baseline justify-between gap-2">
+							<span className="flex min-w-0 items-baseline justify-between gap-2">
 								<span className="min-w-0 flex-1 truncate text-sm font-medium">
 									{label}
 								</span>
-								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+								<span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
 									{count} · {share}%
 								</span>
 							</span>
