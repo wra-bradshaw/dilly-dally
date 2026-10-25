@@ -4,6 +4,7 @@ import { render } from "vitest-browser-react";
 import { AvailabilityGrid } from "../components/availability-grid";
 import { buildColumns } from "../components/grid-model";
 import { HttpError } from "../lib/http-error";
+import { useHydrateOnce } from "./use-hydrate-once";
 import { useLocalStorage } from "./use-local-storage";
 import { useOwnAvailabilityRestore } from "./use-own-availability-restore";
 
@@ -312,5 +313,221 @@ test("expired event shows gone banner with disabled grid and no retry", async ()
 		.join(" ");
 	expect(goneReason).toContain("temporarily unavailable");
 	expect(screen.getByRole("button", { name: "Retry" }).all()).toHaveLength(0);
+	expect(fetchAvailability).toHaveBeenCalledTimes(1);
+});
+
+function ClearingHarness({
+	fetchAvailability,
+}: {
+	fetchAvailability: FetchAvailability;
+}) {
+	const [storedName, setStoredName] = useState("Ada");
+	const [settled] = useState(false);
+	const { status } = useOwnAvailabilityRestore({
+		eventId,
+		eventSettled: settled,
+		fetchAvailability,
+		onRestored: () => {},
+		storedName,
+	});
+	return (
+		<div>
+			<p data-testid="restore-status">{status}</p>
+			<button
+				data-testid="clear-name"
+				onClick={() => setStoredName("")}
+				type="button"
+			>
+				clear
+			</button>
+		</div>
+	);
+}
+
+test("clearing the stored name while unsettled resolves to idle", async () => {
+	localStorage.clear();
+	const fetchAvailability = vi.fn();
+	const screen = await render(
+		<ClearingHarness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("restoring");
+	expect(fetchAvailability).not.toHaveBeenCalled();
+	await screen.getByTestId("clear-name").click();
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("idle");
+	expect(fetchAvailability).not.toHaveBeenCalled();
+});
+
+function LateSessionHarness({
+	fetchAvailability,
+}: {
+	fetchAvailability: FetchAvailability;
+}) {
+	const [storedName] = useLocalStorage(nameKey, "");
+	const [session, setSession] = useState<null | {
+		name: string;
+		slots: string[];
+	}>(null);
+	const [sessionSettled, setSessionSettled] = useState(false);
+	const [detailPending] = useState(false);
+	const [hadStoredNameAtMount] = useState(() => storedName.trim() !== "");
+	const [signedIn, setSignedIn] = useState(storedName.trim() !== "");
+	const [activeName, setActiveName] = useState(storedName.trim());
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const restoreName = session ? "" : storedName;
+	const { status } = useOwnAvailabilityRestore({
+		eventId,
+		eventSettled: !detailPending && sessionSettled,
+		fetchAvailability,
+		onRestored: (own) => {
+			setSelected(new Set(own.slots));
+			setActiveName(own.name);
+			setSignedIn(true);
+		},
+		storedName: restoreName,
+	});
+	const hydrateSource =
+		hadStoredNameAtMount &&
+		signedIn &&
+		session !== null &&
+		storedName.trim().toLowerCase() === session.name.trim().toLowerCase()
+			? session
+			: null;
+	useHydrateOnce(hydrateSource, (arrived) => {
+		setSelected(new Set(arrived.slots));
+		setActiveName(arrived.name);
+		setSignedIn(true);
+	});
+	return (
+		<div>
+			<p data-testid="restore-status">{status}</p>
+			<p data-testid="active-name">
+				{activeName === "" ? "(empty)" : activeName}
+			</p>
+			<button
+				data-testid="session-arrives"
+				onClick={() => {
+					setSession({ name: "Ada", slots: ["2026-09-28T09:00"] });
+					setSessionSettled(true);
+				}}
+				type="button"
+			>
+				session arrives
+			</button>
+			<AvailabilityGrid
+				columns={columns()}
+				disabled={status === "restoring"}
+				onCommit={setSelected}
+				selected={selected}
+			/>
+		</div>
+	);
+}
+
+test("late session arrival hydrates selection and settles to idle without fetching", async () => {
+	localStorage.clear();
+	localStorage.setItem(nameKey, "Ada");
+	const fetchAvailability = vi.fn().mockResolvedValue({
+		name: "Ada",
+		slots: ["2026-09-28T09:00"],
+	});
+	const screen = await render(
+		<LateSessionHarness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("restoring");
+	expect(fetchAvailability).not.toHaveBeenCalled();
+	await screen.getByTestId("session-arrives").click();
+	const cell = screen.getByRole("button", { name: "Mon, 9/28 9:00 AM" });
+	await expect.element(cell).toHaveAttribute("aria-pressed", "true");
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("idle");
+	await expect
+		.element(screen.getByTestId("active-name"))
+		.toHaveTextContent("Ada");
+	expect(fetchAvailability).not.toHaveBeenCalled();
+});
+
+function SwitchDuringRestoreHarness({
+	fetchAvailability,
+}: {
+	fetchAvailability: FetchAvailability;
+}) {
+	const [storedName, setStoredName] = useState("Ada");
+	const [signedIn, setSignedIn] = useState(true);
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const [restoredCount, setRestoredCount] = useState(0);
+	const { status } = useOwnAvailabilityRestore({
+		eventId,
+		eventSettled: true,
+		fetchAvailability,
+		onRestored: (own) => {
+			setRestoredCount((c) => c + 1);
+			setSelected(new Set(own.slots));
+			setStoredName(own.name);
+			setSignedIn(true);
+		},
+		storedName,
+	});
+	return (
+		<div>
+			<p data-testid="restore-status">{status}</p>
+			<p data-testid="stored-name">
+				{storedName === "" ? "(empty)" : storedName}
+			</p>
+			<p data-testid="signed-in">{signedIn ? "yes" : "no"}</p>
+			<p data-testid="restored-count">{restoredCount}</p>
+			<p data-testid="selected-count">{selected.size}</p>
+			<button
+				data-testid="switch-user"
+				onClick={() => {
+					setStoredName("");
+					setSignedIn(false);
+					setSelected(new Set());
+				}}
+				type="button"
+			>
+				switch
+			</button>
+		</div>
+	);
+}
+
+test("switching user during restore aborts the fetch result", async () => {
+	let resolveFetch!: (value: { name: string; slots: string[] }) => void;
+	const fetchAvailability = vi.fn(
+		() =>
+			new Promise<{ name: string; slots: string[] }>((resolve) => {
+				resolveFetch = resolve;
+			}),
+	);
+	const screen = await render(
+		<SwitchDuringRestoreHarness fetchAvailability={fetchAvailability} />,
+	);
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("restoring");
+	expect(fetchAvailability).toHaveBeenCalledTimes(1);
+	await screen.getByTestId("switch-user").click();
+	await expect
+		.element(screen.getByTestId("restore-status"))
+		.toHaveTextContent("idle");
+	resolveFetch({ name: "Ada", slots: ["2026-09-28T09:00"] });
+	await new Promise((r) => setTimeout(r, 200));
+	await expect
+		.element(screen.getByTestId("restored-count"))
+		.toHaveTextContent("0");
+	await expect
+		.element(screen.getByTestId("stored-name"))
+		.toHaveTextContent("(empty)");
+	await expect.element(screen.getByTestId("signed-in")).toHaveTextContent("no");
+	await expect
+		.element(screen.getByTestId("selected-count"))
+		.toHaveTextContent("0");
 	expect(fetchAvailability).toHaveBeenCalledTimes(1);
 });

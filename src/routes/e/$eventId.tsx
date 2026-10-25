@@ -28,6 +28,7 @@ import { useEventSave } from "#/hooks/use-event-save";
 import { useEventSignIn } from "#/hooks/use-event-sign-in";
 import { useFocusOnSignal } from "#/hooks/use-focus-on-signal";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
+import { useHydrateOnce } from "#/hooks/use-hydrate-once";
 import { useLocalStorage } from "#/hooks/use-local-storage";
 import { useOwnAvailabilityRestore } from "#/hooks/use-own-availability-restore";
 import { useOwnSession } from "#/hooks/use-own-session";
@@ -180,10 +181,24 @@ function EventPage() {
 	const signErrorRef = useFocusOnSignal<HTMLParagraphElement>(signError);
 	const signedInRef = useFocusOnSignal<HTMLHeadingElement>(signedIn);
 	const restoreName = sessionData ? "" : storedName;
+	const [hadStoredNameAtMount] = useState(() => storedName.trim() !== "");
+	const hydrateSource =
+		hadStoredNameAtMount &&
+		sessionData !== null &&
+		storedName.trim().toLowerCase() === sessionData.name.trim().toLowerCase()
+			? sessionData
+			: null;
+	useHydrateOnce(hydrateSource, (arrived) => {
+		lastSavedRef.current = new Set(arrived.slots);
+		setSelected(new Set(arrived.slots));
+		setActiveName(arrived.name);
+		setStoredName(arrived.name);
+		setSignedIn(true);
+	});
 	const { retry: retryRestore, status: restoreStatus } =
 		useOwnAvailabilityRestore({
 			eventId,
-			eventSettled: !detail.isPending && !sessionData,
+			eventSettled: !detail.isPending && !ownSession.isPending,
 			fetchAvailability: fetchOwnAvailability,
 			onCleared: () => {
 				if (sessionData) return;

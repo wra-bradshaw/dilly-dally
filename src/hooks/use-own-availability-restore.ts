@@ -49,12 +49,12 @@ export function useOwnAvailabilityRestore(options: {
 	});
 	useEffect(() => {
 		if (status !== "restoring") return;
-		if (!eventSettled) return;
 		const name = storedName.trim();
 		if (name === "") {
 			setStatus("idle");
 			return;
 		}
+		if (!eventSettled) return;
 		let cancelled = false;
 		fetchAvailability(eventId, name, undefined).then(
 			(own) => {
