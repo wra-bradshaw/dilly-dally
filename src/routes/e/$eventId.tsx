@@ -625,8 +625,8 @@ function EventPage() {
 					</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
 						{total === 0
-							? "No responses yet — share the invite link to gather availability."
-							: "Darker green means more people are free. Hover or tap a slot to see who."}
+							? "No responses yet."
+							: "Darker green means more people are free."}
 					</p>
 					<div className="mt-5">
 						<GroupHeatmap
