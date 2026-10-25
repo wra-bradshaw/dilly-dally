@@ -162,44 +162,20 @@ export async function readCappedJson(
 ): Promise<
 	{ ok: true; value: unknown } | { ok: false; reason: "too_large" | "invalid" }
 > {
-	if (!request.body) {
-		const raw = request.headers.get("content-length");
-		if (raw !== null) {
-			const n = Number(raw);
-			if (Number.isFinite(n) && n > maxBytes) {
-				return { ok: false, reason: "too_large" };
-			}
-		}
-		try {
-			return { ok: true, value: await request.json() };
-		} catch {
-			return { ok: false, reason: "invalid" };
-		}
+	if (contentLengthTooLarge(request, maxBytes)) {
+		return { ok: false, reason: "too_large" };
 	}
-	const reader = request.body.getReader();
-	const chunks: Uint8Array[] = [];
-	let total = 0;
-	for (;;) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		total += value.byteLength;
-		if (total > maxBytes) {
-			await reader.cancel().catch(() => {});
-			return { ok: false, reason: "too_large" };
-		}
-		chunks.push(value);
+	let text: string;
+	try {
+		text = await request.text();
+	} catch {
+		return { ok: false, reason: "invalid" };
 	}
-	const merged = new Uint8Array(total);
-	let offset = 0;
-	for (const chunk of chunks) {
-		merged.set(chunk, offset);
-		offset += chunk.byteLength;
+	if (new TextEncoder().encode(text).length > maxBytes) {
+		return { ok: false, reason: "too_large" };
 	}
 	try {
-		return {
-			ok: true,
-			value: JSON.parse(new TextDecoder().decode(merged)) as unknown,
-		};
+		return { ok: true, value: JSON.parse(text) as unknown };
 	} catch {
 		return { ok: false, reason: "invalid" };
 	}
