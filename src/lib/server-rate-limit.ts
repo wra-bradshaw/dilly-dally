@@ -10,7 +10,7 @@ export async function checkRateLimit(
 	limit: number,
 	namespace: DurableObjectNamespace<RateLimiter> = env.RATE_LIMITER,
 ): Promise<RateLimitResult> {
-	const stub = namespace.getByName(key);
+	const stub = namespace.getByName(key, { locationHint: "oc" });
 	return stub.check(nowMs, windowMs, limit);
 }
 
