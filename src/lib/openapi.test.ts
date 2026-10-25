@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { getOpenApiSpec, serializeSpec } from "./openapi";
+import { getOpenApiSpec, openApiResponse, serializeSpec } from "./openapi";
 
 describe("openapi availability errors", () => {
 	const spec = getOpenApiSpec("https://example.com");
@@ -47,6 +47,47 @@ describe("openapi availability errors", () => {
 		expect(availability.put.responses["415"]).toBeDefined();
 		expect(availability.post.responses["413"]).toBeDefined();
 		expect(availability.post.responses["415"]).toBeDefined();
+	});
+});
+
+describe("openapi component inventory", () => {
+	it("keeps every downstream component name", () => {
+		const names = Object.keys(
+			getOpenApiSpec("https://example.com").components.schemas,
+		).sort();
+		expect(names).toEqual(
+			[
+				"AvailabilityRequest",
+				"AvailabilityResponse",
+				"CreateEventRequest",
+				"CreatePollRequest",
+				"PollOption",
+				"Poll",
+				"CreatePollResponse",
+				"AddPollOptionRequest",
+				"AddPollOptionResponse",
+				"PollVoteRequest",
+				"PollVoteResponse",
+				"EventMode",
+				"Weekday",
+				"WeeklySlotId",
+				"CreateEventResponse",
+				"Error",
+				"Event",
+				"SlotId",
+				"EventDetailResponse",
+				"OwnAvailabilityResponse",
+				"SessionRequest",
+				"SessionResponse",
+			].sort(),
+		);
+	});
+
+	it("serves the spec as json", () => {
+		const res = openApiResponse(
+			new Request("https://example.com/openapi.json"),
+		);
+		expect(res.headers.get("content-type")).toContain("application/json");
 	});
 });
 

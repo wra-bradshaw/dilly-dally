@@ -149,19 +149,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AvailabilityRequest: {
-            name: string;
-            /** @description Optional password. Sent only over HTTPS, never stored in plain text. */
-            password?: string;
-            /** @description Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere. */
-            slots: components["schemas"]["SlotId"][];
-        };
-        AvailabilityResponse: {
-            count: number;
-            name: string;
-            protected: boolean;
-            updatedAt: string;
-        };
         CreateEventRequest: {
             /** @description 1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. Required when mode is dates (the default). Omit or send [] for weekly events. */
             dates?: string[];
@@ -178,33 +165,36 @@ export interface components {
             /** @description Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri. */
             weekdays?: components["schemas"]["Weekday"][];
         };
+        /**
+         * @description dates picks specific dates; weekly repeats on weekdays.
+         * @example dates
+         * @enum {string}
+         */
+        EventMode: "dates" | "weekly";
         CreatePollRequest: {
             /** @description When true voters may pick multiple options, otherwise single choice. */
             allowMultiple?: boolean;
             options: string[];
             question: string;
         };
-        PollOption: {
-            count: number;
-            id: string;
-            label: string;
-            names: string[];
+        /**
+         * @description Day of week, 0=Sunday through 6=Saturday.
+         * @example 1
+         */
+        Weekday: number;
+        AvailabilityRequest: {
+            name: string;
+            /** @description Optional password. Sent only over HTTPS, never stored in plain text. */
+            password?: string;
+            /** @description Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere. */
+            slots: components["schemas"]["SlotId"][];
         };
-        Poll: {
-            allowMultiple: boolean;
-            id: string;
-            options: components["schemas"]["PollOption"][];
-            question: string;
-            totalVoters: number;
-        };
-        CreatePollResponse: {
-            poll: components["schemas"]["Poll"];
-        };
+        /**
+         * @description Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.
+         * @example 2026-10-05T09:30
+         */
+        SlotId: string;
         AddPollOptionRequest: {
-            label: string;
-        };
-        AddPollOptionResponse: {
-            id: string;
             label: string;
         };
         PollVoteRequest: {
@@ -214,38 +204,15 @@ export interface components {
             /** @description Optional password, same identity as availability. Required when the name is password-protected. */
             password?: string;
         };
-        PollVoteResponse: {
-            pollId: string;
+        SessionRequest: {
+            name: string;
+            /** @description Optional password, required when the name is password-protected. Never stored, only used to mint a short-lived session cookie. */
+            password?: string;
         };
-        /**
-         * @description dates picks specific dates; weekly repeats on weekdays.
-         * @example dates
-         * @enum {string}
-         */
-        EventMode: "dates" | "weekly";
-        /**
-         * @description Day of week, 0=Sunday through 6=Saturday.
-         * @example 1
-         */
-        Weekday: number;
-        /**
-         * @description Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.
-         * @example MON-09:30
-         */
-        WeeklySlotId: string;
         CreateEventResponse: {
             event: components["schemas"]["Event"];
             id: string;
             url: string;
-        };
-        Error: {
-            error: {
-                code: string;
-                fields?: {
-                    [key: string]: string[];
-                };
-                message: string;
-            };
         };
         Event: {
             createdAt: string;
@@ -261,11 +228,15 @@ export interface components {
             /** @description Weekdays for weekly events, 0=Sunday through 6=Saturday; empty array for dates events. */
             weekdays: components["schemas"]["Weekday"][];
         };
-        /**
-         * @description Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.
-         * @example 2026-10-05T09:30
-         */
-        SlotId: string;
+        Error: {
+            error: {
+                code: string;
+                fields?: {
+                    [key: string]: string[];
+                };
+                message: string;
+            };
+        };
         EventDetailResponse: {
             bestTimes: {
                 count: number;
@@ -286,18 +257,47 @@ export interface components {
             polls: components["schemas"]["Poll"][];
             slotUniverse: string[];
         };
+        Poll: {
+            allowMultiple: boolean;
+            id: string;
+            options: components["schemas"]["PollOption"][];
+            question: string;
+            totalVoters: number;
+        };
+        PollOption: {
+            count: number;
+            id: string;
+            label: string;
+            names: string[];
+        };
         OwnAvailabilityResponse: {
             name: string;
             slots: string[];
         };
-        SessionRequest: {
+        AvailabilityResponse: {
+            count: number;
             name: string;
-            /** @description Optional password, required when the name is password-protected. Never stored, only used to mint a short-lived session cookie. */
-            password?: string;
+            protected: boolean;
+            updatedAt: string;
+        };
+        CreatePollResponse: {
+            poll: components["schemas"]["Poll"];
+        };
+        AddPollOptionResponse: {
+            id: string;
+            label: string;
+        };
+        PollVoteResponse: {
+            pollId: string;
         };
         SessionResponse: {
             name: string;
         };
+        /**
+         * @description Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.
+         * @example MON-09:30
+         */
+        WeeklySlotId: string;
     };
     responses: never;
     parameters: never;

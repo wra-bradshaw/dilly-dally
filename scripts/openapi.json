@@ -1,648 +1,98 @@
 {
-  "components": {
-    "schemas": {
-      "AvailabilityRequest": {
-        "properties": {
-          "name": {
-            "maxLength": 40,
-            "minLength": 1,
-            "type": "string"
-          },
-          "password": {
-            "description": "Optional password. Sent only over HTTPS, never stored in plain text.",
-            "maxLength": 72,
-            "minLength": 4,
-            "type": "string"
-          },
-          "slots": {
-            "description": "Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere.",
-            "items": {
-              "$ref": "#/components/schemas/SlotId"
-            },
-            "maxItems": 2852,
-            "type": "array"
-          }
-        },
-        "required": [
-          "name",
-          "slots"
-        ],
-        "type": "object"
-      },
-      "AvailabilityResponse": {
-        "properties": {
-          "count": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "protected": {
-            "type": "boolean"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "count",
-          "protected",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "CreateEventRequest": {
-        "properties": {
-          "dates": {
-            "description": "1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. Required when mode is dates (the default). Omit or send [] for weekly events.",
-            "items": {
-              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-              "type": "string"
-            },
-            "maxItems": 31,
-            "minItems": 1,
-            "type": "array"
-          },
-          "endTime": {
-            "example": "17:00",
-            "pattern": "^([01]\\d|2[0-3]):(00|30)$",
-            "type": "string"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/EventMode"
-          },
-          "polls": {
-            "description": "Optional 0..10 polls created with the event. Each needs question 1..140 chars and 2..10 unique options 1..80 chars.",
-            "items": {
-              "$ref": "#/components/schemas/CreatePollRequest"
-            },
-            "maxItems": 10,
-            "type": "array"
-          },
-          "startTime": {
-            "example": "09:00",
-            "pattern": "^([01]\\d|2[0-3]):(00|30)$",
-            "type": "string"
-          },
-          "timezone": {
-            "example": "America/New_York",
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "title": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
-          },
-          "weekdays": {
-            "description": "Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri.",
-            "items": {
-              "$ref": "#/components/schemas/Weekday"
-            },
-            "maxItems": 7,
-            "type": "array"
-          }
-        },
-        "required": [
-          "endTime",
-          "startTime",
-          "timezone",
-          "title"
-        ],
-        "type": "object"
-      },
-      "CreatePollRequest": {
-        "properties": {
-          "allowMultiple": {
-            "description": "When true voters may pick multiple options, otherwise single choice.",
-            "type": "boolean"
-          },
-          "options": {
-            "items": {
-              "maxLength": 80,
-              "minLength": 1,
-              "type": "string"
-            },
-            "maxItems": 10,
-            "minItems": 2,
-            "type": "array"
-          },
-          "question": {
-            "maxLength": 140,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "question",
-          "options"
-        ],
-        "type": "object"
-      },
-      "PollOption": {
-        "properties": {
-          "count": {
-            "type": "integer"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "names": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "count",
-          "names"
-        ],
-        "type": "object"
-      },
-      "Poll": {
-        "properties": {
-          "allowMultiple": {
-            "type": "boolean"
-          },
-          "id": {
-            "type": "string"
-          },
-          "options": {
-            "items": {
-              "$ref": "#/components/schemas/PollOption"
-            },
-            "type": "array"
-          },
-          "question": {
-            "type": "string"
-          },
-          "totalVoters": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "question",
-          "allowMultiple",
-          "options",
-          "totalVoters"
-        ],
-        "type": "object"
-      },
-      "CreatePollResponse": {
-        "properties": {
-          "poll": {
-            "$ref": "#/components/schemas/Poll"
-          }
-        },
-        "required": [
-          "poll"
-        ],
-        "type": "object"
-      },
-      "AddPollOptionRequest": {
-        "properties": {
-          "label": {
-            "maxLength": 80,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "label"
-        ],
-        "type": "object"
-      },
-      "AddPollOptionResponse": {
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label"
-        ],
-        "type": "object"
-      },
-      "PollVoteRequest": {
-        "properties": {
-          "name": {
-            "maxLength": 40,
-            "minLength": 1,
-            "type": "string"
-          },
-          "optionIds": {
-            "description": "Full replace set of option ids for this poll. Empty array clears the vote.",
-            "items": {
-              "maxLength": 64,
-              "minLength": 1,
-              "type": "string"
-            },
-            "maxItems": 10,
-            "type": "array"
-          },
-          "password": {
-            "description": "Optional password, same identity as availability. Required when the name is password-protected.",
-            "maxLength": 72,
-            "minLength": 4,
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "optionIds"
-        ],
-        "type": "object"
-      },
-      "PollVoteResponse": {
-        "properties": {
-          "pollId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "pollId"
-        ],
-        "type": "object"
-      },
-      "EventMode": {
-        "description": "dates picks specific dates; weekly repeats on weekdays.",
-        "enum": [
-          "dates",
-          "weekly"
-        ],
-        "example": "dates",
-        "type": "string"
-      },
-      "Weekday": {
-        "description": "Day of week, 0=Sunday through 6=Saturday.",
-        "example": 1,
-        "maximum": 6,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "WeeklySlotId": {
-        "description": "Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.",
-        "example": "MON-09:30",
-        "pattern": "^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30)$",
-        "type": "string"
-      },
-      "CreateEventResponse": {
-        "properties": {
-          "event": {
-            "$ref": "#/components/schemas/Event"
-          },
-          "id": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "url",
-          "event"
-        ],
-        "type": "object"
-      },
-      "Error": {
-        "properties": {
-          "error": {
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "fields": {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              "message": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "code",
-              "message"
-            ],
-            "type": "object"
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "type": "object"
-      },
-      "Event": {
-        "properties": {
-          "createdAt": {
-            "type": "string"
-          },
-          "dates": {
-            "description": "Specific dates for dates events; empty array for weekly events.",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "endTime": {
-            "type": "string"
-          },
-          "expiresAt": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/EventMode"
-          },
-          "startTime": {
-            "type": "string"
-          },
-          "timezone": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "weekdays": {
-            "description": "Weekdays for weekly events, 0=Sunday through 6=Saturday; empty array for dates events.",
-            "items": {
-              "$ref": "#/components/schemas/Weekday"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "mode",
-          "dates",
-          "weekdays",
-          "startTime",
-          "endTime",
-          "timezone",
-          "createdAt",
-          "expiresAt"
-        ],
-        "type": "object"
-      },
-      "SlotId": {
-        "description": "Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.",
-        "example": "2026-10-05T09:30",
-        "pattern": "^(\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|30)|(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30))$",
-        "type": "string"
-      },
-      "EventDetailResponse": {
-        "properties": {
-          "bestTimes": {
-            "items": {
-              "properties": {
-                "count": {
-                  "type": "integer"
-                },
-                "slot": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "slot",
-                "count"
-              ],
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "counts": {
-            "items": {
-              "properties": {
-                "count": {
-                  "type": "integer"
-                },
-                "names": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "slot": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "slot",
-                "count",
-                "names"
-              ],
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "event": {
-            "$ref": "#/components/schemas/Event"
-          },
-          "participants": {
-            "items": {
-              "properties": {
-                "count": {
-                  "type": "integer"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "updatedAt": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "name",
-                "count",
-                "updatedAt"
-              ],
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "polls": {
-            "description": "Polls for this event, each with public vote counts and voter names.",
-            "items": {
-              "$ref": "#/components/schemas/Poll"
-            },
-            "type": "array"
-          },
-          "slotUniverse": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "event",
-          "slotUniverse",
-          "counts",
-          "participants",
-          "bestTimes",
-          "polls"
-        ],
-        "type": "object"
-      },
-      "OwnAvailabilityResponse": {
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "slots": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "name",
-          "slots"
-        ],
-        "type": "object"
-      },
-      "SessionRequest": {
-        "properties": {
-          "name": {
-            "maxLength": 40,
-            "minLength": 1,
-            "type": "string"
-          },
-          "password": {
-            "description": "Optional password, required when the name is password-protected. Never stored, only used to mint a short-lived session cookie.",
-            "maxLength": 72,
-            "minLength": 4,
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "type": "object"
-      },
-      "SessionResponse": {
-        "properties": {
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "type": "object"
-      }
-    }
-  },
   "info": {
     "description": "Agent-friendly when2meet replacement. Create events with curl, then add availability by name.",
     "title": "Dilly-Dally API",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "https://example.com"
+    }
+  ],
   "paths": {
     "/api/events": {
       "post": {
         "operationId": "createEvent",
+        "summary": "Create an event",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEventRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
+            "description": "Event created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateEventResponse"
                 }
               }
-            },
-            "description": "Event created"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "413": {
+            "description": "Payload too large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Payload too large"
+            }
           },
           "415": {
+            "description": "Content-Type must be application/json",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Content-Type must be application/json"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           },
           "500": {
+            "description": "Internal error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Internal error"
+            }
           }
-        },
-        "summary": "Create an event"
+        }
       }
     },
     "/api/events/{id}": {
       "get": {
         "operationId": "getEvent",
+        "summary": "Get event and group availability",
         "parameters": [
           {
             "in": "path",
@@ -655,52 +105,52 @@
         ],
         "responses": {
           "200": {
+            "description": "Event with counts and participants",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventDetailResponse"
                 }
               }
-            },
-            "description": "Event with counts and participants"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Get event and group availability"
+        }
       }
     },
     "/api/events/{id}/availability": {
       "get": {
         "operationId": "getAvailability",
+        "summary": "Get own availability",
         "parameters": [
           {
             "in": "path",
@@ -721,70 +171,70 @@
         ],
         "responses": {
           "200": {
+            "description": "Own slots for editing",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OwnAvailabilityResponse"
                 }
               }
-            },
-            "description": "Own slots for editing"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           },
           "404": {
+            "description": "Event not found, or no availability for this name (availability_not_found)",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Event not found, or no availability for this name (availability_not_found)"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Get own availability"
+        }
       },
       "put": {
         "operationId": "putAvailability",
+        "summary": "Create or update availability",
         "parameters": [
           {
             "in": "path",
@@ -796,111 +246,111 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AvailabilityRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
+            "description": "Saved",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AvailabilityResponse"
                 }
               }
-            },
-            "description": "Saved"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "413": {
+            "description": "Payload too large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Payload too large"
+            }
           },
           "415": {
+            "description": "Content-Type must be application/json",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Content-Type must be application/json"
+            }
           },
           "422": {
+            "description": "Invalid slot",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid slot"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Create or update availability"
+        }
       },
       "post": {
         "operationId": "postAvailability",
+        "summary": "Create or update availability (alias of PUT)",
         "parameters": [
           {
             "in": "path",
@@ -912,113 +362,113 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AvailabilityRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
+            "description": "Saved",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AvailabilityResponse"
                 }
               }
-            },
-            "description": "Saved"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "413": {
+            "description": "Payload too large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Payload too large"
+            }
           },
           "415": {
+            "description": "Content-Type must be application/json",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Content-Type must be application/json"
+            }
           },
           "422": {
+            "description": "Invalid slot",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid slot"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Create or update availability (alias of PUT)"
+        }
       }
     },
     "/api/events/{id}/polls": {
       "post": {
         "operationId": "createPoll",
+        "summary": "Add a poll to an event",
         "parameters": [
           {
             "in": "path",
@@ -1030,83 +480,83 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreatePollRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
+            "description": "Poll created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreatePollResponse"
                 }
               }
-            },
-            "description": "Poll created"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "409": {
+            "description": "Duplicate or too many polls",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Duplicate or too many polls"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Add a poll to an event"
+        }
       }
     },
     "/api/events/{id}/polls/{pollId}/options": {
       "post": {
         "operationId": "addPollOption",
+        "summary": "Add an option to a poll",
         "parameters": [
           {
             "in": "path",
@@ -1126,83 +576,83 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AddPollOptionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
+            "description": "Option added",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AddPollOptionResponse"
                 }
               }
-            },
-            "description": "Option added"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "409": {
+            "description": "Duplicate or too many options",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Duplicate or too many options"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Add an option to a poll"
+        }
       }
     },
     "/api/events/{id}/polls/{pollId}/options/{optionId}": {
       "delete": {
         "operationId": "deletePollOption",
+        "summary": "Remove an unvoted poll option",
         "parameters": [
           {
             "in": "path",
@@ -1231,6 +681,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -1238,56 +689,55 @@
                   "type": "object"
                 }
               }
-            },
-            "description": "Deleted"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "409": {
+            "description": "Option has votes and cannot be removed",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Option has votes and cannot be removed"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Remove an unvoted poll option"
+        }
       }
     },
     "/api/events/{id}/polls/{pollId}/vote": {
       "put": {
         "operationId": "putPollVote",
+        "summary": "Vote in a poll",
         "parameters": [
           {
             "in": "path",
@@ -1307,91 +757,91 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PollVoteRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
+            "description": "Vote saved",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PollVoteResponse"
                 }
               }
-            },
-            "description": "Vote saved"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "422": {
+            "description": "Invalid option or selection",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid option or selection"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Vote in a poll"
+        }
       },
       "post": {
         "operationId": "postPollVote",
+        "summary": "Vote in a poll (alias of PUT)",
         "parameters": [
           {
             "in": "path",
@@ -1411,88 +861,87 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PollVoteRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
+            "description": "Vote saved",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PollVoteResponse"
                 }
               }
-            },
-            "description": "Vote saved"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           },
           "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Not found"
+            }
           },
           "410": {
+            "description": "Expired",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Expired"
+            }
           },
           "422": {
+            "description": "Invalid option or selection",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid option or selection"
+            }
           },
           "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Rate limited"
+            }
           }
-        },
-        "summary": "Vote in a poll (alias of PUT)"
+        }
       }
     },
     "/api/events/{id}/sessions": {
@@ -1554,6 +1003,7 @@
       },
       "post": {
         "operationId": "createSession",
+        "summary": "Create an event session",
         "parameters": [
           {
             "in": "path",
@@ -1565,51 +1015,51 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SessionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
+            "description": "Session created, HttpOnly session cookie set",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionResponse"
                 }
               }
-            },
-            "description": "Session created, HttpOnly session cookie set"
+            }
           },
           "400": {
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Validation error"
+            }
           },
           "401": {
+            "description": "Invalid password",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
-            },
-            "description": "Invalid password"
+            }
           }
-        },
-        "summary": "Create an event session"
+        }
       },
       "delete": {
         "operationId": "deleteSession",
+        "summary": "Clear an event session",
         "parameters": [
           {
             "in": "path",
@@ -1622,6 +1072,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Session cleared",
             "content": {
               "application/json": {
                 "schema": {
@@ -1629,17 +1080,597 @@
                   "type": "object"
                 }
               }
-            },
-            "description": "Session cleared"
+            }
           }
-        },
-        "summary": "Clear an event session"
+        }
       }
     }
   },
-  "servers": [
-    {
-      "url": "https://example.com"
+  "components": {
+    "schemas": {
+      "CreateEventRequest": {
+        "type": "object",
+        "properties": {
+          "dates": {
+            "minItems": 1,
+            "maxItems": 31,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "description": "1..31 entries, YYYY-MM-DD, each today (UTC) through today+90 inclusive. Required when mode is dates (the default). Omit or send [] for weekly events."
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|30)$",
+            "example": "17:00"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/EventMode"
+          },
+          "polls": {
+            "description": "Optional 0..10 polls created with the event. Each needs question 1..140 chars and 2..10 unique options 1..80 chars.",
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePollRequest"
+            }
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|30)$",
+            "example": "09:00"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "example": "America/New_York"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "weekdays": {
+            "description": "Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri.",
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Weekday"
+            }
+          }
+        },
+        "required": [
+          "endTime",
+          "startTime",
+          "timezone",
+          "title"
+        ]
+      },
+      "EventMode": {
+        "type": "string",
+        "enum": [
+          "dates",
+          "weekly"
+        ],
+        "description": "dates picks specific dates; weekly repeats on weekdays.",
+        "example": "dates"
+      },
+      "CreatePollRequest": {
+        "type": "object",
+        "properties": {
+          "allowMultiple": {
+            "description": "When true voters may pick multiple options, otherwise single choice.",
+            "type": "boolean"
+          },
+          "options": {
+            "minItems": 2,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 140
+          }
+        },
+        "required": [
+          "options",
+          "question"
+        ]
+      },
+      "Weekday": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 6,
+        "description": "Day of week, 0=Sunday through 6=Saturday.",
+        "example": 1
+      },
+      "AvailabilityRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "password": {
+            "description": "Optional password. Sent only over HTTPS, never stored in plain text.",
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 72
+          },
+          "slots": {
+            "maxItems": 2852,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotId"
+            },
+            "description": "Full replace set of slot ids. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30. Empty array means unavailable everywhere."
+          }
+        },
+        "required": [
+          "name",
+          "slots"
+        ]
+      },
+      "SlotId": {
+        "type": "string",
+        "pattern": "^(\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):(00|30)|(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30))$",
+        "description": "Slot id in event-timezone wall time. Date events use YYYY-MM-DDTHH:mm; weekly events use DOW-HH:mm like MON-09:30.",
+        "example": "2026-10-05T09:30"
+      },
+      "AddPollOptionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "PollVoteRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "optionIds": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "description": "Full replace set of option ids for this poll. Empty array clears the vote."
+          },
+          "password": {
+            "description": "Optional password, same identity as availability. Required when the name is password-protected.",
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "name",
+          "optionIds"
+        ]
+      },
+      "SessionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "password": {
+            "description": "Optional password, required when the name is password-protected. Never stored, only used to mint a short-lived session cookie.",
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateEventResponse": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/Event"
+          },
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "id",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific dates for dates events; empty array for weekly events."
+          },
+          "endTime": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/EventMode"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Weekday"
+            },
+            "description": "Weekdays for weekly events, 0=Sunday through 6=Saturday; empty array for dates events."
+          }
+        },
+        "required": [
+          "createdAt",
+          "dates",
+          "endTime",
+          "expiresAt",
+          "id",
+          "mode",
+          "startTime",
+          "timezone",
+          "title",
+          "weekdays"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "EventDetailResponse": {
+        "type": "object",
+        "properties": {
+          "bestTimes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "slot": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "count",
+                "slot"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "counts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "names": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "slot": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "count",
+                "names",
+                "slot"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "event": {
+            "$ref": "#/components/schemas/Event"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "count",
+                "name",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "polls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Poll"
+            },
+            "description": "Polls for this event, each with public vote counts and voter names."
+          },
+          "slotUniverse": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "bestTimes",
+          "counts",
+          "event",
+          "participants",
+          "polls",
+          "slotUniverse"
+        ],
+        "additionalProperties": false
+      },
+      "Poll": {
+        "type": "object",
+        "properties": {
+          "allowMultiple": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PollOption"
+            }
+          },
+          "question": {
+            "type": "string"
+          },
+          "totalVoters": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "allowMultiple",
+          "id",
+          "options",
+          "question",
+          "totalVoters"
+        ],
+        "additionalProperties": false
+      },
+      "PollOption": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "id",
+          "label",
+          "names"
+        ],
+        "additionalProperties": false
+      },
+      "OwnAvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "slots"
+        ],
+        "additionalProperties": false
+      },
+      "AvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "name",
+          "protected",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CreatePollResponse": {
+        "type": "object",
+        "properties": {
+          "poll": {
+            "$ref": "#/components/schemas/Poll"
+          }
+        },
+        "required": [
+          "poll"
+        ],
+        "additionalProperties": false
+      },
+      "AddPollOptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "PollVoteResponse": {
+        "type": "object",
+        "properties": {
+          "pollId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pollId"
+        ],
+        "additionalProperties": false
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "WeeklySlotId": {
+        "type": "string",
+        "pattern": "^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30)$",
+        "description": "Weekly slot id: weekday code plus HH:mm. Monday is MON, Sunday is SUN.",
+        "example": "MON-09:30"
+      }
     }
-  ]
+  }
 }

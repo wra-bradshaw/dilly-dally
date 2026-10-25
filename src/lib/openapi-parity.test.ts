@@ -6,8 +6,17 @@ import {
 	availabilitySchema,
 	createEventSchema,
 	createPollSchema,
+	errorSchema,
+	eventDetailResponseSchema,
+	eventModeSchema,
+	eventSchema,
+	pollOptionSchema,
+	pollSchema,
 	pollVoteSchema,
 	sessionCreateSchema,
+	slotIdSchema,
+	weekdaySchema,
+	weeklySlotIdSchema,
 } from "./validation";
 
 type JsonRecord = Record<string, unknown>;
@@ -30,7 +39,12 @@ function fieldOf(schema: string, field: string): JsonRecord {
 }
 
 function jsonOf(schema: z.ZodType): JsonRecord {
-	return z.toJSONSchema(schema) as unknown as JsonRecord;
+	const json = z.toJSONSchema(schema) as unknown as JsonRecord;
+	if (typeof json.$ref === "string" && json.$defs !== undefined) {
+		const key = (json.$ref as string).split("/").pop() as string;
+		return (json.$defs as JsonRecord)[key] as JsonRecord;
+	}
+	return json;
 }
 
 function jsonProps(schema: z.ZodType): JsonRecord {
@@ -174,9 +188,12 @@ describe("openapi parity session", () => {
 describe("openapi parity primitives", () => {
 	it("pins event mode weekday slot ids", () => {
 		expect(schemaOf("EventMode").enum).toEqual(["dates", "weekly"]);
+		expect(schemaOf("EventMode").enum).toEqual(jsonOf(eventModeSchema).enum);
 		expect(schemaOf("Weekday").type).toBe("integer");
 		expect(schemaOf("Weekday").minimum).toBe(0);
 		expect(schemaOf("Weekday").maximum).toBe(6);
+		expect(schemaOf("Weekday").minimum).toBe(jsonOf(weekdaySchema).minimum);
+		expect(schemaOf("Weekday").maximum).toBe(jsonOf(weekdaySchema).maximum);
 		expect(String(schemaOf("SlotId").pattern)).toContain("SUN|MON");
 		expect(String(schemaOf("SlotId").pattern)).toContain("\\d{4}");
 		expect(schemaOf("WeeklySlotId").pattern).toBe(
@@ -191,6 +208,56 @@ describe("openapi parity primitives", () => {
 		expect(
 			(fieldOf("CreateEventRequest", "polls").items as JsonRecord).$ref,
 		).toBe("#/components/schemas/CreatePollRequest");
+		expect(schemaOf("PollOption").required).toEqual(
+			jsonOf(pollOptionSchema).required,
+		);
+	});
+});
+
+describe("openapi parity slot ids", () => {
+	it("exposes SlotId and WeeklySlotId as reusable schemas", () => {
+		const slotJson = jsonOf(slotIdSchema);
+		const weeklyJson = jsonOf(weeklySlotIdSchema);
+		expect(String(slotJson.pattern)).toContain("SUN|MON");
+		expect(String(slotJson.pattern)).toContain("\\d{4}");
+		expect(weeklyJson.pattern).toBe(
+			"^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\\d|2[0-3]):(00|30)$",
+		);
+		expect(schemaOf("SlotId").pattern).toBe(slotJson.pattern);
+		expect(schemaOf("WeeklySlotId").pattern).toBe(weeklyJson.pattern);
+	});
+
+	it("validates date and weekly slots through the shared schema", () => {
+		expect(slotIdSchema.safeParse("2026-10-05T09:30").success).toBe(true);
+		expect(slotIdSchema.safeParse("MON-09:30").success).toBe(true);
+		expect(slotIdSchema.safeParse("nope").success).toBe(false);
+		expect(
+			availabilitySchema.safeParse({ name: "Al", slots: ["MON-09:30"] })
+				.success,
+		).toBe(true);
+	});
+});
+
+describe("openapi parity response registry", () => {
+	it("exposes error and event detail schemas", () => {
+		expect(schemaOf("Error").required).toEqual(["error"]);
+		expect(schemaOf("Event").required).toContain("id");
+		expect(
+			(fieldOf("EventDetailResponse", "polls").items as JsonRecord).$ref,
+		).toBe("#/components/schemas/Poll");
+		expect(jsonOf(errorSchema)).toBeDefined();
+		expect(jsonOf(eventSchema)).toBeDefined();
+		expect(jsonOf(eventDetailResponseSchema)).toBeDefined();
+		expect(jsonOf(pollSchema)).toBeDefined();
+	});
+
+	it("pins vote and session response shapes", () => {
+		expect(schemaOf("PollVoteResponse").required).toEqual(["pollId"]);
+		expect(schemaOf("SessionResponse").required).toEqual(["name"]);
+		expect(schemaOf("OwnAvailabilityResponse").required).toEqual([
+			"name",
+			"slots",
+		]);
 	});
 });
 
