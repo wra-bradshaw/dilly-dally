@@ -107,6 +107,34 @@ describe("readCappedJson", () => {
 		});
 	});
 
+	it("cancels chunked streams once over budget", async () => {
+		let cancelled = false;
+		let pulls = 0;
+		const chunk = new Uint8Array(64 * 1024);
+		const stream = new ReadableStream({
+			cancel() {
+				cancelled = true;
+			},
+			pull(controller) {
+				pulls += 1;
+				if (pulls < 10) controller.enqueue(chunk);
+				else controller.close();
+			},
+		});
+		const req = new Request("https://x.test/", {
+			body: stream,
+			duplex: "half",
+			headers: { "content-type": "application/json" },
+			method: "POST",
+		} as RequestInit);
+		expect(await readCappedJson(req)).toEqual({
+			ok: false,
+			reason: "too_large",
+		});
+		expect(cancelled).toBe(true);
+		expect(pulls).toBeLessThan(10);
+	});
+
 	it("caps null bodies via content-length", async () => {
 		const req = new Request("https://x.test/", {
 			headers: { "content-length": String(300_000) },

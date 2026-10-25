@@ -165,12 +165,46 @@ export async function readCappedJson(
 	if (contentLengthTooLarge(request, maxBytes)) {
 		return { ok: false, reason: "too_large" };
 	}
-	let text: string;
+	if (!request.body) {
+		let text: string;
+		try {
+			text = await request.text();
+		} catch {
+			return { ok: false, reason: "invalid" };
+		}
+		if (new TextEncoder().encode(text).length > maxBytes) {
+			return { ok: false, reason: "too_large" };
+		}
+		try {
+			return { ok: true, value: JSON.parse(text) as unknown };
+		} catch {
+			return { ok: false, reason: "invalid" };
+		}
+	}
+	const reader = request.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
 	try {
-		text = await request.text();
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			total += value.byteLength;
+			if (total > maxBytes) {
+				await reader.cancel().catch(() => {});
+				return { ok: false, reason: "too_large" };
+			}
+			chunks.push(value);
+		}
 	} catch {
 		return { ok: false, reason: "invalid" };
 	}
+	const merged = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		merged.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	const text = new TextDecoder().decode(merged);
 	if (new TextEncoder().encode(text).length > maxBytes) {
 		return { ok: false, reason: "too_large" };
 	}
