@@ -63,6 +63,27 @@ const datesField = z
 export const MAX_POLLS_PER_EVENT = 10;
 export const MAX_OPTIONS_PER_POLL = 10;
 
+const timezoneSchema = z
+	.string()
+	.min(1)
+	.max(64)
+	.refine(
+		(tz) => {
+			try {
+				Intl.DateTimeFormat(undefined, { timeZone: tz });
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		{ message: "Invalid timezone" },
+	);
+
+function toMinutes(t: string): number {
+	const [h, m] = t.split(":").map(Number);
+	return h * 60 + m;
+}
+
 const pollQuestionSchema = z.string().trim().min(1).max(140);
 
 const pollOptionLabelSchema = z.string().trim().min(1).max(80);
@@ -112,21 +133,7 @@ export const createEventSchema = z
 		mode: eventModeSchema.optional().default("dates"),
 		polls: z.array(createPollSchema).max(MAX_POLLS_PER_EVENT).optional(),
 		startTime: z.string().regex(hourRe),
-		timezone: z
-			.string()
-			.min(1)
-			.max(64)
-			.refine(
-				(tz) => {
-					try {
-						Intl.DateTimeFormat(undefined, { timeZone: tz });
-						return true;
-					} catch {
-						return false;
-					}
-				},
-				{ message: "Invalid timezone" },
-			),
+		timezone: timezoneSchema,
 		title: z.string().trim().min(1).max(100),
 		weekdays: z.array(weekdaySchema).max(7).optional(),
 	})
@@ -179,14 +186,58 @@ export const createEventSchema = z
 			}
 		}
 	})
-	.refine(
-		(v) => {
-			const [sh, sm] = v.startTime.split(":").map(Number);
-			const [eh, em] = v.endTime.split(":").map(Number);
-			return sh * 60 + sm < eh * 60 + em;
-		},
-		{ message: "End time must be after start time", path: ["endTime"] },
-	);
+	.refine((v) => toMinutes(v.startTime) < toMinutes(v.endTime), {
+		message: "End time must be after start time",
+		path: ["endTime"],
+	});
+
+export const eventFormSchema = z
+	.object({
+		dates: z.array(z.string()).optional(),
+		endTime: z.string().regex(hourRe),
+		mode: eventModeSchema.optional().default("dates"),
+		polls: z.array(createPollSchema).max(MAX_POLLS_PER_EVENT).optional(),
+		startTime: z.string().regex(hourRe),
+		timezone: timezoneSchema,
+		title: z.string().trim().min(1).max(100),
+		weekdays: z.array(weekdaySchema).optional(),
+	})
+	.superRefine((v, ctx) => {
+		if (v.polls !== undefined) {
+			const seen = new Set<string>();
+			for (const p of v.polls) {
+				const key = p.question.trim().toLowerCase();
+				if (seen.has(key)) {
+					ctx.addIssue({
+						code: "custom",
+						message: "Poll questions must be unique",
+						path: ["polls"],
+					});
+					break;
+				}
+				seen.add(key);
+			}
+		}
+		if ((v.mode ?? "dates") === "weekly") {
+			if ((v.weekdays ?? []).length === 0) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Weekly events need at least one weekday",
+					path: ["weekdays"],
+				});
+			}
+		} else if ((v.dates ?? []).length === 0) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Pick at least one date",
+				path: ["dates"],
+			});
+		}
+	})
+	.refine((v) => toMinutes(v.startTime) < toMinutes(v.endTime), {
+		message: "End time must be after start time",
+		path: ["endTime"],
+	});
 
 export const availabilitySchema = z.object({
 	name: participantNameSchema,
