@@ -524,11 +524,13 @@ function EventPage() {
 								setSaveState("");
 								setSaveFailed(false);
 								setSignError("");
-								void deleteEventSession(eventId).then(() =>
-									queryClient.invalidateQueries({
-										queryKey: ["own-session", eventId],
-									}),
-								);
+								void deleteEventSession(eventId)
+									.catch(() => undefined)
+									.then(() =>
+										queryClient.invalidateQueries({
+											queryKey: ["own-session", eventId],
+										}),
+									);
 							}}
 							type="button"
 							variant="link"

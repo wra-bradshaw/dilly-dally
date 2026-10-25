@@ -164,30 +164,25 @@ export async function votePoll(
 	);
 }
 
-export interface SessionResponse {
-	name: string;
-}
+export type SessionRequest = components["schemas"]["SessionRequest"];
+export type SessionResponse = components["schemas"]["SessionResponse"];
 
 export async function createEventSession(
 	id: string,
-	input: { name: string; password?: string },
+	input: SessionRequest,
 ): Promise<SessionResponse> {
-	const res = await globalThis.fetch(`/api/events/${id}/sessions`, {
-		body: JSON.stringify(input),
-		credentials: "include",
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-	});
-	if (!res.ok) {
-		const body = await res.json().catch(() => null);
-		throw toHttpError(res.status, body, res.statusText);
-	}
-	return (await res.json()) as SessionResponse;
+	return unwrap<SessionResponse>(
+		await client.POST("/api/events/{id}/sessions", {
+			body: input,
+			params: { path: { id } },
+		}),
+	);
 }
 
 export async function deleteEventSession(id: string): Promise<void> {
-	await globalThis.fetch(`/api/events/${id}/sessions`, {
-		credentials: "include",
-		method: "DELETE",
-	});
+	await unwrap<unknown>(
+		await client.DELETE("/api/events/{id}/sessions", {
+			params: { path: { id } },
+		}),
+	);
 }
