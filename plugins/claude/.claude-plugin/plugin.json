@@ -1,0 +1,14 @@
+{
+	"name": "dilly-dally",
+	"displayName": "Dilly Dally",
+	"version": "0.0.0-dev",
+	"description": "Find group meeting times and run polls with Dilly Dally.",
+	"author": {
+		"name": "Bradshaw",
+		"url": "https://dally.bradshaw.page"
+	},
+	"homepage": "https://dally.bradshaw.page",
+	"repository": "https://github.com/wra-bradshaw/dilly-dally",
+	"license": "MIT",
+	"keywords": ["scheduling", "availability", "polls", "meetings"]
+}

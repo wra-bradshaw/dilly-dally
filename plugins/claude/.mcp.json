@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"dilly-dally": {
+			"type": "http",
+			"url": "https://dally.bradshaw.page/mcp"
+		}
+	}
+}

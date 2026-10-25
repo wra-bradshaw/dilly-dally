@@ -1,0 +1,35 @@
+{
+	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+	"name": "dilly-dally",
+	"version": "0.0.0-dev",
+	"description": "Find group meeting times and run polls with Dilly Dally.",
+	"author": {
+		"name": "Bradshaw",
+		"url": "https://dally.bradshaw.page"
+	},
+	"homepage": "https://dally.bradshaw.page",
+	"repository": "https://github.com/wra-bradshaw/dilly-dally",
+	"license": "MIT",
+	"keywords": ["scheduling", "availability", "polls", "meetings"],
+	"extensions": {
+		"com.openai": {
+			"interface": {
+				"displayName": "Dilly Dally",
+				"shortDescription": "Find when everyone is free",
+				"longDescription": "Create scheduling events, collect availability, and run polls with Dilly Dally. No accounts, just share the event link.",
+				"developerName": "Bradshaw",
+				"category": "Productivity",
+				"capabilities": ["Create events", "Collect availability", "Run polls"],
+				"websiteURL": "https://dally.bradshaw.page",
+				"supportURL": "https://github.com/wra-bradshaw/dilly-dally/issues",
+				"privacyPolicyURL": "https://github.com/wra-bradshaw/dilly-dally",
+				"termsOfServiceURL": "https://github.com/wra-bradshaw/dilly-dally",
+				"defaultPrompt": [
+					"Create a Dilly Dally event for team lunch next week",
+					"Check who is free for my Dilly Dally event",
+					"Add a poll to my Dilly Dally event"
+				]
+			}
+		}
+	}
+}
