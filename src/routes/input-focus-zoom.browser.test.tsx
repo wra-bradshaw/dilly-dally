@@ -1,5 +1,6 @@
 import "#/styles.css";
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { Input } from "#/components/ui/input";
 import {
@@ -15,8 +16,9 @@ function fontSizePx(el: Element): number {
 }
 
 test("event + index inputs stay >=16px at 360px to avoid iOS zoom", async () => {
+	await page.viewport(360, 800);
 	const screen = await render(
-		<div style={{ width: "360px" }}>
+		<div>
 			<Input id="who-name" placeholder="Ada Lovelace" value="Ada" />
 			<Input id="who-pass" type="password" value="secret" />
 			<Input id="event-name" placeholder="Team offsite" value="Team offsite" />

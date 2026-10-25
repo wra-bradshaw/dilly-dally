@@ -75,7 +75,7 @@ test("event page with 6-day grids fits a 320px viewport without page overflow", 
 	);
 	const screen = await render(
 		<div
-			className="mx-auto w-[min(1080px,calc(100%-2rem))] pt-6 pb-16"
+			className="mx-auto min-w-0 max-w-full w-[min(1080px,calc(100%-2rem))] overflow-x-hidden pt-6 pb-16"
 			data-testid="event-page"
 		>
 			<h1 className="font-heading mt-2 text-3xl font-bold">Team offsite</h1>
@@ -85,7 +85,7 @@ test("event page with 6-day grids fits a 320px viewport without page overflow", 
 			>
 				<Label htmlFor="tz-view">Show times in</Label>
 				<Select defaultValue="UTC">
-					<SelectTrigger className="w-80" id="tz-view" type="button">
+					<SelectTrigger className="w-80 max-w-full" id="tz-view" type="button">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
@@ -96,7 +96,7 @@ test("event page with 6-day grids fits a 320px viewport without page overflow", 
 					</SelectContent>
 				</Select>
 			</div>
-			<Card className="mt-4" data-testid="own-card">
+			<Card className="mt-4 min-w-0 max-w-full" data-testid="own-card">
 				<CardHeader>
 					<CardTitle>Your availability</CardTitle>
 				</CardHeader>
@@ -108,7 +108,7 @@ test("event page with 6-day grids fits a 320px viewport without page overflow", 
 					/>
 				</CardContent>
 			</Card>
-			<Card className="mt-4" data-testid="group-card">
+			<Card className="mt-4 min-w-0 max-w-full" data-testid="group-card">
 				<CardHeader>
 					<CardTitle>Group&apos;s availability</CardTitle>
 				</CardHeader>
@@ -179,4 +179,63 @@ test("event page with 6-day grids fits a 360px viewport without page overflow", 
 		doc.scrollWidth,
 		`page overflows 360px viewport (innerWidth=${window.innerWidth}):\n${widestOverflow()}`,
 	).toBeLessThanOrEqual(window.innerWidth + 1);
+});
+
+test("non-contiguous 12-day grid renders gap markers and scrolls inside the card", async () => {
+	await page.viewport(320, 800);
+	const days = [
+		"2026-10-05",
+		"2026-10-06",
+		"2026-10-08",
+		"2026-10-09",
+		"2026-10-12",
+		"2026-10-13",
+		"2026-10-14",
+		"2026-10-15",
+		"2026-10-19",
+		"2026-10-20",
+		"2026-10-21",
+		"2026-10-22",
+	];
+	const columns = buildColumns(
+		days.flatMap((d) => [`${d}T09:00`, `${d}T09:30`]),
+		{
+			eventTimezone: "UTC",
+			mode: "dates",
+			viewTimezone: "UTC",
+		},
+	);
+	const screen = await render(
+		<div
+			className="mx-auto min-w-0 max-w-full w-[min(1080px,calc(100%-2rem))] overflow-x-hidden pt-6 pb-16"
+			data-testid="event-page"
+		>
+			<Card className="mt-4 min-w-0 max-w-full" data-testid="group-card">
+				<CardHeader>
+					<CardTitle>Group&apos;s availability</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<AvailabilityGrid
+						columns={columns}
+						onCommit={() => {}}
+						selected={new Set()}
+					/>
+				</CardContent>
+			</Card>
+		</div>,
+	);
+	await expect.element(screen.getByText("Group's availability")).toBeVisible();
+	expect(screen.container.textContent ?? "").toMatch(/\+\d/);
+	const doc = document.documentElement;
+	expect(
+		doc.scrollWidth,
+		`page overflows 320px viewport:\n${widestOverflow()}`,
+	).toBeLessThanOrEqual(321);
+	const scroller =
+		screen.container.querySelector<HTMLElement>(".overflow-x-auto");
+	expect(scroller, "grid inner scroller").not.toBeNull();
+	expect(
+		(scroller as HTMLElement).scrollWidth,
+		"wide grid should scroll inside its card",
+	).toBeGreaterThanOrEqual((scroller as HTMLElement).clientWidth);
 });
