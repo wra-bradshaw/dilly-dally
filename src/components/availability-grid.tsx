@@ -8,6 +8,7 @@ import {
 } from "#/hooks/use-paint-surface";
 import {
 	buildGridPos,
+	cellDateLabel,
 	type GridColumn,
 	gridRectangleIdsFromPos,
 } from "./grid-model";
@@ -94,7 +95,7 @@ export function AvailabilityGrid({
 									.filter(Boolean)
 									.join(" ")}
 								aria-disabled={disabled}
-								aria-label={`${ctx.segment.label} ${cell.label}`}
+								aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}`}
 								aria-pressed={isSelected}
 								className={cn(
 									"absolute inset-0 w-full border-r border-b border-l transition-colors motion-reduce:transition-none first:border-t hover:ring-2 hover:ring-inset hover:ring-ring active:ring-2 active:ring-inset active:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
@@ -105,7 +106,6 @@ export function AvailabilityGrid({
 										(isSelected
 											? "border-t border-t-emerald-500 dark:border-t-emerald-800"
 											: "border-t border-t-rose-200 dark:border-t-rose-800"),
-									ctx.afterBreak && "border-t-2 border-t-foreground/20",
 								)}
 								data-cell={cell.id}
 								onClick={(e) => surface.toggle(cell.id, e.detail)}

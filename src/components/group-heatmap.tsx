@@ -2,7 +2,12 @@ import { cn } from "cn";
 import { useId, useMemo, useRef, useState } from "react";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
-import { buildGridPos, formatViewerSlot, type GridColumn } from "./grid-model";
+import {
+	buildGridPos,
+	cellDateLabel,
+	formatViewerSlot,
+	type GridColumn,
+} from "./grid-model";
 import { TimeGrid } from "./time-grid";
 
 interface CellCount {
@@ -87,11 +92,10 @@ export function GroupHeatmap({
 					renderCell={(cell, ctx) => (
 						<button
 							aria-describedby={detailId}
-							aria-label={`${ctx.segment.label} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
+							aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							className={cn(
 								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs sm:text-[10px] leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",
 								heatmapFill(counts.get(cell.id)?.count ?? 0, total),
-								ctx.afterBreak && "border-t-2 border-t-foreground/20",
 								hovered === cell.id && "ring-2 ring-inset ring-ring",
 							)}
 							data-cell={cell.id}

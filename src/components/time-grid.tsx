@@ -1,13 +1,9 @@
 import { cn } from "cn";
 import { Fragment, type ReactNode, type Ref, useId, useMemo } from "react";
 import {
-	buildTimeRows,
-	type DateMarker,
 	type GridCell,
 	type GridColumn,
-	getDateBreaks,
 	getDayGaps,
-	segmentForCell,
 	summarizeDates,
 } from "./grid-model";
 
@@ -15,8 +11,6 @@ interface TimeGridCellContext {
 	column: GridColumn;
 	columnIndex: number;
 	rowIndex: number;
-	segment: DateMarker;
-	afterBreak: boolean;
 }
 
 interface TimeGridProps {
@@ -39,7 +33,7 @@ function GapCell({
 	variant,
 }: {
 	gap: DayGap;
-	variant: "header" | "marker" | "body";
+	variant: "header" | "body";
 }) {
 	if (variant === "header") {
 		return (
@@ -62,11 +56,7 @@ function GapCell({
 			aria-hidden="true"
 			className="border-r border-dashed border-muted-foreground bg-muted/40 p-0"
 		>
-			<span
-				className={
-					variant === "marker" ? "block h-7 w-3 sm:w-4" : "block h-6 w-3 sm:w-4"
-				}
-			/>
+			<span className="block h-12 w-3 sm:h-6 sm:w-4" />
 		</td>
 	);
 }
@@ -88,11 +78,6 @@ export function TimeGrid({
 		() => new Map(gaps.map((g) => [g.afterIndex, g])),
 		[gaps],
 	);
-	const breaksByCol = useMemo(
-		() => columns.map((c) => getDateBreaks(c)),
-		[columns],
-	);
-	const rows = useMemo(() => buildTimeRows(columns), [columns]);
 	const summary = useMemo(() => summarizeDates(columns), [columns]);
 	const totalSkipped = gaps.reduce((n, g) => n + g.skipped, 0);
 	const rawId = useId();
@@ -102,6 +87,7 @@ export function TimeGrid({
 		gaps.length > 0
 			? `${tableLabel} Dates are non-contiguous; gaps marked ${totalSkipped} days skipped.`
 			: tableLabel;
+	const rowCount = columns.reduce((n, c) => Math.max(n, c.cells.length), 0);
 
 	return (
 		<>
@@ -135,13 +121,14 @@ export function TimeGrid({
 										<GapCell gap={headerGap} variant="header" />
 									) : null}
 									<th
-										className="min-w-8 px-0.5 sm:min-w-9"
+										className="min-w-8 px-0.5 pb-1 sm:min-w-9"
 										id={`${baseId}-col-${i}`}
 										scope="col"
 									>
-										<span className="sr-only">
-											Available times for {col.header}
-										</span>
+										<span className="sr-only">Available times for </span>
+										<div className="text-xs font-semibold sm:text-[11px]">
+											{col.header}
+										</div>
 									</th>
 								</Fragment>
 							);
@@ -149,49 +136,12 @@ export function TimeGrid({
 					</tr>
 				</thead>
 				<tbody>
-					{rows.map((row, ri) => {
-						if (row.kind === "markers") {
-							return (
-								// biome-ignore lint/suspicious/noArrayIndexKey: interleaved marker/cell rows are positional and never reorder
-								<tr key={`marker-${ri}`}>
-									<td aria-hidden="true" className="p-0">
-										<span className="block h-1 w-12 sm:w-16" />
-									</td>
-									{columns.map((col, i) => {
-										const gap = i > 0 ? gapByAfter.get(i - 1) : undefined;
-										const marker = row.markers[i] ?? null;
-										return (
-											<Fragment key={col.key}>
-												{gap ? <GapCell gap={gap} variant="marker" /> : null}
-												{marker ? (
-													<th
-														className={cn(
-															"px-0.5 pb-1",
-															marker.rowIndex === 0 ? "pt-1" : "pt-2 sm:pt-4",
-														)}
-														id={`${baseId}-date-${col.key}-${marker.rowIndex}`}
-														scope="col"
-													>
-														<div className="text-xs font-semibold sm:text-[11px]">
-															{marker.label}
-														</div>
-													</th>
-												) : (
-													<td aria-hidden="true" className="p-0">
-														<span className="block h-7 w-full" />
-													</td>
-												)}
-											</Fragment>
-										);
-									})}
-								</tr>
-							);
-						}
-						const r = row.rowIndex;
+					{Array.from({ length: rowCount }, (_, r) => {
 						const gutter = columns.map((c) => c.cells[r]).find(Boolean) ?? null;
 						const rowId =
 							gutter?.hourStart === true ? `${baseId}-row-${r}` : null;
 						return (
+							// biome-ignore lint/suspicious/noArrayIndexKey: grid rows are positional and never reorder
 							<tr key={`row-${r}`}>
 								{gutter?.hourStart === true && gutter ? (
 									<th
@@ -209,33 +159,23 @@ export function TimeGrid({
 								{columns.map((col, i) => {
 									const gap = i > 0 ? gapByAfter.get(i - 1) : undefined;
 									const cell = col.cells[r];
-									const breaks = breaksByCol[i] ?? [];
-									const segment = cell ? segmentForCell(breaks, r) : null;
-									const afterBreak =
-										segment !== null && segment.rowIndex === r && r !== 0;
 									const colId = `${baseId}-col-${i}`;
-									const dateId =
-										segment !== null
-											? `${baseId}-date-${col.key}-${segment.rowIndex}`
-											: null;
-									const headers = [colId, dateId, rowId]
+									const headers = [colId, rowId]
 										.filter((v): v is string => v !== null)
 										.join(" ");
 									return (
 										<Fragment key={col.key}>
 											{gap ? <GapCell gap={gap} variant="body" /> : null}
-											{cell && segment ? (
+											{cell ? (
 												<td
 													className="relative p-0"
 													headers={headers}
 													key={cell.id}
 												>
 													{renderCell(cell, {
-														afterBreak,
 														column: col,
 														columnIndex: i,
 														rowIndex: r,
-														segment,
 													})}
 												</td>
 											) : (

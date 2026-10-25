@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useId, useMemo, useRef, useState } from "react";
 import { AvailabilityGrid } from "#/components/availability-grid";
 import { EventLoadError } from "#/components/event/event-load-error";
-import { buildColumns, buildWeeklyColumns } from "#/components/grid-model";
+import { buildColumns } from "#/components/grid-model";
 import { GroupHeatmap } from "#/components/group-heatmap";
 import { PollsSection } from "#/components/polls";
 import { Button } from "#/components/ui/button";
@@ -224,14 +224,17 @@ function EventPage() {
 	const columns = useMemo(() => {
 		if (!detail.data) return [];
 		if ((detail.data.event.mode ?? "dates") === "weekly") {
-			return buildWeeklyColumns(detail.data.slotUniverse, hourCycle);
+			return buildColumns(detail.data.slotUniverse, {
+				hourCycle,
+				mode: "weekly",
+			});
 		}
-		return buildColumns(
-			detail.data.slotUniverse,
-			detail.data.event.timezone,
-			viewTimezone,
+		return buildColumns(detail.data.slotUniverse, {
+			eventTimezone: detail.data.event.timezone,
 			hourCycle,
-		);
+			mode: "dates",
+			viewTimezone,
+		});
 	}, [detail.data, viewTimezone, hourCycle]);
 	const counts = useMemo(() => {
 		const map = new Map<string, { count: number; names: string[] }>();
