@@ -166,3 +166,18 @@ export async function getParticipantRow(
 		);
 	return rows[0] ?? null;
 }
+
+export async function runAsBatch(
+	db: DrizzleDb,
+	queries: unknown[],
+): Promise<void> {
+	const candidate = (db as unknown as { batch?: unknown }).batch;
+	if (typeof candidate === "function") {
+		await (candidate as (queries: unknown[]) => Promise<unknown>).call(
+			db,
+			queries,
+		);
+		return;
+	}
+	for (const query of queries) await query;
+}

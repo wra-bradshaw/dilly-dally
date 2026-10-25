@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	deleteEvent,
 	fetchEvent,
@@ -6,6 +6,8 @@ import {
 	listParticipants,
 	parseSlotsJson,
 	purgeExpired,
+	runAsBatch,
+	type DrizzleDb,
 	toPublicEvent,
 } from "./db";
 import { events, participants } from "./schema";
@@ -116,5 +118,48 @@ describe("event persistence", () => {
 		});
 		expect(await purgeExpired(db, 2000)).toBe(1);
 		expect(await listParticipants(db, base.id)).toEqual([]);
+	});
+});
+
+describe("runAsBatch", () => {
+	it("sends every query in one batch call when supported", async () => {
+		const batch = vi.fn(async () => []);
+		const db = { batch } as unknown as DrizzleDb;
+		const first = { tag: "first" };
+		const second = { tag: "second" };
+		await runAsBatch(db, [first, second]);
+		expect(batch).toHaveBeenCalledTimes(1);
+		expect(batch).toHaveBeenCalledWith([first, second]);
+	});
+
+	it("runs queries in order when batch is unavailable", async () => {
+		const db = {} as unknown as DrizzleDb;
+		const order: string[] = [];
+		const query = (name: string) => ({
+			then: (onFulfilled: (value: string) => unknown) => {
+				order.push(name);
+				return Promise.resolve(name).then(onFulfilled);
+			},
+		});
+		await runAsBatch(db, [query("a"), query("b"), query("c")]);
+		expect(order).toEqual(["a", "b", "c"]);
+	});
+
+	it("propagates batch failures", async () => {
+		const batch = vi.fn(async () => {
+			throw new Error("batch blew up");
+		});
+		const db = { batch } as unknown as DrizzleDb;
+		await expect(runAsBatch(db, [{}])).rejects.toThrow("batch blew up");
+	});
+
+	it("propagates sequential failures", async () => {
+		const db = {} as unknown as DrizzleDb;
+		const failing = {
+			then: () => {
+				throw new Error("query blew up");
+			},
+		};
+		await expect(runAsBatch(db, [failing])).rejects.toThrow("query blew up");
 	});
 });
