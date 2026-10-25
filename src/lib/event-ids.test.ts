@@ -4,8 +4,24 @@ import { generateEventId, isValidEventId } from "./event-ids";
 describe("generateEventId", () => {
 	it("generates a 12-char url-safe id", () => {
 		const id = generateEventId();
+		expect(id).toHaveLength(12);
 		expect(id).toMatch(/^[A-Za-z0-9_-]{12}$/);
 		expect(isValidEventId(id)).toBe(true);
+	});
+
+	it("generates unique ids", () => {
+		const ids = new Set(Array.from({ length: 100 }, () => generateEventId()));
+		expect(ids.size).toBe(100);
+		for (const id of ids) {
+			expect(id).toMatch(/^[A-Za-z0-9_-]{12}$/);
+		}
+	});
+
+	it("has no collision in 10k batch", () => {
+		const ids = new Set(
+			Array.from({ length: 10_000 }, () => generateEventId()),
+		);
+		expect(ids.size).toBe(10_000);
 	});
 
 	it("rejects invalid ids", () => {

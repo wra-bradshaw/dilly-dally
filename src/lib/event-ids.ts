@@ -1,13 +1,7 @@
-const ALPHABET =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+import { nanoid } from "nanoid";
 
 export function generateEventId(): string {
-	const bytes = crypto.getRandomValues(new Uint8Array(12));
-	let id = "";
-	for (const b of bytes) {
-		id += ALPHABET[b % ALPHABET.length];
-	}
-	return id;
+	return nanoid(12);
 }
 
 export function isValidEventId(id: string): boolean {
