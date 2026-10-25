@@ -12,7 +12,9 @@ export function bindingForScope(
 	if (scope === "read") return bindings.READ_LIMITER as RateLimit;
 	if (scope === "create_event")
 		return bindings.CREATE_EVENT_LIMITER as RateLimit;
-	return bindings.AVAIL_WRITE_LIMITER as RateLimit;
+	if (scope === "availability_write")
+		return bindings.AVAIL_WRITE_LIMITER as RateLimit;
+	throw new Error(`unknown rate limit scope: ${scope}`);
 }
 
 function resetMsFor(windowMs: number, now: number = Date.now()): number {

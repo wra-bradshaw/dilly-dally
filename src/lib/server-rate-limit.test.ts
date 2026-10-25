@@ -54,6 +54,13 @@ describe("bindingForScope", () => {
 			bindings.AVAIL_WRITE_LIMITER,
 		);
 	});
+
+	it("throws on unknown scopes instead of silently picking a budget", () => {
+		const bindings = {
+			AVAIL_WRITE_LIMITER: fakeBinding(true),
+		} as unknown as Record<string, RateLimit | undefined>;
+		expect(() => bindingForScope("nope", bindings)).toThrow();
+	});
 });
 
 describe("checkRateLimit", () => {
@@ -90,6 +97,7 @@ describe("doRateLimit", () => {
 	it("keys by scope and client ip", async () => {
 		const seenA: { key?: string } = {};
 		const seenB: { key?: string } = {};
+		const seenC: { key?: string } = {};
 		await doRateLimit(
 			request("4.4.4.4"),
 			"read",
@@ -103,6 +111,13 @@ describe("doRateLimit", () => {
 			fakeBinding(true, seenB),
 		);
 		expect(seenA.key).not.toBe(seenB.key);
+		await doRateLimit(
+			request("5.5.5.5"),
+			"read",
+			{ limit: 120, windowMs: 60_000 },
+			fakeBinding(true, seenC),
+		);
+		expect(seenA.key).not.toBe(seenC.key);
 	});
 
 	it("denies when the binding reports failure", async () => {
