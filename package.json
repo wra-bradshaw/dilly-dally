@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "format": "biome format",
     "lint": "biome lint",
-    "check": "biome check && pnpm knip",
+    "check": "tsc --noEmit && biome check && pnpm knip",
     "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest",
