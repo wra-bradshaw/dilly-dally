@@ -1,5 +1,6 @@
 import { handleGetDetail } from "../routes/api/events/$eventId/index";
 import { getOwnSessionResponse } from "../routes/api/events/$eventId/sessions";
+import { originOf } from "./api-errors";
 import {
 	type EventDetailSsrResult,
 	type OwnSessionSsrResult,
@@ -25,4 +26,8 @@ export async function readOwnSessionSsr(
 	const response = await getOwnSessionResponse(eventId, request);
 	const body: unknown = await response.json();
 	return toOwnSessionSsrResult(response, body);
+}
+
+export function readInviteOriginSsr(request: Request): string {
+	return originOf(request);
 }

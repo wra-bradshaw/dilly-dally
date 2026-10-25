@@ -25,3 +25,10 @@ export const fetchOwnSessionSsrFn = createServerFn({ method: "GET" })
 		const { readOwnSessionSsr } = await import("./event-ssr-server");
 		return readOwnSessionSsr(eventId, getRequest());
 	});
+
+export const fetchInviteOriginSsrFn = createServerFn({ method: "GET" }).handler(
+	async (): Promise<string> => {
+		const { readInviteOriginSsr } = await import("./event-ssr-server");
+		return readInviteOriginSsr(getRequest());
+	},
+);

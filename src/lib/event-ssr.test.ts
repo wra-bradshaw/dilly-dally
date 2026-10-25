@@ -10,7 +10,11 @@ import {
 	toEventDetailSsrResult,
 	toOwnSessionSsrResult,
 } from "./event-ssr-result";
-import { readEventDetailSsr, readOwnSessionSsr } from "./event-ssr-server";
+import {
+	readEventDetailSsr,
+	readInviteOriginSsr,
+	readOwnSessionSsr,
+} from "./event-ssr-server";
 import { upsertAvailability } from "./server-availability";
 import { createTestDb } from "./test-db";
 
@@ -182,6 +186,14 @@ describe("readEventDetailSsr", () => {
 		);
 		expect(res).toMatchObject({ code: "rate_limited", ok: false, status: 429 });
 		if (!res.ok) expect(typeof res.retryAfter).toBe("number");
+	});
+});
+
+describe("readInviteOriginSsr", () => {
+	it("returns the request origin", () => {
+		expect(
+			readInviteOriginSsr(new Request("https://dally.example/e/abc123")),
+		).toBe("https://dally.example");
 	});
 });
 
