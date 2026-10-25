@@ -76,6 +76,7 @@ describe("session flow", () => {
 		const setCookie = login.headers.get("set-cookie");
 		expect(setCookie).toContain("HttpOnly");
 		expect(setCookie).toContain(`dd_s_${event.id}=`);
+		expect(login.headers.get("Cache-Control")).toBe("no-store");
 		const cookie = setCookie?.split(";")[0] ?? "";
 		const own = await getOwnAvailabilityResponse(
 			event.id,
@@ -101,5 +102,7 @@ describe("session flow", () => {
 			}),
 		);
 		expect(res.headers.get("set-cookie")).toContain("Max-Age=0");
+		expect(res.headers.get("set-cookie")).toContain(`dd_s_${event.id}=`);
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
 	});
 });

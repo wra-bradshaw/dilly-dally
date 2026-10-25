@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { readGuardedJson } from "#/lib/api-errors";
+import { insertEvent } from "#/lib/db";
+import { createTestDb } from "#/lib/test-db";
 import { availabilitySchema } from "#/lib/validation";
 import {
 	allowNamespace,
@@ -12,7 +14,37 @@ import {
 	saveAvailability,
 } from "./$eventId/availability";
 import { handleGetDetail } from "./$eventId/index";
+import {
+	createSessionResponse,
+	deleteSessionResponse,
+} from "./$eventId/sessions";
 import { handleCreate } from "./index";
+
+vi.mock("#/lib/db-env", () => ({
+	getDb: () => (globalThis as unknown as Record<string, unknown>).__testDb,
+}));
+
+beforeAll(async () => {
+	const { db } = await createTestDb();
+	(globalThis as unknown as Record<string, unknown>).__testDb = db;
+	await insertEvent(
+		(globalThis as unknown as { __testDb: Parameters<typeof insertEvent>[0] })
+			.__testDb,
+		{
+			createdAt: 1_700_000_000_000,
+			dates: ["2026-10-05"],
+			endTime: "10:00",
+			expiresAt: 1_800_000_000_000,
+			id: "AbC123_-XyZ9",
+			mode: "dates",
+			startTime: "09:00",
+			timezone: "UTC",
+			title: "Standup",
+			weekdays: [],
+		},
+	);
+	stubRateLimiter(allowNamespace());
+});
 
 afterEach(() => {
 	delete (env as unknown as Record<string, unknown>).RATE_LIMITER;
@@ -281,5 +313,36 @@ describe("guard response headers", () => {
 		expect(res.headers.get("Referrer-Policy")).toBe(
 			"strict-origin-when-cross-origin",
 		);
+	});
+});
+
+describe("live-event precedence", () => {
+	it("reports missing events before malformed availability bodies", async () => {
+		stubRateLimiter(allowNamespace());
+		const res = await saveAvailability(
+			postRequest({ name: "Ada" }, "text/plain"),
+			"!!!not-an-id!!!",
+		);
+		expect(res.status).toBe(404);
+	});
+
+	it("reports missing events before malformed session bodies", async () => {
+		stubRateLimiter(allowNamespace());
+		const res = await createSessionResponse(
+			"!!!not-an-id!!!",
+			postRequest({ name: "Ada" }, "text/plain"),
+		);
+		expect(res.status).toBe(404);
+	});
+
+	it("reports missing events on session logout before clearing cookies", async () => {
+		stubRateLimiter(allowNamespace());
+		const res = await deleteSessionResponse(
+			"!!!not-an-id!!!",
+			new Request("https://x.test/api/events/!!!not-an-id!!!/sessions", {
+				method: "DELETE",
+			}),
+		);
+		expect(res.status).toBe(404);
 	});
 });
