@@ -38,10 +38,6 @@ import {
 	saveAvailability,
 } from "#/lib/client";
 import { patchDetailForSave } from "#/lib/detail-patch";
-import {
-	fetchEventDetailServerFn,
-	fetchOwnSessionServerFn,
-} from "#/lib/event-detail-loader";
 import { decideSignInError, saveErrorMessage } from "#/lib/event-messages";
 import { HttpError } from "#/lib/http-error";
 import { allTimezones, browserTimezone } from "#/lib/time-slots";
@@ -52,35 +48,6 @@ export const Route = createFileRoute("/e/$eventId")({
 	headers: () => ({
 		"Cache-Control": "no-store",
 	}),
-	loader: async ({ context, params }) => {
-		await context.queryClient.ensureQueryData({
-			queryFn: async () => {
-				const result = await fetchEventDetailServerFn({
-					data: params.eventId,
-				});
-				if (!result.ok) {
-					throw new HttpError(
-						result.status,
-						result.code,
-						result.message,
-						undefined,
-						result.retryAfter,
-					);
-				}
-				return result.detail;
-			},
-			queryKey: ["event", params.eventId],
-		});
-		await context.queryClient.ensureQueryData({
-			queryFn: async () => {
-				const result = await fetchOwnSessionServerFn({
-					data: params.eventId,
-				});
-				return result;
-			},
-			queryKey: ["own-session", params.eventId],
-		});
-	},
 });
 
 function EventError({ error }: { error: unknown }) {
