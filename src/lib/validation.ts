@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { DAY_MS, EVENT_MAX_FUTURE_DAYS } from "./expiry";
 
-const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-const hourRe = /^([01]\d|2[0-3]):(00|30)$/;
-const slotRe = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):(00|30)$/;
-const weeklySlotRe = /^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|30)$/;
+export const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+export const hourRe = /^([01]\d|2[0-3]):(00|30)$/;
+export const slotRe = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):(00|30)$/;
+export const weeklySlotRe =
+	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|30)$/;
 
 function isSlotId(s: string): boolean {
 	return slotRe.test(s) || weeklySlotRe.test(s);
@@ -47,9 +48,9 @@ export function nameKey(name: string): string {
 	return name.trim().toLowerCase();
 }
 
-const eventModeSchema = z.enum(["dates", "weekly"]);
+export const eventModeSchema = z.enum(["dates", "weekly"]);
 
-const weekdaySchema = z.number().int().min(0).max(6);
+export const weekdaySchema = z.number().int().min(0).max(6);
 
 const datesField = z
 	.array(

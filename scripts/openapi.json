@@ -87,6 +87,8 @@
           },
           "timezone": {
             "example": "America/New_York",
+            "maxLength": 64,
+            "minLength": 1,
             "type": "string"
           },
           "title": {
@@ -100,15 +102,14 @@
               "$ref": "#/components/schemas/Weekday"
             },
             "maxItems": 7,
-            "minItems": 1,
             "type": "array"
           }
         },
         "required": [
-          "title",
-          "startTime",
           "endTime",
-          "timezone"
+          "startTime",
+          "timezone",
+          "title"
         ],
         "type": "object"
       },
@@ -245,6 +246,8 @@
           "optionIds": {
             "description": "Full replace set of option ids for this poll. Empty array clears the vote.",
             "items": {
+              "maxLength": 64,
+              "minLength": 1,
               "type": "string"
             },
             "maxItems": 10,
@@ -286,6 +289,8 @@
       "Weekday": {
         "description": "Day of week, 0=Sunday through 6=Saturday.",
         "example": 1,
+        "maximum": 6,
+        "minimum": 0,
         "type": "integer"
       },
       "WeeklySlotId": {

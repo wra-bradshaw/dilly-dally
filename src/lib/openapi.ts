@@ -1,3 +1,4 @@
+// @generated
 import { docsResponse, originOf } from "./api-errors";
 
 interface OpenApiSchema {
@@ -12,6 +13,8 @@ interface OpenApiSchema {
 	maxLength?: number;
 	minItems?: number;
 	minLength?: number;
+	minimum?: number;
+	maximum?: number;
 	nullable?: boolean;
 	pattern?: string;
 	properties?: Record<string, OpenApiSchema>;
@@ -118,18 +121,22 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 							pattern: "^([01]\\d|2[0-3]):(00|30)$",
 							type: "string",
 						},
-						timezone: { example: "America/New_York", type: "string" },
+						timezone: {
+							example: "America/New_York",
+							maxLength: 64,
+							minLength: 1,
+							type: "string",
+						},
 						title: { maxLength: 100, minLength: 1, type: "string" },
 						weekdays: {
 							description:
 								"Required when mode is weekly. 1..7 unique entries, 0=Sunday through 6=Saturday. Example [1,3,5] means Mon/Wed/Fri.",
 							items: { $ref: "#/components/schemas/Weekday" },
 							maxItems: 7,
-							minItems: 1,
 							type: "array",
 						},
 					},
-					required: ["title", "startTime", "endTime", "timezone"],
+					required: ["endTime", "startTime", "timezone", "title"],
 					type: "object",
 				},
 				CreatePollRequest: {
@@ -208,7 +215,7 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 						optionIds: {
 							description:
 								"Full replace set of option ids for this poll. Empty array clears the vote.",
-							items: { type: "string" },
+							items: { maxLength: 64, minLength: 1, type: "string" },
 							maxItems: 10,
 							type: "array",
 						},
@@ -240,6 +247,8 @@ export function getOpenApiSpec(origin: string): OpenApiSpec {
 				Weekday: {
 					description: "Day of week, 0=Sunday through 6=Saturday.",
 					example: 1,
+					maximum: 6,
+					minimum: 0,
 					type: "integer",
 				},
 				WeeklySlotId: weeklySlotId,
