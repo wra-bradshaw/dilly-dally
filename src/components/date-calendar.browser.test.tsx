@@ -457,3 +457,35 @@ test("repeat keydown does not toggle the day", async () => {
 	);
 	expect(onCommit).not.toHaveBeenCalled();
 });
+
+test("calendar never scrolls horizontally on narrow viewports", async () => {
+	const screen = await render(
+		<div style={{ width: "320px" }}>
+			<DateCalendar
+				maxDate="2026-10-31"
+				minDate="2026-09-22"
+				onCommit={() => {}}
+				selected={new Set()}
+			/>
+		</div>,
+	);
+
+	const day = screen.getByRole("button", { name: "Mon, 9/28" });
+	await expect.element(day).toBeVisible();
+	const scroller = screen.container.querySelector<HTMLElement>(
+		'[data-slot="date-calendar-months"]',
+	);
+	const outer = screen.container.querySelector<HTMLElement>(
+		'[data-slot="date-calendar"]',
+	);
+	expect(scroller).not.toBeNull();
+	expect(outer).not.toBeNull();
+	const scrollerEl = scroller as HTMLElement;
+	const outerEl = outer as HTMLElement;
+	expect(scrollerEl.className).toContain("overflow-x-hidden");
+	expect(outerEl.className).toContain("overflow-x-hidden");
+	expect(scrollerEl.scrollWidth).toBeLessThanOrEqual(
+		scrollerEl.clientWidth + 1,
+	);
+	expect(outerEl.scrollWidth).toBeLessThanOrEqual(outerEl.clientWidth + 1);
+});

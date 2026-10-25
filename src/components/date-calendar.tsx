@@ -334,12 +334,14 @@ export function DateCalendar({
 	};
 
 	return (
-		<div>
+		<div className="w-full max-w-full min-w-0 overflow-x-hidden">
 			{/* biome-ignore lint/a11y/useSemanticElements: inner group inside parent fieldset */}
 			<div
 				aria-describedby={describedBy}
 				aria-labelledby={labelledBy}
-				className={cn("touch-pan-y select-none")}
+				className={cn(
+					"touch-pan-y max-w-full min-w-0 overflow-x-hidden select-none",
+				)}
 				data-slot="date-calendar"
 				onKeyDown={onDayKeyDown}
 				onPointerCancel={onPointerCancel}
@@ -349,12 +351,12 @@ export function DateCalendar({
 				role="group"
 			>
 				<div
-					className="max-h-[60dvh] overflow-y-auto overscroll-contain sm:max-h-[400px]"
+					className="max-h-[60dvh] max-w-full overflow-x-hidden overflow-y-auto overscroll-contain sm:max-h-[400px]"
 					data-slot="date-calendar-months"
 					ref={scrollRef}
 				>
 					<div
-						className="sticky top-0 z-10 grid grid-cols-7 gap-1 border-b border-border bg-card/95 py-1 backdrop-blur"
+						className="sticky top-0 z-10 grid w-full min-w-0 grid-cols-7 gap-1 border-b border-border bg-card/95 py-1 backdrop-blur"
 						data-slot="date-calendar-weekdays"
 					>
 						{[
@@ -367,7 +369,7 @@ export function DateCalendar({
 							{ full: "Saturday", short: "S" },
 						].map((d) => (
 							<div
-								className="text-center text-xs text-muted-foreground"
+								className="min-w-0 overflow-hidden text-center text-xs text-muted-foreground"
 								key={d.full}
 							>
 								<abbr
@@ -391,7 +393,7 @@ export function DateCalendar({
 								<h2 className="mb-1 text-sm font-semibold" id={headingId}>
 									{section.label}
 								</h2>
-								<div className="grid grid-cols-7 gap-1">
+								<div className="grid w-full min-w-0 grid-cols-7 gap-1">
 									{section.weeks.flatMap((week) => {
 										let offset = 0;
 										while (offset < week.length && week[offset] === null) {
@@ -408,7 +410,7 @@ export function DateCalendar({
 												return (
 													<span
 														aria-hidden="true"
-														className="aspect-square"
+														className="aspect-square min-w-0"
 														data-filler=""
 														key={day}
 														style={gridStyle}
@@ -422,7 +424,7 @@ export function DateCalendar({
 													aria-label={formatMarkerDate(day)}
 													aria-pressed={on}
 													className={cn(
-														"flex aspect-square min-h-11 items-center justify-center rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+														"flex aspect-square min-h-11 w-full min-w-0 items-center justify-center overflow-hidden rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
 														!on &&
 															"border-input bg-background hover:border-primary",
 														on &&
