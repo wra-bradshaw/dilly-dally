@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { useId, useMemo, useRef, useState } from "react";
+import { useDateLocale } from "#/hooks/use-date-locale";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import { useHourCycle } from "#/hooks/use-hour-cycle";
 import {
@@ -57,6 +58,7 @@ export function GroupHeatmap({
 	const tapped = useRef<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
 	const hourCycle = useHourCycle();
+	const locale = useDateLocale();
 	const rawDetailId = useId();
 	const detailId = rawDetailId.replace(/[^a-zA-Z0-9_-]/g, "");
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
@@ -80,10 +82,16 @@ export function GroupHeatmap({
 	);
 	const hoveredDisplay = hovered
 		? eventTimezone && viewTimezone
-			? formatViewerSlotRange(hovered, eventTimezone, viewTimezone, hourCycle)
+			? formatViewerSlotRange(
+					hovered,
+					eventTimezone,
+					viewTimezone,
+					hourCycle,
+					locale,
+				)
 			: isWeeklySlotId(hovered)
 				? formatWeeklySlotRange(hovered, hourCycle)
-				: formatSlotWithDateRange(hovered, hourCycle)
+				: formatSlotWithDateRange(hovered, hourCycle, locale)
 		: null;
 
 	return (
@@ -96,7 +104,7 @@ export function GroupHeatmap({
 					renderCell={(cell, ctx) => (
 						<button
 							aria-describedby={detailId}
-							aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
+							aria-label={`${cellDateLabel(cell, ctx.column, locale)} ${cell.label}: ${counts.get(cell.id)?.count ?? 0} of ${total} available`}
 							title={cell.rangeLabel}
 							className={cn(
 								"absolute inset-0 flex w-full cursor-pointer items-center justify-center border-r border-b border-l text-xs leading-none font-semibold transition-colors motion-reduce:transition-none first:border-t focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring forced-colors:focus-visible:outline-[Highlight]",

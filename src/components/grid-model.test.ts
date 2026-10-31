@@ -332,6 +332,10 @@ describe("formatMarkerDate", () => {
 	it("pins en-US output so server and client render identically", () => {
 		expect(formatMarkerDate("2026-09-28")).toBe("Mon, 9/28");
 	});
+
+	it("orders day and month by locale", () => {
+		expect(formatMarkerDate("2026-09-28", "en-GB")).toBe("Mon, 28/09");
+	});
 });
 
 describe("splitDateHeader", () => {
@@ -355,6 +359,18 @@ describe("cellDateLabel", () => {
 	it("falls back to the column header for weekly cells", () => {
 		const cols = buildColumns(["MON-09:00"], { mode: "weekly" });
 		expect(cellDateLabel(cols[0].cells[0], cols[0])).toBe(cols[0].header);
+	});
+});
+
+describe("buildColumns locale", () => {
+	it("formats date headers in the given locale", () => {
+		const cols = buildColumns(["2026-09-28T09:00"], {
+			eventTimezone: "UTC",
+			locale: "en-GB",
+			mode: "dates",
+			viewTimezone: "UTC",
+		});
+		expect(cols[0].header).toBe("Mon, 28/09");
 	});
 });
 
@@ -394,7 +410,7 @@ describe("hourCycle", () => {
 				"America/New_York",
 				"h23",
 			),
-		).toBe("Oct 5, 13:00");
+		).toBe("10/5, 13:00");
 	});
 });
 

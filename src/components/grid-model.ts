@@ -1,5 +1,8 @@
 import {
 	convertSlotZone,
+	DATE_RE,
+	DEFAULT_LOCALE,
+	formatDayMonth,
 	formatSlotLabel,
 	formatSlotWithDate,
 	formatTimeRange,
@@ -29,6 +32,7 @@ export type BuildColumnsOptions =
 			eventTimezone: string;
 			viewTimezone: string;
 			hourCycle?: HourCycle;
+			locale?: string;
 	  }
 	| { mode: "weekly"; hourCycle?: HourCycle };
 
@@ -46,10 +50,10 @@ export function weekdayName(
 	if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
 		return `Day ${weekday}`;
 	}
-	return new Intl.DateTimeFormat("en-US", {
-		timeZone: "UTC",
-		weekday: style,
-	}).format(new Date(Date.UTC(2000, 0, 2 + weekday)));
+	return new Date(Date.UTC(2000, 0, 2 + weekday)).toLocaleDateString(
+		DEFAULT_LOCALE,
+		{ timeZone: "UTC", weekday: style },
+	);
 }
 
 export function formatGroupSummary(
@@ -88,15 +92,13 @@ export function summarizeWeekdays(weekdays: number[]): string {
 	);
 }
 
-export function formatMarkerDate(date: string): string {
+export function formatMarkerDate(
+	date: string,
+	locale = DEFAULT_LOCALE,
+): string {
 	const [y, m, d] = date.split("-").map(Number);
-	const dt = new Date(Date.UTC(y, m - 1, d));
-	return new Intl.DateTimeFormat("en-US", {
-		day: "numeric",
-		month: "numeric",
-		timeZone: "UTC",
-		weekday: "short",
-	}).format(dt);
+	const weekday = weekdayName(new Date(Date.UTC(y, m - 1, d)).getUTCDay());
+	return `${weekday}, ${formatDayMonth(date, locale)}`;
 }
 
 export function splitDateHeader(header: string): [string, string | null] {
@@ -105,15 +107,17 @@ export function splitDateHeader(header: string): [string, string | null] {
 	return [header.slice(0, comma), header.slice(comma + 1).trimStart()];
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 function isHourStart(minutes: string): boolean {
 	return minutes === "00";
 }
 
-export function cellDateLabel(cell: GridCell, column: GridColumn): string {
+export function cellDateLabel(
+	cell: GridCell,
+	column: GridColumn,
+	locale = DEFAULT_LOCALE,
+): string {
 	const candidate = cell.display.slice(0, 10);
-	if (DATE_RE.test(candidate)) return formatMarkerDate(candidate);
+	if (DATE_RE.test(candidate)) return formatMarkerDate(candidate, locale);
 	return column.header;
 }
 
@@ -253,6 +257,7 @@ function buildDatesMode(
 	eventTimezone: string,
 	viewTimezone: string,
 	hourCycle: HourCycle,
+	locale: string,
 ): GridColumn[] {
 	const byEventDate = new Map<string, GridCell[]>();
 	for (const id of universe) {
@@ -274,7 +279,7 @@ function buildDatesMode(
 		.map(([date, cells]) => ({
 			cells,
 			key: date,
-			header: formatMarkerDate(date),
+			header: formatMarkerDate(date, locale),
 		}));
 }
 
@@ -290,5 +295,6 @@ export function buildColumns(
 		options.eventTimezone,
 		options.viewTimezone,
 		options.hourCycle ?? "h12",
+		options.locale ?? DEFAULT_LOCALE,
 	);
 }

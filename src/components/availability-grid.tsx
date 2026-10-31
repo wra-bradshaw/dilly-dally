@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { useId, useMemo, useRef } from "react";
+import { useDateLocale } from "#/hooks/use-date-locale";
 import { useGridKeyboardNav } from "#/hooks/use-grid-keyboard-nav";
 import {
 	identityParse,
@@ -33,6 +34,7 @@ export function AvailabilityGrid({
 }: AvailabilityGridProps) {
 	const tableRef = useRef<HTMLTableElement>(null);
 	const hintId = useId();
+	const locale = useDateLocale();
 	const pos = useMemo(() => buildGridPos(columns), [columns]);
 	const { onGridKeyDown, roving, setFocusId, values } = useGridKeyboardNav(
 		columns,
@@ -95,7 +97,7 @@ export function AvailabilityGrid({
 									.filter(Boolean)
 									.join(" ")}
 								aria-disabled={disabled}
-								aria-label={`${cellDateLabel(cell, ctx.column)} ${cell.label}`}
+								aria-label={`${cellDateLabel(cell, ctx.column, locale)} ${cell.label}`}
 								aria-pressed={isSelected}
 								title={cell.rangeLabel}
 								className={cn(

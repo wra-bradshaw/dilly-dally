@@ -1,10 +1,12 @@
 import { cn } from "cn";
 import { useRef, useState } from "react";
+import { useDateLocale } from "#/hooks/use-date-locale";
 import {
 	identityParse,
 	suppressToggleKey,
 	usePaintSurface,
 } from "#/hooks/use-paint-surface";
+import { DEFAULT_LOCALE } from "#/lib/time-slots";
 import { formatMarkerDate } from "./grid-model";
 
 export function buildMonthMatrix(
@@ -126,17 +128,18 @@ export function DateCalendar({
 	onCommit,
 	selected,
 }: DateCalendarProps) {
+	const locale = useDateLocale();
 	const months = monthsInRange(minDate, maxDate);
 	const enabled = (day: string | null): day is string =>
 		day !== null && day >= minDate && day <= maxDate;
 	const sections = months
 		.map(({ m, y }) => ({
 			key: `${y}-${m}`,
-			label: new Intl.DateTimeFormat("en-US", {
+			label: new Date(Date.UTC(y, m, 1)).toLocaleDateString(DEFAULT_LOCALE, {
 				month: "long",
 				timeZone: "UTC",
 				year: "numeric",
-			}).format(new Date(Date.UTC(y, m, 1))),
+			}),
 			weeks: trimDisabledWeeks(buildMonthMatrix(y, m), minDate, maxDate),
 		}))
 		.filter((s) => s.weeks.length > 0);
@@ -421,7 +424,7 @@ export function DateCalendar({
 											const dayNum = /^\d{4}-\d{2}-(\d{2})$/.exec(day);
 											return (
 												<button
-													aria-label={formatMarkerDate(day)}
+													aria-label={formatMarkerDate(day, locale)}
 													aria-pressed={on}
 													className={cn(
 														"flex aspect-square min-h-11 w-full min-w-0 items-center justify-center overflow-hidden rounded-none border text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",

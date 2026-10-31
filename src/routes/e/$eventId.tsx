@@ -22,6 +22,7 @@ import {
 	TooltipTrigger,
 } from "#/components/ui/tooltip";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
+import { useDateLocale } from "#/hooks/use-date-locale";
 import { useEventDetail } from "#/hooks/use-event-detail";
 import { useEventSave } from "#/hooks/use-event-save";
 import { useEventSignIn } from "#/hooks/use-event-sign-in";
@@ -224,6 +225,7 @@ function EventPage() {
 		});
 	const [view, setView] = useLocalStorage("dd:tz-view", "");
 	const hourCycle = useHourCycle();
+	const locale = useDateLocale();
 
 	const event = detail.data?.event;
 	const browserTz = browserTimezone();
@@ -257,10 +259,11 @@ function EventPage() {
 		return buildColumns(detail.data.slotUniverse, {
 			eventTimezone: detail.data.event.timezone,
 			hourCycle,
+			locale,
 			mode: "dates",
 			viewTimezone,
 		});
-	}, [detail.data, viewTimezone, hourCycle]);
+	}, [detail.data, viewTimezone, hourCycle, locale]);
 	const counts = useMemo(() => {
 		const map = new Map<string, { count: number; names: string[] }>();
 		for (const c of detail.data?.counts ?? []) map.set(c.slot, c);

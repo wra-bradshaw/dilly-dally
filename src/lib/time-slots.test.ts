@@ -48,10 +48,8 @@ describe("systemHourCycle", () => {
 
 describe("formatSlotWithDate", () => {
 	it("respects the hour cycle", () => {
-		expect(formatSlotWithDate("2026-01-01T13:00", "h23")).toBe("Jan 1, 13:00");
-		expect(formatSlotWithDate("2026-01-01T13:00", "h12")).toBe(
-			"Jan 1, 1:00 PM",
-		);
+		expect(formatSlotWithDate("2026-01-01T13:00", "h23")).toBe("1/1, 13:00");
+		expect(formatSlotWithDate("2026-01-01T13:00", "h12")).toBe("1/1, 1:00 PM");
 	});
 });
 
@@ -97,10 +95,31 @@ describe("formatWeeklySlotRange", () => {
 describe("formatSlotWithDateRange", () => {
 	it("respects the hour cycle", () => {
 		expect(formatSlotWithDateRange("2026-01-01T13:00", "h23")).toBe(
-			"Jan 1, 13:00-13:30",
+			"1/1, 13:00-13:30",
 		);
 		expect(formatSlotWithDateRange("2026-01-01T13:00", "h12")).toBe(
-			"Jan 1, 1:00-1:30 PM",
+			"1/1, 1:00-1:30 PM",
+		);
+	});
+
+	it("orders day and month by locale", () => {
+		expect(formatSlotWithDateRange("2026-09-28T13:00", "h23", "en-GB")).toBe(
+			"28/09, 13:00-13:30",
+		);
+	});
+
+	it("keeps Gregorian dates and Latin digits in every locale", () => {
+		expect(formatSlotWithDateRange("2026-09-28T13:00", "h23", "fa-IR")).toBe(
+			"9/28, 13:00-13:30",
+		);
+		expect(formatSlotWithDateRange("2026-09-28T13:00", "h23", "ar-EG")).toMatch(
+			/^28‏?\/9, 13:00-13:30$/,
+		);
+	});
+
+	it("returns malformed date slots unchanged", () => {
+		expect(formatSlotWithDateRange("2026-9-28T13:00", "h23")).toBe(
+			"2026-9-28T13:00",
 		);
 	});
 });
@@ -120,7 +139,16 @@ describe("formatViewerSlotRange", () => {
 				"Australia/Sydney",
 				"h23",
 			),
-		).toBe("Oct 6, 00:00-00:30");
+		).toBe("10/6, 00:00-00:30");
+		expect(
+			formatViewerSlotRange(
+				"2026-10-05T09:00",
+				"America/New_York",
+				"Australia/Sydney",
+				"h23",
+				"en-GB",
+			),
+		).toBe("06/10, 00:00-00:30");
 	});
 });
 

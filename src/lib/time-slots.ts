@@ -3,6 +3,7 @@ import { DAY_MS } from "./expiry";
 const WEEKLY_SLOT_RE =
 	/^(SUN|MON|TUE|WED|THU|FRI|SAT)-([01]\d|2[0-3]):(00|30)$/;
 const HOUR_RE = /^([01]\d|2[0-3]):(00|30)$/;
+export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const WEEKDAY_CODES = [
 	"SUN",
@@ -33,6 +34,16 @@ export function systemHourCycle(): HourCycle {
 		}
 	} catch {}
 	return "h12";
+}
+
+export const DEFAULT_LOCALE = "en-US";
+
+export function systemLocale(): string {
+	try {
+		return new Intl.DateTimeFormat().resolvedOptions().locale;
+	} catch {
+		return DEFAULT_LOCALE;
+	}
 }
 
 export function browserTimezone(): string {
@@ -99,28 +110,41 @@ function wallFormatter(tz: string): Intl.DateTimeFormat {
 	return fmt;
 }
 
-const slotLabelFormatters = new Map<HourCycle, Intl.DateTimeFormat>();
+function memoize<A extends string[]>(
+	fn: (...args: A) => string,
+): (...args: A) => string {
+	const cache = new Map<string, string>();
+	return (...args) => {
+		const key = args.join("|");
+		const cached = cache.get(key);
+		if (cached !== undefined) return cached;
+		const value = fn(...args);
+		cache.set(key, value);
+		return value;
+	};
+}
 
-function slotLabelFormatterFor(hourCycle: HourCycle): Intl.DateTimeFormat {
-	const cached = slotLabelFormatters.get(hourCycle);
-	if (cached) return cached;
-	const fmt = new Intl.DateTimeFormat("en-US", {
-		hour: "numeric",
-		hourCycle,
-		minute: "2-digit",
+const dayMonth = memoize((date: string, locale: string) => {
+	const [y, m, d] = date.split("-").map(Number);
+	return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, {
+		calendar: "gregory",
+		day: "numeric",
+		month: "numeric",
+		numberingSystem: "latn",
 		timeZone: "UTC",
 	});
-	slotLabelFormatters.set(hourCycle, fmt);
-	return fmt;
-}
-const weekdayShortFormatter = new Intl.DateTimeFormat("en-US", {
-	timeZone: "UTC",
-	weekday: "short",
 });
-const monthDayFormatter = new Intl.DateTimeFormat("en-US", {
-	day: "numeric",
-	month: "short",
-	timeZone: "UTC",
+
+export function formatDayMonth(date: string, locale = DEFAULT_LOCALE): string {
+	return dayMonth(date, locale);
+}
+
+const timeLabel = memoize((time: string, hourCycle: HourCycle) => {
+	const [hh, mm] = time.split(":").map(Number);
+	return new Date(Date.UTC(2000, 0, 1, hh, mm)).toLocaleTimeString(
+		DEFAULT_LOCALE,
+		{ hour: "numeric", hourCycle, minute: "2-digit", timeZone: "UTC" },
+	);
 });
 
 function wallInZone(ms: number, tz: string): number {
@@ -165,10 +189,7 @@ export function formatSlotLabel(
 	hourCycle: HourCycle = "h12",
 ): string {
 	const [, time] = slot.split("T");
-	const [hh, mm] = time.split(":").map(Number);
-	return slotLabelFormatterFor(hourCycle).format(
-		new Date(Date.UTC(2000, 0, 1, hh, mm)),
-	);
+	return timeLabel(time, hourCycle);
 }
 
 function addThirtyMinutes(time: string): string {
@@ -222,7 +243,10 @@ export function formatSlotRange(
 function weekdayShortForCode(code: string): string {
 	const idx = weekdayForCode(code);
 	if (idx === null) return code;
-	return weekdayShortFormatter.format(new Date(Date.UTC(2000, 0, 2 + idx)));
+	return new Date(Date.UTC(2000, 0, 2 + idx)).toLocaleDateString(
+		DEFAULT_LOCALE,
+		{ timeZone: "UTC", weekday: "short" },
+	);
 }
 
 export function formatWeeklySlot(
@@ -262,27 +286,21 @@ function weeklySlotRank(slot: string): number | null {
 export function formatSlotWithDate(
 	slot: string,
 	hourCycle: HourCycle = "h12",
+	locale = DEFAULT_LOCALE,
 ): string {
 	const [date] = slot.split("T");
-	const [y, m, d] = date.split("-").map(Number);
-	const dt = new Date(Date.UTC(y, m - 1, d));
-	const monthDay = monthDayFormatter.format(dt);
-	return `${monthDay}, ${formatSlotLabel(slot, hourCycle)}`;
+	return `${formatDayMonth(date, locale)}, ${formatSlotLabel(slot, hourCycle)}`;
 }
 
 export function formatSlotWithDateRange(
 	slot: string,
 	hourCycle: HourCycle = "h12",
+	locale = DEFAULT_LOCALE,
 ): string {
 	const [date, time] = slot.split("T");
 	if (!date || !time || !/^\d{2}:\d{2}$/.test(time)) return slot;
-	const [y, m, d] = date.split("-").map(Number);
-	if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) {
-		return slot;
-	}
-	const dt = new Date(Date.UTC(y, m - 1, d));
-	const monthDay = monthDayFormatter.format(dt);
-	return `${monthDay}, ${formatTimeRange(time, hourCycle)}`;
+	if (!DATE_RE.test(date)) return slot;
+	return `${formatDayMonth(date, locale)}, ${formatTimeRange(time, hourCycle)}`;
 }
 
 export function formatViewerSlotRange(
@@ -290,11 +308,13 @@ export function formatViewerSlotRange(
 	eventTimezone: string,
 	viewTimezone: string,
 	hourCycle: HourCycle = "h12",
+	locale = DEFAULT_LOCALE,
 ): string {
 	if (isWeeklySlotId(slot)) return formatWeeklySlotRange(slot, hourCycle);
 	return formatSlotWithDateRange(
 		convertSlotZone(slot, eventTimezone, viewTimezone),
 		hourCycle,
+		locale,
 	);
 }
 
