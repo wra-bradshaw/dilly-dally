@@ -1,18 +1,6 @@
-import { useSyncExternalStore } from "react";
 import { type HourCycle, systemHourCycle } from "#/lib/time-slots";
-
-function subscribe(): () => void {
-	return () => {};
-}
-
-function clientSnapshot(): HourCycle {
-	return systemHourCycle();
-}
-
-function serverSnapshot(): HourCycle {
-	return "h12";
-}
+import { useClientValue } from "./use-client-value";
 
 export function useHourCycle(): HourCycle {
-	return useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+	return useClientValue(systemHourCycle, "h12");
 }

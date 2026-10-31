@@ -1,17 +1,9 @@
-import { useSyncExternalStore } from "react";
+import { useClientValue } from "./use-client-value";
 
-function subscribe(): () => void {
-	return () => {};
-}
-
-function clientSnapshot(): boolean {
+function hydrated(): boolean {
 	return true;
 }
 
-function serverSnapshot(): boolean {
-	return false;
-}
-
 export function useHydrated(): boolean {
-	return useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+	return useClientValue(hydrated, false);
 }
